@@ -17,8 +17,8 @@
 
     <!-- mammoth.js: DOCX → HTML -->
     <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
-    <!-- pdf.js: PDF 文本提取 -->
-    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.min.js"></script>
+    <!-- pdf.js: PDF 文本提取（本地文件，离线可用） -->
+    <script src="lib/pdf.min.js"></script>
     <!-- JSZip: 构建 DOCX -->
     <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
     <!-- html2pdf.js: HTML → PDF 自动转换 -->
@@ -508,8 +508,10 @@
             });
 
             // ========== 设置 pdf.js worker ==========
-            if (typeof pdfjsLib !== 'undefined') {
-                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.worker.min.js';
+            if (typeof window.pdfjsLib !== 'undefined') {
+                window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'lib/pdf.worker.min.js';
+            } else {
+                throw new Error('PDF解析组件加载失败，请刷新页面后重试');
             }
 
             // ========== Word → PDF 转换 ==========
@@ -561,7 +563,7 @@
                 var arrayBuffer = await readFileAsArrayBuffer(selectedFile);
 
                 updateStatus('正在解析 PDF 文档...');
-                var pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                var pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
                 var totalPages = pdf.numPages;
                 var allText = '';
 
