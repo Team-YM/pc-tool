@@ -1,91 +1,124 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>图片转格式</title>
+    <title>图片批量转格式</title>
     <link rel="icon" type="image/png" href="../favicon.png">
-    <meta name="description" content="免费在线图片格式转换工具，支持JPG、PNG、WebP、GIF、BMP、PDF互转，支持裁剪，纯浏览器端处理，安全快捷。">
+    <meta name="description" content="免费在线图片批量格式转换工具，支持JPG、PNG、WebP、GIF、BMP、PDF互转，支持批量上传多张图片同时转换，纯浏览器端处理，安全快捷。">
     <link rel="stylesheet" href="common.css">
     <!-- OGP 社交分享标签 -->
-    <meta property="og:title" content="图片转格式 | PC-TOOL">
+    <meta property="og:title" content="图片批量转格式 | PC-TOOL">
     <meta property="og:description" content="免费在线工具集合——图片转换、视频压缩、音频转格式、图片抠图……每一个功能都为效率而生，完全免费，为人民服务！">
     <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
     <meta property="og:url" content="https://www.pc-tool.cn/tool/image-convert.html">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="PC-TOOL">
     <meta property="og:locale" content="zh_CN">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.1/dist/cropper.min.css">
     <style>
-        .crop-switch {
+        .batch-list {
+            margin: 20px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 350px;
+            overflow-y: auto;
+        }
+
+        .batch-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            gap: 12px;
+        }
+
+        .batch-item .file-info {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .batch-item .file-name {
+            color: #e4e4e7;
+            font-size: 14px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .batch-item .file-size {
+            color: #71717a;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+
+        .batch-item .remove-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.04);
+            color: #a1a1aa;
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 15px 0;
-            gap: 12px;
-            font-size: 16px;
-            color: #cdcdd3;
+            flex-shrink: 0;
+            transition: all 0.2s;
         }
 
-        .switch-btn {
-            width: 50px;
-            height: 26px;
-            background: #3f3f46;
-            border-radius: 13px;
-            position: relative;
-            cursor: pointer;
-            transition: 0.3s;
+        .batch-item .remove-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
         }
 
-        .switch-btn::after {
-            content: '';
-            width: 22px;
-            height: 22px;
-            background: #a1a1aa;
-            border-radius: 50%;
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            transition: 0.3s;
+        .batch-item .status {
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            flex-shrink: 0;
         }
 
-        .switch-btn.on { background: #818cf8; }
-        .switch-btn.on::after { left: 26px; background: white; }
-
-        .img-crop-container {
-            display: none;
-            margin: 20px auto;
-            width: 100%;
-            max-width: 100%;
-            height: 400px;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 10px;
-            overflow: hidden;
-            position: relative;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        .batch-item .status.done {
+            background: rgba(16, 185, 129, 0.2);
+            color: #6ee7b7;
         }
 
-        #cropImage {
-            display: block;
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
+        .batch-item .status.processing {
+            background: rgba(129, 140, 248, 0.2);
+            color: #a5b4fc;
         }
 
-        .crop-btn {
-            padding: 10px 20px;
-            background: #e67e22;
-            color: white;
-            border: none;
+        .batch-item .status.error {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+        }
+
+        .batch-item .dl-btn {
+            padding: 6px 14px;
+            background: rgba(39, 174, 96, 0.2);
+            border: 1px solid rgba(39, 174, 96, 0.25);
+            color: #6ee7b7;
             border-radius: 6px;
             cursor: pointer;
-            margin: 10px;
-            font-size: 16px;
-            display: none;
-            transition: all 0.3s;
+            font-size: 13px;
+            flex-shrink: 0;
+            transition: all 0.2s;
         }
 
-        .crop-btn:hover { background: #d35400; }
+        .batch-item .dl-btn:hover {
+            background: rgba(39, 174, 96, 0.35);
+            border-color: rgba(39, 174, 96, 0.45);
+        }
 
         .preview-img {
             max-width: 100%;
@@ -102,6 +135,56 @@
             color: #818cf8;
             text-align: center;
         }
+
+        .batch-actions {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+
+        .download-all-btn {
+            padding: 12px 25px;
+            background: rgba(39, 174, 96, 0.3);
+            border: 1px solid rgba(39, 174, 96, 0.3);
+            color: white;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: none;
+        }
+
+        .download-all-btn:hover {
+            background: rgba(39, 174, 96, 0.5);
+            border-color: rgba(39, 174, 96, 0.5);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .clear-btn {
+            padding: 12px 25px;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        .clear-btn:hover {
+            background: rgba(239, 68, 68, 0.25);
+            border-color: rgba(239, 68, 68, 0.35);
+            transform: translateY(-1px);
+        }
     </style>
 </head>
 <body>
@@ -110,23 +193,18 @@
     <a href="../index.html" class="back-link">← 返回转换工具首页</a>
 
     <div class="container">
-        <h1>图片转格式</h1>
-        <p>支持JPG、PNG、WebP、GIF、BMP、PDF图片格式互转，支持裁剪</p>
-        <div class="crop-switch">
-            <span>裁剪功能：</span>
-            <div class="switch-btn" id="cropSwitch"></div>
-            <span id="cropStatus">关闭</span>
-        </div>
+        <h1>图片批量转格式</h1>
+        <p>支持JPG、PNG、WebP、GIF、BMP、PDF图片格式互转，支持批量上传多张图片同时转换</p>
+
         <div class="upload-area" id="uploadArea">
-            <p>点击或拖拽上传图片</p>
-            <input type="file" id="fileInput" accept="image/*">
+            <p>点击或拖拽上传图片（支持多选）</p>
+            <input type="file" id="fileInput" accept="image/*" multiple>
         </div>
-        <div class="img-crop-container" id="cropContainer">
-            <img id="cropImage" alt="裁剪图片">
-        </div>
-        <button id="cropBtn" class="crop-btn">确认裁剪</button>
-        <img id="previewImage" class="preview-img" alt="预览图">
-        <div style="text-align:center; margin:20px 0;">
+
+        <div class="batch-list" id="batchList"></div>
+
+        <div class="batch-actions" id="batchActions" style="display:none;">
+            <button class="clear-btn" id="clearBtn">清空列表</button>
             <select class="format-select" id="outputFormat">
                 <option value="jpg">JPG</option>
                 <option value="png">PNG</option>
@@ -135,141 +213,201 @@
                 <option value="bmp">BMP</option>
                 <option value="pdf">PDF</option>
             </select>
-            <button class="convert-btn" id="convertBtn">开始转换</button>
-            <button class="download-btn" id="downloadBtn">下载转换后的文件</button>
+            <button class="convert-btn" id="convertBtn">批量转换</button>
+            <button class="download-all-btn" id="downloadAllBtn">全部下载</button>
         </div>
+
         <div class="result-box" id="resultBox">
             <h3>转换完成</h3>
             <img id="convertedImage" class="preview-img">
             <div id="pdfPreview" class="pdf-preview-box"></div>
         </div>
+
         <div class="contact-tip">面向大众，有任何想要的功能或者意见，请联系QQ：<strong>1003294905</strong></div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.1/dist/cropper.min.js"></script>
-
     <script src="common.js"></script>
 
     <script>
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
-        const cropContainer = document.getElementById('cropContainer');
-        const cropImage = document.getElementById('cropImage');
-        const cropBtn = document.getElementById('cropBtn');
-        const previewImage = document.getElementById('previewImage');
+        const batchList = document.getElementById('batchList');
+        const batchActions = document.getElementById('batchActions');
         const convertBtn = document.getElementById('convertBtn');
-        const downloadBtn = document.getElementById('downloadBtn');
+        const downloadAllBtn = document.getElementById('downloadAllBtn');
+        const clearBtn = document.getElementById('clearBtn');
         const outputFormat = document.getElementById('outputFormat');
         const resultBox = document.getElementById('resultBox');
         const convertedImage = document.getElementById('convertedImage');
         const pdfPreview = document.getElementById('pdfPreview');
-        const cropSwitch = document.getElementById('cropSwitch');
-        const cropStatus = document.getElementById('cropStatus');
-        let cropEnabled = false;
-        let cropper;
-        let croppedUrl = null;
-        let originalFileUrl = null;
-        let convertedUrl = null;
-        let originalFileName = '';
 
-        cropSwitch.onclick = () => {
-            cropEnabled = !cropEnabled;
-            cropSwitch.classList.toggle('on', cropEnabled);
-            cropStatus.textContent = cropEnabled ? '开启' : '关闭';
-            if (!cropEnabled) {
-                cropContainer.style.display = 'none';
-                cropBtn.style.display = 'none';
-                if (cropper) { cropper.destroy(); cropper = null; }
-                if (originalFileUrl) {
-                    croppedUrl = originalFileUrl;
-                    previewImage.src = croppedUrl;
-                    previewImage.style.display = 'block';
-                }
-            } else {
-                if (originalFileUrl) {
-                    cropContainer.style.display = 'block';
-                    cropBtn.style.display = 'inline-block';
-                    previewImage.style.display = 'none';
-                    initCropper();
-                }
-            }
-        };
-
-        function initCropper() {
-            if (cropper) cropper.destroy();
-            cropImage.src = originalFileUrl;
-            cropImage.onload = () => {
-                cropper = new Cropper(cropImage, {
-                    aspectRatio: NaN, viewMode: 1, autoCropArea: 0.9, responsive: true, autoCrop: true, zoomable: true, scalable: false
-                });
-            };
-        }
+        let fileItems = []; // { file, id, convertedUrl, status }
+        let idCounter = 0;
 
         uploadArea.onclick = () => fileInput.click();
-        fileInput.onchange = handleUpload;
-        uploadArea.ondrop = e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f?.type.startsWith('image/')) handleUpload({ target: { files: [f] } }); };
-        ['dragenter', 'dragover', 'dragleave'].forEach(ev => uploadArea.addEventListener(ev, e => e.preventDefault()));
-
-        function handleUpload(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            originalFileName = file.name.replace(/\.\w+$/, '');
-            originalFileUrl = URL.createObjectURL(file);
-            if (!cropEnabled) {
-                croppedUrl = originalFileUrl;
-                previewImage.src = croppedUrl; previewImage.style.display = 'block';
-                cropContainer.style.display = 'none'; cropBtn.style.display = 'none';
-                return;
+        fileInput.onchange = (e) => {
+            if (e.target.files.length > 0) {
+                addFiles(Array.from(e.target.files));
+                fileInput.value = '';
             }
-            cropContainer.style.display = 'block'; cropBtn.style.display = 'inline-block'; previewImage.style.display = 'none';
-            initCropper();
+        };
+
+        // 拖拽支持
+        ['dragenter', 'dragover', 'dragleave'].forEach(ev => uploadArea.addEventListener(ev, e => e.preventDefault()));
+        uploadArea.addEventListener('drop', e => {
+            e.preventDefault();
+            const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+            if (files.length > 0) addFiles(files);
+        });
+
+        function addFiles(files) {
+            files.forEach(f => {
+                const item = { file: f, id: ++idCounter, convertedUrl: null, status: 'pending' };
+                fileItems.push(item);
+            });
+            renderList();
+            batchActions.style.display = 'flex';
+            resultBox.style.display = 'none';
+            downloadAllBtn.style.display = 'none';
         }
 
-        cropBtn.onclick = () => {
-            cropper.getCroppedCanvas({ maxWidth: 6000, maxHeight: 6000 }).toBlob(b => {
-                croppedUrl = URL.createObjectURL(b);
-                previewImage.src = croppedUrl; previewImage.style.display = 'block';
-                cropContainer.style.display = 'none'; cropBtn.style.display = 'none';
+        function removeFile(id) {
+            const item = fileItems.find(fi => fi.id === id);
+            if (item && item.convertedUrl) URL.revokeObjectURL(item.convertedUrl);
+            fileItems = fileItems.filter(fi => fi.id !== id);
+            renderList();
+            if (fileItems.length === 0) {
+                batchActions.style.display = 'none';
+                downloadAllBtn.style.display = 'none';
+            }
+        }
+
+        function renderList() {
+            batchList.innerHTML = fileItems.map(item => {
+                const statusClass = item.status === 'done' ? 'done' : (item.status === 'processing' ? 'processing' : '');
+                const statusText = item.status === 'done' ? '已完成' : (item.status === 'processing' ? '处理中...' : (item.status === 'error' ? '失败' : '待转换'));
+                const statusEl = item.status !== 'pending' ? `<span class="status ${statusClass}">${statusText}</span>` : '';
+                const dlBtn = item.status === 'done' ? `<button class="dl-btn" data-id="${item.id}">下载</button>` : '';
+                return `<div class="batch-item">
+                    <div class="file-info">
+                        <span class="file-name" title="${item.file.name}">${item.file.name}</span>
+                        <span class="file-size">${formatSize(item.file.size)}</span>
+                    </div>
+                    ${statusEl}
+                    ${dlBtn}
+                    <button class="remove-btn" data-id="${item.id}">&#x2715;</button>
+                </div>`;
+            }).join('');
+
+            // 绑定事件
+            batchList.querySelectorAll('.remove-btn').forEach(btn => {
+                btn.onclick = () => removeFile(Number(btn.dataset.id));
             });
+            batchList.querySelectorAll('.dl-btn').forEach(btn => {
+                btn.onclick = () => {
+                    const item = fileItems.find(fi => fi.id === Number(btn.dataset.id));
+                    if (item && item.convertedUrl) {
+                        downloadOne(item);
+                    }
+                };
+            });
+        }
+
+        function downloadOne(item) {
+            const ext = outputFormat.value;
+            const origName = item.file.name.replace(/\.\w+$/, '');
+            const a = document.createElement('a');
+            a.href = item.convertedUrl;
+            a.download = origName + '-格式转换.' + ext;
+            a.click();
+        }
+
+        clearBtn.onclick = () => {
+            fileItems.forEach(item => {
+                if (item.convertedUrl) URL.revokeObjectURL(item.convertedUrl);
+            });
+            fileItems = [];
+            renderList();
+            batchActions.style.display = 'none';
+            downloadAllBtn.style.display = 'none';
+            resultBox.style.display = 'none';
         };
 
-        convertBtn.onclick = () => {
-            const u = croppedUrl || originalFileUrl;
-            if (!u) { alert('请先上传图片！'); return; }
-            resultBox.style.display = 'none'; convertedImage.style.display = 'none'; pdfPreview.innerText = ''; downloadBtn.style.display = 'none';
-            const f = outputFormat.value.toLowerCase();
-            if (f === 'pdf') {
+        convertBtn.onclick = async () => {
+            if (fileItems.length === 0) { alert('请先上传图片！'); return; }
+            const fmt = outputFormat.value.toLowerCase();
+
+            downloadAllBtn.style.display = 'none';
+
+            // 标记所有为处理中
+            fileItems.forEach(item => { item.status = 'processing'; item.convertedUrl = null; });
+            renderList();
+
+            for (const item of fileItems) {
+                try {
+                    const url = URL.createObjectURL(item.file);
+                    if (fmt === 'pdf') {
+                        item.convertedUrl = await convertToPdf(url, item.file);
+                    } else {
+                        item.convertedUrl = await convertToImage(url, fmt);
+                    }
+                    URL.revokeObjectURL(url);
+                    item.status = 'done';
+                } catch (err) {
+                    console.error('转换失败:', item.file.name, err);
+                    item.status = 'error';
+                }
+                renderList();
+            }
+
+            const hasDone = fileItems.some(item => item.status === 'done');
+            if (hasDone) downloadAllBtn.style.display = 'inline-block';
+        };
+
+        function convertToImage(srcUrl, format) {
+            return new Promise((resolve, reject) => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+                img.onload = () => {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    resolve(canvas.toDataURL('image/' + format, 0.95));
+                };
+                img.onerror = reject;
+                img.src = srcUrl;
+            });
+        }
+
+        function convertToPdf(srcUrl, file) {
+            return new Promise((resolve, reject) => {
                 const { jsPDF } = jspdf;
                 const img = new Image();
-                img.src = u;
                 img.onload = () => {
-                    const p = new jsPDF({ orientation: img.width > img.height ? 'landscape' : 'portrait', unit: 'px', format: [img.width, img.height] });
+                    const p = new jsPDF({
+                        orientation: img.width > img.height ? 'landscape' : 'portrait',
+                        unit: 'px',
+                        format: [img.width, img.height]
+                    });
                     p.addImage(img, 'PNG', 0, 0, img.width, img.height);
-                    convertedUrl = p.output('bloburl');
-                    resultBox.style.display = 'block';
-                    pdfPreview.innerText = 'PDF已生成，无法预览，请下载查看';
-                    downloadBtn.style.display = 'inline-block';
+                    resolve(p.output('bloburl'));
                 };
-            } else {
-                const c = document.createElement('canvas');
-                const ctx2 = c.getContext('2d');
-                const img = new Image();
-                img.src = u;
-                img.onload = () => {
-                    c.width = img.width; c.height = img.height; ctx2.drawImage(img, 0, 0);
-                    convertedUrl = c.toDataURL('image/' + f, 0.95);
-                    convertedImage.src = convertedUrl; convertedImage.style.display = 'block';
-                    resultBox.style.display = 'block'; downloadBtn.style.display = 'inline-block';
-                };
-            }
-        };
+                img.onerror = reject;
+                img.src = srcUrl;
+            });
+        }
 
-        downloadBtn.onclick = () => {
-            const a = document.createElement('a');
-            a.href = convertedUrl;
-            a.download = originalFileName + '-图片格式转换.' + outputFormat.value;
-            a.click();
+        downloadAllBtn.onclick = () => {
+            const doneItems = fileItems.filter(item => item.status === 'done' && item.convertedUrl);
+            if (doneItems.length === 0) return;
+            const ext = outputFormat.value;
+            doneItems.forEach((item, i) => {
+                setTimeout(() => {
+                    downloadOne(item);
+                }, i * 300);
+            });
         };
     </script>
 </body>

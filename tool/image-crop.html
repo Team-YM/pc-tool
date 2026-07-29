@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片裁剪</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="免费在线图片裁剪工具，支持自由比例裁剪，纯浏览器端处理，安全快捷。">
+    <link rel="stylesheet" href="common.css">
+    <!-- OGP 社交分享标签 -->
+    <meta property="og:title" content="图片裁剪 | PC-TOOL">
+    <meta property="og:description" content="免费在线工具集合——图片转换、视频压缩、音频转格式、图片抠图……每一个功能都为效率而生，完全免费，为人民服务！">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/image-crop.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="zh_CN">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.1/dist/cropper.min.css">
+    <style>
+        .aspect-options {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            margin: 15px 0;
+        }
+
+        .aspect-btn {
+            padding: 8px 16px;
+            background: rgba(24, 24, 27, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #a1a1aa;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .aspect-btn:hover {
+            background: rgba(39, 39, 42, 0.6);
+            border-color: rgba(255, 255, 255, 0.2);
+            color: #e4e4e7;
+        }
+
+        .aspect-btn.active {
+            background: rgba(129, 140, 248, 0.3);
+            border-color: rgba(129, 140, 248, 0.5);
+            color: #c4b5fd;
+        }
+
+        .img-crop-container {
+            display: none;
+            margin: 20px auto;
+            width: 100%;
+            max-width: 100%;
+            height: 450px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        #cropImage {
+            display: block;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .crop-btn-row {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin: 15px 0;
+        }
+
+        .preview-img {
+            max-width: 100%;
+            max-height: 400px;
+            margin: 20px auto;
+            border-radius: 8px;
+            display: none;
+            object-fit: contain;
+        }
+    </style>
+</head>
+<body>
+<canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <a href="../index.html" class="back-link">← 返回转换工具首页</a>
+
+    <div class="container">
+        <h1>图片裁剪</h1>
+        <p>自由裁剪图片，支持常见比例预设</p>
+
+        <div class="aspect-options" id="aspectOptions">
+            <button class="aspect-btn active" data-ratio="NaN">自由比例</button>
+            <button class="aspect-btn" data-ratio="1">1:1</button>
+            <button class="aspect-btn" data-ratio="4/3">4:3</button>
+            <button class="aspect-btn" data-ratio="3/4">3:4</button>
+            <button class="aspect-btn" data-ratio="16/9">16:9</button>
+            <button class="aspect-btn" data-ratio="9/16">9:16</button>
+            <button class="aspect-btn" data-ratio="3/2">3:2</button>
+            <button class="aspect-btn" data-ratio="2/3">2:3</button>
+        </div>
+
+        <div class="upload-area" id="uploadArea">
+            <p>点击或拖拽上传图片</p>
+            <input type="file" id="fileInput" accept="image/*">
+        </div>
+
+        <div class="img-crop-container" id="cropContainer">
+            <img id="cropImage" alt="裁剪图片">
+        </div>
+
+        <div class="crop-btn-row">
+            <button class="convert-btn" id="resetBtn" style="display:none;">重置裁剪框</button>
+            <button class="download-btn" id="cropBtn" style="display:none;background:rgba(230,126,34,0.3);border-color:rgba(230,126,34,0.3);">确认裁剪</button>
+        </div>
+
+        <img id="previewImage" class="preview-img" alt="裁剪预览">
+
+        <div style="text-align:center; margin:20px 0;">
+            <button class="convert-btn" id="downloadBtn" style="display:none;">下载裁剪图片</button>
+        </div>
+
+        <div class="contact-tip">面向大众，有任何想要的功能或者意见，请联系QQ：<strong>1003294905</strong></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.1/dist/cropper.min.js"></script>
+    <script src="common.js"></script>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const cropContainer = document.getElementById('cropContainer');
+        const cropImage = document.getElementById('cropImage');
+        const cropBtn = document.getElementById('cropBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const previewImage = document.getElementById('previewImage');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const aspectBtns = document.querySelectorAll('.aspect-btn');
+
+        let cropper;
+        let croppedUrl = null;
+        let originalFileName = '';
+
+        // 比例切换
+        aspectBtns.forEach(btn => {
+            btn.onclick = () => {
+                aspectBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                if (cropper) {
+                    const ratio = btn.dataset.ratio;
+                    cropper.setAspectRatio(ratio === 'NaN' ? NaN : eval(ratio));
+                }
+            };
+        });
+
+        // 上传
+        uploadArea.onclick = () => fileInput.click();
+        fileInput.onchange = handleUpload;
+        uploadArea.ondrop = e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f?.type.startsWith('image/')) handleUpload({ target: { files: [f] } }); };
+        ['dragenter', 'dragover', 'dragleave'].forEach(ev => uploadArea.addEventListener(ev, e => e.preventDefault()));
+
+        function handleUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            originalFileName = file.name.replace(/\.\w+$/, '');
+            const url = URL.createObjectURL(file);
+            cropImage.src = url;
+            cropContainer.style.display = 'block';
+            cropBtn.style.display = 'inline-block';
+            resetBtn.style.display = 'inline-block';
+            previewImage.style.display = 'none';
+            downloadBtn.style.display = 'none';
+            croppedUrl = null;
+            initCropper();
+        }
+
+        function initCropper() {
+            if (cropper) cropper.destroy();
+            cropImage.onload = () => {
+                cropper = new Cropper(cropImage, {
+                    aspectRatio: NaN,
+                    viewMode: 1,
+                    autoCropArea: 0.9,
+                    responsive: true,
+                    autoCrop: true,
+                    zoomable: true,
+                    scalable: false
+                });
+            };
+        }
+
+        // 重置裁剪框
+        resetBtn.onclick = () => {
+            if (cropper) cropper.reset();
+        };
+
+        // 确认裁剪
+        cropBtn.onclick = () => {
+            cropper.getCroppedCanvas({ maxWidth: 6000, maxHeight: 6000 }).toBlob(b => {
+                croppedUrl = URL.createObjectURL(b);
+                previewImage.src = croppedUrl;
+                previewImage.style.display = 'block';
+                downloadBtn.style.display = 'inline-block';
+            });
+        };
+
+        // 下载
+        downloadBtn.onclick = () => {
+            const a = document.createElement('a');
+            a.href = croppedUrl;
+            a.download = originalFileName + '-裁剪.' + 'png';
+            a.click();
+        };
+    </script>
+</body>
+</html>

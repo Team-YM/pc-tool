@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>更新公告 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <meta name="description" content="PC-TOOL 更新公告">
+    <meta property="og:title" content="更新公告 | PC-TOOL">
+    <meta property="og:description" content="PC-TOOL 最新更新动态">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/notice.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="zh_CN">
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            background:#09090b; color:#f4f4f5;
+            font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+            background-image:linear-gradient(to bottom left, #242323, #131314, #000000);
+            background-attachment:fixed;
+            -webkit-font-smoothing:antialiased;
+            min-height:100vh;
+            padding:80px 20px 60px;
+            position:relative;
+        }
+
+        .bg-canvas {
+            position:fixed; top:0; left:0; width:100vw; height:100vh;
+            z-index:0; pointer-events:none; filter:blur(2px);
+        }
+
+        .back-link {
+            position:fixed; top:20px; left:20px; z-index:10;
+            color:#a1a1aa; font-size:15px; text-decoration:none;
+            background:rgba(24,24,27,0.5); backdrop-filter:blur(10px);
+            -webkit-backdrop-filter:blur(10px);
+            padding:8px 16px; border-radius:8px;
+            border:1px solid rgba(255,255,255,0.05);
+            transition:all 0.3s;
+        }
+        .back-link:hover { color:#e4e4e7; border-color:rgba(255,255,255,0.15); }
+
+        .container {
+            position:relative; z-index:1;
+            max-width:700px; margin:0 auto;
+            animation:fadeUp 0.8s cubic-bezier(0.16,1,0.3,1) forwards;
+        }
+        @keyframes fadeUp { from{transform:translateY(30px);opacity:0} to{transform:translateY(0);opacity:1} }
+
+        .page-header {
+            text-align:center; margin-bottom:48px;
+        }
+        .page-header h1 {
+            font-size:32px; font-weight:700; letter-spacing:-0.02em;
+            color:#e4e4e7; margin-bottom:8px;
+        }
+        .page-header .subtitle {
+            color:#71717a; font-size:15px;
+        }
+
+        .timeline {
+            position:relative; padding-left:36px;
+        }
+        .timeline::before {
+            content:'';
+            position:absolute; left:11px; top:8px; bottom:8px;
+            width:2px;
+            background:linear-gradient(to bottom, rgba(129,140,248,0.4), rgba(16,185,129,0.2));
+            border-radius:1px;
+        }
+
+        .notice-item {
+            position:relative; margin-bottom:40px; opacity:0;
+            animation:itemIn 0.6s cubic-bezier(0.16,1,0.3,1) forwards;
+        }
+        @keyframes itemIn {
+            from { transform:translateX(-20px); opacity:0; }
+            to { transform:translateX(0); opacity:1; }
+        }
+        .notice-item:nth-child(1) { animation-delay:0.00s; }
+        .notice-item:nth-child(2) { animation-delay:0.08s; }
+        .notice-item:nth-child(3) { animation-delay:0.16s; }
+        .notice-item:nth-child(4) { animation-delay:0.24s; }
+        .notice-item:nth-child(5) { animation-delay:0.32s; }
+        .notice-item:nth-child(6) { animation-delay:0.40s; }
+        .notice-item:nth-child(7) { animation-delay:0.48s; }
+
+        .notice-item::before {
+            content:'';
+            position:absolute; left:-28px; top:10px;
+            width:10px; height:10px;
+            background:#818cf8; border-radius:50%;
+            border:2px solid rgba(129,140,248,0.3);
+            box-shadow:0 0 12px rgba(129,140,248,0.4);
+            z-index:2;
+        }
+        .notice-item:nth-child(even)::before {
+            background:#34d399; border-color:rgba(16,185,129,0.3);
+            box-shadow:0 0 12px rgba(16,185,129,0.4);
+        }
+
+        .notice-item .notice-date {
+            font-size:13px; color:#71717a; margin-bottom:6px;
+            letter-spacing:0.03em; font-weight:500;
+        }
+
+        .notice-card {
+            background:rgba(24,24,27,0.25);
+            border:1px solid rgba(255,255,255,0.05);
+            border-radius:14px; padding:24px 28px;
+            backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+            transition:all 0.3s;
+        }
+        .notice-card:hover {
+            background:rgba(24,24,27,0.45);
+            border-color:rgba(255,255,255,0.1);
+            box-shadow:0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        .notice-card h3 {
+            font-size:16px; font-weight:600; color:#e4e4e7;
+            margin-bottom:10px;
+        }
+
+        .notice-card .notice-body {
+            color:#a1a1aa; font-size:14px; line-height:1.75;
+        }
+        .notice-card .notice-body ul {
+            padding-left:18px; margin-top:6px;
+        }
+        .notice-card .notice-body li {
+            margin-bottom:5px; color:#cdcdd3;
+        }
+        .notice-card .notice-body strong {
+            color:#e4e4e7;
+        }
+
+        .tag {
+            display:inline-block; padding:2px 10px; border-radius:6px;
+            font-size:12px; font-weight:500; margin-right:6px;
+        }
+        .tag.new { background:rgba(16,185,129,0.2); color:#6ee7b7; }
+        .tag.fix { background:rgba(245,158,11,0.2); color:#fcd34d; }
+        .tag.upgrade { background:rgba(129,140,248,0.2); color:#a5b4fc; }
+
+        .footer-note {
+            text-align:center; margin-top:48px; color:#52525b;
+            font-size:14px;
+        }
+
+        @media (max-width:640px) {
+            .container { padding:0 4px; }
+            .timeline { padding-left:28px; }
+            .notice-item::before { left:-22px; width:8px; height:8px; }
+            .notice-card { padding:18px 20px; }
+            .page-header h1 { font-size:26px; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <a href="index.html" class="back-link">← 返回首页</a>
+
+    <div class="container">
+        <div class="page-header">
+            <h1>更新公告</h1>
+            <p class="subtitle">记录每一次成长</p>
+        </div>
+
+        <div class="timeline">
+        <!-- 注：时间线最新在最上 -->
+
+            <div class="notice-item">
+                <div class="notice-date">2026-07-30</div>
+                <div class="notice-card">
+                    <h3>
+                        <span class="tag upgrade">升级</span>
+                        <span class="tag new">新增</span>
+                    </h3>
+                    <div class="notice-body">
+                        <ul>
+                            <li>图片转格式升级为<strong>批量转换</strong>，支持多张图片同时上传、逐一处理、一键全部下载</li>
+                            <li>新增<strong>图片裁剪</strong>工具，支持自由比例及 1:1、4:3、16:9 等常用预设比例</li>
+                            <li>首页新增<strong>更新公告</strong>入口，方便查阅版本动态</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="notice-item">
+                <div class="notice-date">2026-07-20</div>
+                <div class="notice-card">
+                    <h3>
+                        <span class="tag new">新增</span>
+                    </h3>
+                    <div class="notice-body">
+                        <ul>
+                            <li>新增<strong>音频截取</strong> — 设定起止时间裁剪音频片段</li>
+                            <li>新增<strong>音频合并</strong> — 多段音频首尾拼接</li>
+                            <li>新增<strong>PDF合并</strong> — 多个 PDF 合并为一个，pdf-lib 纯前端实现</li>
+                            <li>新增<strong>Word 与 PDF 互转</strong> — 双向文档转换</li>
+                            <li>新增<strong>文件哈希计算</strong> — 拖入文件计算 MD5 / SHA1 / SHA256</li>
+                            <li>新增<strong>节拍器（BPM）</strong> — 精准节拍，支持键盘空格快捷启停</li>
+                            <li>新增<strong>AI Chat 框架</strong>（第三方）— 智能对话平台</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="notice-item">
+                <div class="notice-date">2026-07-10</div>
+                <div class="notice-card">
+                    <h3>
+                        <span class="tag new">新增</span>
+                    </h3>
+                    <div class="notice-body">
+                        <ul>
+                            <li>新增<strong>视频压缩</strong> — 支持 MP4 / WebM / MOV / AVI 格式，可调节画质与分辨率</li>
+                            <li>新增<strong>视频转格式</strong> — 视频转 WebM</li>
+                            <li>新增<strong>视频提取音频</strong> — 从视频中分离导出音频</li>
+                            <li>新增<strong>视频转 GIF</strong> — 自定义帧率和尺寸</li>
+                            <li>新增<strong>视频截取片段</strong> — 设定起止时间截取</li>
+                            <li>新增<strong>视频截图 / 取帧</strong> — 播放到某一帧导出为图片</li>
+                            <li>新增<strong>B 站视频转 URL</strong> — 提取 B 站视频直链，适用于 VRChat 等场景</li>
+                            <li>引入<strong>视频解析</strong>（第三方）服务</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="notice-item">
+                <div class="notice-date">2026-06-30</div>
+                <div class="notice-card">
+                    <h3>
+                        <span class="tag new">新增</span>
+                    </h3>
+                    <div class="notice-body">
+                        <ul>
+                            <li>新增<strong>音频转格式</strong> — 支持 MP3 / WAV / OGG / M4A 互转</li>
+                            <li>新增<strong>音频转 OGG</strong> — 支持 MP3 / WAV / FLAC / AAC 等格式</li>
+                            <li>新增<strong>音频压缩</strong> — 可调节压缩质量</li>
+                            <li>引入<strong>音乐解析</strong>（第三方）服务</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="notice-item">
+                <div class="notice-date">2026-06-15</div>
+                <div class="notice-card">
+                    <h3>
+                        <span class="tag new">新增</span>
+                    </h3>
+                    <div class="notice-body">
+                        <ul>
+                            <li>新增<strong>图片拼接</strong> — 多图横向或纵向拼接，可自定义输出分辨率</li>
+                            <li>新增<strong>多图合成 GIF</strong> — 可自定义帧率</li>
+                            <li>新增<strong>图片加水印</strong> — 支持文字 / 图片 / 平铺水印，可调透明度与旋转</li>
+                            <li>新增<strong>图片旋转 / 翻转</strong> — 90° 旋转、水平 / 垂直翻转</li>
+                            <li>新增<strong>图片调色 / 滤镜</strong> — 亮度、对比度、饱和度、色相、模糊等调节</li>
+                            <li>新增<strong>图片 DPI 转换</strong> — 调整 DPI 像素不变</li>
+                            <li>新增<strong>图片抠图</strong> — 智能去除图片背景，完全离线运行保护隐私</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="notice-item">
+                <div class="notice-date">2026-06-01</div>
+                <div class="notice-card">
+                    <h3>
+                        <span class="tag new">首发</span>
+                    </h3>
+                    <div class="notice-body">
+                        <ul>
+                            <li><strong>PC-TOOL 正式上线</strong> — 免费在线工具集合，为人民服务，不收一分钱</li>
+                            <li>上线<strong>二维码生成器</strong> — 输入文字 / 链接生成二维码，支持自定义颜色、添加 Logo</li>
+                            <li>上线<strong>二维码解析</strong> — 上传二维码图片读出内容</li>
+                            <li>上线<strong>图片转格式</strong> — 支持 JPG / PNG / WebP / GIF / BMP / PDF 互转</li>
+                            <li>上线<strong>图片压缩</strong> — 支持批量压缩，可调节质量</li>
+                            <li>上线<strong>图片转 Base64</strong> — 拖入图片直接出 Base64 字符串</li>
+                            <li>上线<strong>Base64 转图片</strong> — 粘贴 Base64 字符串还原图片</li>
+                            <li>上线<strong>颜色格式转换</strong> — HEX / RGB / HSL 互转 + 调色板</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <p class="footer-note">为人民服务 · 不收一分钱 · 只为爱发电</p>
+    </div>
+
+    <script>
+        (function() {
+            var canvas = document.getElementById('bg-canvas');
+            var ctx = canvas.getContext('2d');
+            var W, H, mouseX = -9999, mouseY = -9999;
+
+            function resize() {
+                W = window.innerWidth; H = window.innerHeight;
+                canvas.width = W; canvas.height = H;
+            }
+            window.addEventListener('resize', resize); resize();
+
+            document.addEventListener('mousemove', function(e) { mouseX = e.clientX; mouseY = e.clientY; });
+            document.addEventListener('mouseleave', function() { mouseX = -9999; mouseY = -9999; });
+
+            var GS = 8, PS = 6;
+            var WORM_COUNT = Math.floor((W * H) / 20000);
+
+            var COLORS = [
+                'rgba(16, 185, 129, ',
+                'rgba(129, 140, 248, ',
+                'rgba(168, 85, 247, ',
+                'rgba(236, 72, 153, ',
+            ];
+
+            function rpick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+            var Worm = (function() {
+                function W() { this.init(true); }
+                W.prototype.init = function(pre) {
+                    this.x = Math.random() * (W / GS);
+                    this.y = Math.random() * (H / GS);
+                    this.angle = Math.random() * Math.PI * 2;
+                    this.speed = Math.random() * 0.08 + 0.02;
+                    this.history = [];
+                    this.maxLen = Math.floor(Math.random() * 50 + 15);
+                    this.turn = (Math.random() - 0.5) * 0.03;
+                    this.color = rpick(COLORS);
+                    if (pre) { var n = Math.floor(Math.random() * this.maxLen); for (var i = 0; i < n; i++) this.update(true); }
+                };
+                W.prototype.update = function(isInit) {
+                    var fa = Math.sin(this.x * 0.03) * Math.cos(this.y * 0.03) * Math.PI * 2;
+                    var dx = mouseX / GS - this.x, dy = mouseY / GS - this.y;
+                    var d = Math.sqrt(dx * dx + dy * dy);
+                    if (d < 30 && d > 0) fa += Math.atan2(dy, dx) * (1 - d / 30) * 0.02;
+                    this.angle += (fa - this.angle) * 0.015 + this.turn;
+                    this.x += Math.cos(this.angle) * this.speed;
+                    this.y += Math.sin(this.angle) * this.speed;
+                    var gx = Math.floor(this.x), gy = Math.floor(this.y);
+                    if (this.history.length === 0 || this.history[this.history.length - 1].x !== gx || this.history[this.history.length - 1].y !== gy) {
+                        this.history.push({ x: gx, y: gy });
+                        if (this.history.length > this.maxLen) this.history.shift();
+                    }
+                    if (!isInit && (this.x < -15 || this.x > (W / GS) + 15 || this.y < -15 || this.y > (H / GS) + 15)) this.init();
+                };
+                W.prototype.draw = function(ctx) {
+                    if (this.history.length < 2) return;
+                    for (var i = 0; i < this.history.length; i++) {
+                        var pos = this.history[i];
+                        var alpha = 1, prog = i / this.history.length;
+                        if (prog > 0.8) alpha = (1 - prog) * 5;
+                        else if (prog < 0.2) alpha = prog * 5;
+                        if (Math.random() > 0.96) alpha *= 0.1;
+                        ctx.fillStyle = this.color + (alpha * 0.4) + ')';
+                        ctx.fillRect(pos.x * GS, pos.y * GS, PS, PS);
+                    }
+                };
+                return W;
+            })();
+
+            var worms = Array.from({ length: WORM_COUNT }, function() { return new Worm(); });
+
+            function animate() {
+                ctx.clearRect(0, 0, W, H);
+                for (var i = 0; i < worms.length; i++) { worms[i].update(); worms[i].draw(ctx); }
+                requestAnimationFrame(animate);
+            }
+            animate();
+        })();
+    </script>
+</body>
+</html>
