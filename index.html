@@ -243,10 +243,33 @@
             font-weight: 700;
             letter-spacing: -0.02em;
             margin-bottom: 16px;
+            position: relative;
+            display: inline-block;
         }
 
         .hero h1 span {
             color: #93939c;
+        }
+
+        /* 鼠标探照灯暗金色光晕层 */
+        .hero-title-gold {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            /* 暗金色渐变与高贵光泽 */
+            background: linear-gradient(135deg, #d4af37 0%, #b8860b 45%, #e6ca65 70%, #996515 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: transparent;
+            opacity: 0;
+            transition: opacity 0.25s ease-out;
+            /* 圆形光晕遮罩跟随鼠标 */
+            -webkit-mask-image: radial-gradient(circle 120px at var(--mouse-x, -999px) var(--mouse-y, -999px), black 0%, black 45%, transparent 100%);
+            mask-image: radial-gradient(circle 120px at var(--mouse-x, -999px) var(--mouse-y, -999px), black 0%, black 45%, transparent 100%);
         }
 
         .hero p {
@@ -495,7 +518,10 @@
 
     <main class="main-container">
         <section class="hero">
-            <h1>免费工具<span>，高效生活</span></h1>
+            <h1 id="heroTitle">
+                免费工具<span>，高效生活</span>
+                <span class="hero-title-gold" id="heroTitleGold" aria-hidden="true">免费工具，高效生活</span>
+            </h1>
             <p><strong>为您精心打磨的在线工具集合，每一个功能都为效率而生，完全免费。</strong></p>
         </section>
 
@@ -577,6 +603,8 @@
     <script>
         const canvas = document.getElementById('bg-canvas');
         const ctx = canvas.getContext('2d');
+        const heroTitle = document.getElementById('heroTitle');
+        const heroTitleGold = document.getElementById('heroTitleGold');
         let width, height;
 
         // 像 TRAE 官网一样的网格像素参数
@@ -590,10 +618,32 @@
         window.addEventListener('mousemove', (e) => {
             mouseX = e.clientX;
             mouseY = e.clientY + window.scrollY;
+
+            // 大字“免费工具，高效生活”探照灯暗金色光晕跟随
+            if (heroTitle && heroTitleGold) {
+                const rect = heroTitle.getBoundingClientRect();
+                const relX = e.clientX - rect.left;
+                const relY = e.clientY - rect.top;
+
+                // 距离大字矩形区域的范围判断（超出一定圆形感应距离平滑隐藏）
+                const triggerDistance = 180;
+                const dx = Math.max(rect.left - e.clientX, 0, e.clientX - rect.right);
+                const dy = Math.max(rect.top - e.clientY, 0, e.clientY - rect.bottom);
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < triggerDistance) {
+                    heroTitleGold.style.setProperty('--mouse-x', `${relX}px`);
+                    heroTitleGold.style.setProperty('--mouse-y', `${relY}px`);
+                    heroTitleGold.style.opacity = '1';
+                } else {
+                    heroTitleGold.style.opacity = '0';
+                }
+            }
         });
         window.addEventListener('mouseleave', () => {
             mouseX = -9999;
             mouseY = -9999;
+            if (heroTitleGold) heroTitleGold.style.opacity = '0';
         });
 
         // 快速哈希与多频噪声
