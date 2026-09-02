@@ -579,110 +579,69 @@
         const ctx = canvas.getContext('2d');
         let width, height;
 
-        const GRID_SIZE = 10;
-        const PIXEL_SIZE = 5;
-        const DENSITY_THRESHOLD = 0.42;
-        const HOT_CX = 0.45;
-        const HOT_CY = 0.35;
-        const HOT_RADIUS = 0.25;
+        // 像 TRAE 官网一样的网格像素参数
+        const GRID_SIZE = 9;   // 稍小网格间距，颗粒度更细腻
+        const PIXEL_SIZE = 5;  // 方块像素大小
 
-        let cells = [];
+        let cols = 0, rows = 0;
+        let mouseX = -9999, mouseY = -9999;
+        let time = 0;
 
-        function hash2(ix, iy) {
-            const s = Math.sin(ix * 127.1 + iy * 311.7) * 43758.5453;
-            return s - Math.floor(s);
+        window.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY + window.scrollY;
+        });
+        window.addEventListener('mouseleave', () => {
+            mouseX = -9999;
+            mouseY = -9999;
+        });
+
+        // 快速哈希与多频噪声
+        function hash(x, y) {
+            let n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453123;
+            return n - Math.floor(n);
         }
-        function smoothstep(t) {
-            return t * t * (3 - 2 * t);
-        }
-        function valueNoise(x, y) {
-            const ix = Math.floor(x);
-            const iy = Math.floor(y);
-            const fx = smoothstep(x - ix);
-            const fy = smoothstep(y - iy);
-            const a = hash2(ix, iy);
-            const b = hash2(ix + 1, iy);
-            const c = hash2(ix, iy + 1);
-            const d = hash2(ix + 1, iy + 1);
+
+        function noise2D(x, y) {
+            let i = Math.floor(x), j = Math.floor(y);
+            let fx = x - i, fy = y - j;
+            let u = fx * fx * (3.0 - 2.0 * fx);
+            let v = fy * fy * (3.0 - 2.0 * fy);
             return (
-                a * (1 - fx) * (1 - fy) +
-                b * fx * (1 - fy) +
-                c * (1 - fx) * fy +
-                d * fx * fy
+                hash(i, j) * (1 - u) * (1 - v) +
+                hash(i + 1, j) * u * (1 - v) +
+                hash(i, j + 1) * (1 - u) * v +
+                hash(i + 1, j + 1) * u * v
             );
         }
-        function fractalNoise(x, y) {
-            let sum = 0;
-            let amp = 1;
-            let freq = 1;
-            let norm = 0;
-            for (let i = 0; i < 4; i++) {
-                sum += valueNoise(x * freq, y * freq) * amp;
-                norm += amp;
-                amp *= 0.5;
-                freq *= 2;
+
+        // 分形布朗运动 FBM：模拟复杂波浪与风暴
+        function fbm(x, y, octaves = 4) {
+            let v = 0.0, a = 0.53;
+            let shiftX = 100.0, shiftY = 100.0;
+            for (let i = 0; i < octaves; i++) {
+                v += a * noise2D(x, y);
+                x = x * 2.1 + shiftX;
+                y = y * 2.1 + shiftY;
+                a *= 0.48;
             }
-            return sum / norm;
+            return v;
         }
 
-        class Cell {
-            constructor(x, y, isGreen) {
-                this.x = x;
-                this.y = y;
-                this.isGreen = isGreen;
-                this.reset(true);
-            }
-            reset(initial = false) {
-                this.phase = 0;
-                this.duration = 180 + Math.random() * 260;
-                this.delay = initial ? Math.random() * 800 : 200 + Math.random() * 1200;
-                this.peakAlpha = this.isGreen ? 0.4 + Math.random() * 0.35 : 0.18 + Math.random() * 0.22;
-            }
-            update() {
-                if (this.delay > 0) {
-                    this.delay--;
-                    return;
-                }
-                this.phase++;
-                if (this.phase >= this.duration) {
-                    this.reset();
-                }
-            }
-            draw(ctx) {
-                if (this.delay > 0) return;
-                const t = this.phase / this.duration;
-                const alpha = Math.sin(t * Math.PI) * this.peakAlpha;
-                if (alpha < 0.02) return;
-                ctx.fillStyle = this.isGreen ? `rgba(16, 185, 129, ${alpha})` : `rgba(170, 170, 178, ${alpha})`;
-                ctx.fillRect(this.x, this.y, PIXEL_SIZE, PIXEL_SIZE);
-            }
-        }
+        // Domain Warping 区域扭曲算法（模拟汹涌大海、漩涡与混乱撕裂感）
+        function oceanStormWarp(x, y, t) {
+            // 第一层大浪扰动
+            const qx = fbm(x + t * 0.4, y + t * 0.25, 3);
+            const qy = fbm(x + 5.2 - t * 0.3, y + 1.3 + t * 0.35, 3);
 
-        function buildCells() {
-            cells = [];
-            const cols = Math.floor(width / GRID_SIZE);
-            const rows = Math.floor(height / GRID_SIZE);
-            const noiseScale = 0.05;
-            const viewH = window.innerHeight;
+            // 第二层漩涡与撕裂湍流
+            const rx = fbm(x + 4.0 * qx + 1.7 - t * 0.2, y + 4.0 * qy + 9.2 + t * 0.3, 3);
+            const ry = fbm(x + 4.0 * qx + 8.3 + t * 0.25, y + 4.0 * qy + 2.8 - t * 0.15, 3);
 
-            for (let i = 0; i < cols; i++) {
-                for (let j = 0; j < rows; j++) {
-                    const n = fractalNoise(i * noiseScale, j * noiseScale);
-                    const py = j * GRID_SIZE;
-                    const vFade = Math.max(0.35, 1 - py / (viewH * 2.5));
-                    if (n * vFade < DENSITY_THRESHOLD) continue;
-
-                    const nx = i / cols;
-                    const ny = j / rows;
-                    const dx = nx - HOT_CX;
-                    const dy = ny - HOT_CY;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-                    const greenProb = Math.max(0, 1 - dist / HOT_RADIUS) * 0.55;
-                    const isGreen = Math.random() < greenProb;
-
-                    cells.push(new Cell(i * GRID_SIZE, j * GRID_SIZE, isGreen));
-                }
-            }
+            // 尖锐的浪峰（波涛汹涌的锯齿浪）
+            const storm = fbm(x + 3.5 * rx, y + 3.5 * ry, 4);
+            const sharpWave = Math.abs(storm * 2.0 - 1.0); // 锐化波谷波峰
+            return 1.0 - sharpWave;
         }
 
         function resize() {
@@ -690,7 +649,8 @@
             height = Math.max(document.documentElement.scrollHeight, window.innerHeight);
             canvas.width = width;
             canvas.height = height;
-            buildCells();
+            cols = Math.ceil(width / GRID_SIZE);
+            rows = Math.ceil(height / GRID_SIZE);
         }
         window.addEventListener('resize', resize);
         const ro = new ResizeObserver(() => resize());
@@ -698,11 +658,98 @@
         resize();
 
         function animate() {
+            time += 0.009; // 增强流动演化速度
             ctx.clearRect(0, 0, width, height);
-            for (let i = 0; i < cells.length; i++) {
-                cells[i].update();
-                cells[i].draw(ctx);
+
+            const scrollY = window.scrollY;
+            const viewTop = scrollY;
+            const viewBottom = scrollY + window.innerHeight;
+
+            // 限制噪点只在页面上方区域展示（高度约在顶部 700px 内），向下渐隐淡出，不干扰下方的卡片按钮文字
+            const maxEffectY = 750;
+            const fadeStartY = 350;
+
+            const startRow = Math.max(0, Math.floor((viewTop - 80) / GRID_SIZE));
+            const endRow = Math.min(rows, Math.ceil((Math.min(viewBottom + 80, maxEffectY)) / GRID_SIZE));
+
+            for (let r = startRow; r < endRow; r++) {
+                const py = r * GRID_SIZE;
+                if (py > maxEffectY) continue;
+
+                // 垂直渐变衰减：顶部清晰展现，越往卡片区域越淡，直到完全消失
+                let verticalFade = 1.0;
+                if (py > fadeStartY) {
+                    verticalFade = 1.0 - (py - fadeStartY) / (maxEffectY - fadeStartY);
+                    verticalFade = Math.max(0, Math.min(1, verticalFade));
+                }
+
+                const ny = r * 0.022;
+
+                for (let c = 0; c < cols; c++) {
+                    const px = c * GRID_SIZE;
+                    const nx = c * 0.022;
+
+                    // 1. 区域扭曲汹涌波浪
+                    const waveVal = oceanStormWarp(nx, ny, time);
+
+                    // 2. 局部剧烈噪点破碎与随机泡沫 (Foam / Spray)
+                    const speckle = hash(c + Math.floor(time * 8.0), r + Math.floor(time * 5.0));
+                    const chaoticDensity = noise2D(nx * 3.5 + time * 0.6, ny * 3.5 - time * 0.4);
+
+                    // 动态撕裂阈值：使浪潮边缘极其参差不齐、形状不规则
+                    const threshold = 0.44 + chaoticDensity * 0.22;
+                    if (waveVal < threshold) {
+                        // 浪花外围飞溅的零星独立噪点
+                        if (speckle > 0.982 && waveVal > threshold - 0.12) {
+                            const spAlpha = (0.15 + speckle * 0.25) * verticalFade;
+                            if (spAlpha > 0.02) {
+                                ctx.fillStyle = `rgba(160, 170, 185, ${spAlpha})`;
+                                ctx.fillRect(px, py, PIXEL_SIZE - 1, PIXEL_SIZE - 1);
+                            }
+                        }
+                        continue;
+                    }
+
+                    // 基础亮度
+                    let intensity = (waveVal - threshold) / (1.0 - threshold);
+                    intensity = Math.pow(intensity, 1.4);
+
+                    // 鼠标交互：激起狂暴的浪花与漩涡
+                    const mdx = px - mouseX;
+                    const mdy = py - mouseY;
+                    const mdist = Math.sqrt(mdx * mdx + mdy * mdy);
+                    let mouseBonus = 0;
+                    if (mdist < 220) {
+                        const mNorm = 1 - mdist / 220;
+                        mouseBonus = (mNorm * 0.75 + speckle * mNorm * 0.3) * verticalFade;
+                    }
+
+                    let alpha = (intensity * 0.75 + mouseBonus) * verticalFade;
+                    if (alpha > 0.9) alpha = 0.9;
+                    if (alpha < 0.03) continue;
+
+                    // 动态像素破碎感
+                    if (speckle < 0.12 && intensity < 0.7 && mouseBonus === 0) continue;
+
+                    // 颜色分级
+                    const isCrest = waveVal > (threshold + 0.22) || (mouseBonus > 0.3);
+                    const isSpray = speckle > 0.88;
+
+                    if (isCrest && (isSpray || speckle > 0.45)) {
+                        ctx.fillStyle = `rgba(52, 211, 153, ${Math.min(0.9, alpha * 1.25)})`;
+                    } else if (isCrest && speckle > 0.25) {
+                        ctx.fillStyle = `rgba(225, 235, 245, ${alpha * 0.8})`;
+                    } else if (waveVal > threshold + 0.1) {
+                        ctx.fillStyle = `rgba(90, 145, 135, ${alpha * 0.5})`;
+                    } else {
+                        ctx.fillStyle = `rgba(110, 115, 130, ${alpha * 0.35})`;
+                    }
+
+                    const pSize = (speckle > 0.85 && isCrest) ? PIXEL_SIZE + 1 : PIXEL_SIZE;
+                    ctx.fillRect(px, py, pSize, pSize);
+                }
             }
+
             requestAnimationFrame(animate);
         }
         animate();
