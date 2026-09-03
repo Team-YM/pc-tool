@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>屏幕坏点自助检测 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="屏幕坏点自助检测，支持全屏纯色检测黑点、亮点、暗点、坏点，支持点击切换色彩与按ESC退出。">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .container h1 {
+            color: #e4e4e7;
+            margin-bottom: 10px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .container > p {
+            color: #a1a1aa;
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+
+        .test-box {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 40px 20px;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .start-btn {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #ffffff;
+            border: none;
+            padding: 16px 42px;
+            font-size: 18px;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 4px 18px rgba(16, 185, 129, 0.35);
+            transition: all 0.25s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .start-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(16, 185, 129, 0.5);
+            background: linear-gradient(135deg, #34d399, #10b981);
+        }
+
+        .start-btn:active {
+            transform: translateY(0);
+        }
+
+        .notice-esc {
+            margin-top: 18px;
+            color: #71717a;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .esc-badge {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 2px 8px;
+            border-radius: 5px;
+            color: #e4e4e7;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: monospace;
+        }
+
+        /* 色彩预览小圆点 */
+        .color-previews {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+
+        .color-dot {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        /* 全屏测试遮罩层 */
+        #fullscreenTester {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: none;
+            z-index: 999999;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* 顶部温馨悬浮气泡提示（仅前两秒显示后淡出） */
+        .tester-tip {
+            position: absolute;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.65);
+            color: #ffffff;
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-size: 13px;
+            letter-spacing: 0.5px;
+            pointer-events: none;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: opacity 0.8s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="../index.html" class="back-btn">← 返回</a>
+        <h1>屏幕坏点自助检测</h1>
+        <p>进入全屏纯色背景，方便肉眼逐一排查显示器亮点、暗点、色偏及坏点。</p>
+
+        <div class="test-box">
+            <button class="start-btn" id="startBtn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+                开始测试
+            </button>
+            <div class="notice-esc">
+                <span>测试中单击鼠标切换颜色，按</span>
+                <span class="esc-badge">ESC</span>
+                <span>键或点击右键退出全屏</span>
+            </div>
+
+            <div class="color-previews">
+                <div class="color-dot" style="background: #000000;" title="纯黑"></div>
+                <div class="color-dot" style="background: #ffffff;" title="纯白"></div>
+                <div class="color-dot" style="background: #ff0000;" title="纯红"></div>
+                <div class="color-dot" style="background: #00ff00;" title="纯绿"></div>
+                <div class="color-dot" style="background: #0000ff;" title="纯蓝"></div>
+                <div class="color-dot" style="background: #ffff00;" title="黄色"></div>
+                <div class="color-dot" style="background: #00ffff;" title="青色"></div>
+                <div class="color-dot" style="background: #ff00ff;" title="品红"></div>
+                <div class="color-dot" style="background: #808080;" title="50%中灰"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 全屏测试容器 -->
+    <div id="fullscreenTester">
+        <div class="tester-tip" id="testerTip">点击屏幕切换颜色 · 按 ESC 退出</div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        const colors = [
+            '#000000', // 黑 (查亮点)
+            '#ffffff', // 白 (查暗点、污渍)
+            '#ff0000', // 红
+            '#00ff00', // 绿
+            '#0000ff', // 蓝
+            '#ffff00', // 黄
+            '#00ffff', // 青
+            '#ff00ff', // 品红
+            '#808080'  // 中灰 (查色彩均匀度)
+        ];
+
+        let currentIndex = 0;
+        const startBtn = document.getElementById('startBtn');
+        const tester = document.getElementById('fullscreenTester');
+        const testerTip = document.getElementById('testerTip');
+        let tipTimeout = null;
+
+        function updateColor() {
+            tester.style.backgroundColor = colors[currentIndex];
+        }
+
+        function enterTest() {
+            currentIndex = 0;
+            updateColor();
+            tester.style.display = 'block';
+            testerTip.style.opacity = '1';
+
+            // 渐隐顶部提示
+            clearTimeout(tipTimeout);
+            tipTimeout = setTimeout(() => {
+                testerTip.style.opacity = '0';
+            }, 2500);
+
+            // 触发全屏
+            const el = document.documentElement;
+            if (el.requestFullscreen) {
+                el.requestFullscreen().catch(() => {});
+            } else if (el.webkitRequestFullscreen) {
+                el.webkitRequestFullscreen();
+            } else if (el.msRequestFullscreen) {
+                el.msRequestFullscreen();
+            }
+        }
+
+        function exitTest() {
+            tester.style.display = 'none';
+            if (document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement) {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen().catch(() => {});
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+            }
+        }
+
+        startBtn.addEventListener('click', enterTest);
+
+        // 点击屏幕切换下一个颜色
+        tester.addEventListener('click', (e) => {
+            currentIndex = (currentIndex + 1) % colors.length;
+            updateColor();
+        });
+
+        // 监听全屏变化，ESC退出时自动关闭测试层
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) {
+                tester.style.display = 'none';
+            }
+        });
+        document.addEventListener('webkitfullscreenchange', () => {
+            if (!document.webkitFullscreenElement) {
+                tester.style.display = 'none';
+            }
+        });
+
+        // 按键监听，ESC 或者任何退出意图
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                exitTest();
+            } else if (e.key === ' ' || e.key === 'ArrowRight') {
+                if (tester.style.display === 'block') {
+                    currentIndex = (currentIndex + 1) % colors.length;
+                    updateColor();
+                }
+            } else if (e.key === 'ArrowLeft') {
+                if (tester.style.display === 'block') {
+                    currentIndex = (currentIndex - 1 + colors.length) % colors.length;
+                    updateColor();
+                }
+            }
+        });
+
+        // 移动端若长按或多指也可方便退出
+        tester.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            exitTest();
+        });
+    </script>
+</body>
+</html>
