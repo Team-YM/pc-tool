@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>域名/IP与物理地址查询 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="在线查询域名解析IP地址、物理地理位置、运营商网络信息等。">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .container h1 {
+            color: #e4e4e7;
+            margin-bottom: 10px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .container > p {
+            color: #a1a1aa;
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .query-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+
+        .query-input {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+            padding: 12px 16px;
+            color: #f4f4f5;
+            font-size: 15px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .query-input:focus {
+            border-color: #818cf8;
+            box-shadow: 0 0 10px rgba(129, 140, 248, 0.2);
+        }
+
+        .query-btn {
+            background: #818cf8;
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            padding: 0 24px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .query-btn:hover {
+            background: #6366f1;
+            transform: translateY(-1px);
+        }
+
+        .query-btn:active {
+            transform: translateY(0);
+        }
+
+        .quick-tags {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #71717a;
+        }
+
+        .tag-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #a1a1aa;
+            padding: 3px 9px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tag-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #e4e4e7;
+        }
+
+        /* 结果展示卡片 */
+        .result-card {
+            display: none;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: left;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 14px;
+        }
+
+        .result-row:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .result-row:first-child {
+            padding-top: 0;
+        }
+
+        .result-label {
+            color: #71717a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .result-val {
+            color: #f4f4f5;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: monospace, sans-serif;
+        }
+
+        .copy-icon {
+            cursor: pointer;
+            color: #818cf8;
+            transition: color 0.2s;
+        }
+
+        .copy-icon:hover {
+            color: #a5b4fc;
+        }
+
+        .loading-state {
+            display: none;
+            padding: 20px;
+            text-align: center;
+            color: #a1a1aa;
+            font-size: 14px;
+        }
+
+        .error-state {
+            display: none;
+            padding: 16px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            color: #f87171;
+            border-radius: 10px;
+            font-size: 14px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <a href="../index.html" class="back-link">← 返回</a>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <div class="container">
+        <h1>域名 / IP 物理地址查询</h1>
+        <p>精准查询域名解析的真实 IP 地址、地理归属地、网络运营商信息等。</p>
+
+        <div class="query-box">
+            <input type="text" class="query-input" id="queryInput" placeholder="输入域名或 IPv4/IPv6 (如 baidu.com 或 8.8.8.8)..." autofocus>
+            <button class="query-btn" id="queryBtn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                查询
+            </button>
+        </div>
+
+        <div class="loading-state" id="loadingState">正在查询网络与地理信息，请稍候...</div>
+        <div class="error-state" id="errorState"></div>
+
+        <div class="result-card" id="resultCard">
+            <div class="result-row">
+                <span class="result-label">查询目标</span>
+                <span class="result-val" id="resTarget">-</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">解析 IP 地址</span>
+                <span class="result-val">
+                    <span id="resIp">-</span>
+                    <span class="copy-icon" id="copyIpBtn" title="复制IP">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    </span>
+                </span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">国家 / 地区</span>
+                <span class="result-val" id="resCountry">-</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">省份 / 城市</span>
+                <span class="result-val" id="resRegionCity">-</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">网络运营商 (ISP)</span>
+                <span class="result-val" id="resIsp">-</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">自治系统 (ASN)</span>
+                <span class="result-val" id="resAsn">-</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        const queryInput = document.getElementById('queryInput');
+        const queryBtn = document.getElementById('queryBtn');
+        const loadingState = document.getElementById('loadingState');
+        const errorState = document.getElementById('errorState');
+        const resultCard = document.getElementById('resultCard');
+
+        const resTarget = document.getElementById('resTarget');
+        const resIp = document.getElementById('resIp');
+        const resCountry = document.getElementById('resCountry');
+        const resRegionCity = document.getElementById('resRegionCity');
+        const resIsp = document.getElementById('resIsp');
+        const resAsn = document.getElementById('resAsn');
+        const copyIpBtn = document.getElementById('copyIpBtn');
+
+        // 清理域名格式
+        function cleanDomain(input) {
+            let s = input.trim();
+            s = s.replace(/^https?:\/\//i, '');
+            s = s.replace(/\/.*$/, '');
+            s = s.replace(/:\d+$/, '');
+            return s;
+        }
+
+        async function resolveDns(domain) {
+            // 线路1: 腾讯 DNSPod DoH 接口
+            try {
+                const res = await fetch(`https://doh.pub/resolve?name=${encodeURIComponent(domain)}&type=1`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.Answer && data.Answer.length > 0) {
+                        const a = data.Answer.find(item => item.type === 1);
+                        if (a && a.data) return a.data;
+                        return data.Answer[0].data;
+                    }
+                }
+            } catch (e) {}
+
+            // 线路2: 阿里公共 DNS (无需自定义 Header，原生返回)
+            try {
+                const res = await fetch(`https://dns.alidns.com/resolve?name=${encodeURIComponent(domain)}&type=1`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.Answer && data.Answer.length > 0) {
+                        const a = data.Answer.find(item => item.type === 1);
+                        if (a && a.data) return a.data;
+                        return data.Answer[0].data;
+                    }
+                }
+            } catch (e) {}
+
+            // 线路3: Google DoH (备用)
+            try {
+                const res = await fetch(`https://dns.google/resolve?name=${encodeURIComponent(domain)}&type=A`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.Answer && data.Answer.length > 0) {
+                        const a = data.Answer.find(item => item.type === 1);
+                        if (a && a.data) return a.data;
+                        return data.Answer[0].data;
+                    }
+                }
+            } catch (e) {}
+
+            throw new Error('未解析到该域名的 IP，请确认域名拼写是否正确！');
+        }
+
+        async function fetchGeo(ip) {
+            // 线路1: 免费开放 API - ip-api (http/https 自适应)
+            try {
+                const res = await fetch(`https://ip-api.com/json/${encodeURIComponent(ip)}?lang=zh-CN`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.status === 'success') {
+                        return {
+                            ip: data.query || ip,
+                            country: data.country || '-',
+                            region: data.regionName || '-',
+                            city: data.city || '-',
+                            org: data.isp || data.org || '-',
+                            asn: data.as || '-'
+                        };
+                    }
+                }
+            } catch (e) {}
+
+            // 线路2: ipwho.is (高容错备用)
+            try {
+                const res = await fetch(`https://ipwho.is/${encodeURIComponent(ip)}?lang=zh-CN`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.success !== false) {
+                        return {
+                            ip: data.ip || ip,
+                            country: data.country || '-',
+                            region: data.region || '-',
+                            city: data.city || '-',
+                            org: (data.connection && data.connection.isp) ? data.connection.isp : '-',
+                            asn: (data.connection && data.connection.asn) ? ('AS' + data.connection.asn) : '-'
+                        };
+                    }
+                }
+            } catch (e) {}
+
+            return {
+                ip: ip,
+                country: '已成功解析',
+                region: '-',
+                city: '-',
+                org: '-',
+                asn: '-'
+            };
+        }
+
+        async function doQuery(target) {
+            target = cleanDomain(target);
+            if (!target) {
+                showError('请输入需要查询的域名或 IP 地址！');
+                return;
+            }
+
+            errorState.style.display = 'none';
+            resultCard.style.display = 'none';
+            loadingState.style.display = 'block';
+
+            try {
+                let ipToLookup = target;
+
+                // 判断是否是 IP 地址
+                const isIp = /^(\d{1,3}\.){3}\d{1,3}$/.test(target) || target.includes(':');
+                if (!isIp) {
+                    ipToLookup = await resolveDns(target);
+                }
+
+                // 获取地理位置信息
+                const info = await fetchGeo(ipToLookup);
+
+                // 渲染结果
+                resTarget.textContent = target;
+                resIp.textContent = info.ip;
+                resCountry.textContent = info.country;
+                resRegionCity.textContent = (info.region === '-' && info.city === '-') ? '-' : `${info.region} / ${info.city}`;
+                resIsp.textContent = info.org;
+                resAsn.textContent = info.asn;
+
+                loadingState.style.display = 'none';
+                resultCard.style.display = 'block';
+
+            } catch (err) {
+                loadingState.style.display = 'none';
+                showError('查询失败: ' + err.message);
+            }
+        }
+
+        function showError(msg) {
+            errorState.textContent = msg;
+            errorState.style.display = 'block';
+            resultCard.style.display = 'none';
+            loadingState.style.display = 'none';
+        }
+
+        queryBtn.addEventListener('click', () => {
+            doQuery(queryInput.value);
+        });
+
+        queryInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                doQuery(queryInput.value);
+            }
+        });
+
+        // 复制 IP
+        copyIpBtn.addEventListener('click', () => {
+            const ip = resIp.textContent;
+            if (!ip || ip === '-') return;
+            navigator.clipboard.writeText(ip).then(() => {
+                copyIpBtn.title = '已复制!';
+                const originalSvg = copyIpBtn.innerHTML;
+                copyIpBtn.innerHTML = `<span style="font-size:12px;color:#10b981;font-weight:600;">已复制</span>`;
+                setTimeout(() => {
+                    copyIpBtn.innerHTML = originalSvg;
+                    copyIpBtn.title = '复制IP';
+                }, 1600);
+            });
+        });
+    </script>
+</body>
+</html>
