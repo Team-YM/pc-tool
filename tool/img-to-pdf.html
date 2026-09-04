@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片转PDF | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="免费在线图片转PDF工具，支持JPG、PNG、WebP等多张图片合并转换为PDF，支持调整图片顺序、页面边距与页面大小，纯前端处理安全可靠。">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="图片转PDF | PC-TOOL">
+    <meta property="og:description" content="免费在线工具集合——图片转换、视频压缩、音频转格式、图片抠图……每一个功能都为效率而生，完全免费，为人民服务！">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/img-to-pdf.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="zh_CN">
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <style>
+        #imgInput { display: none; }
+        .img2pdf-card {
+            max-width: 760px;
+            width: 100%;
+        }
+        .options-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 15px 0;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+        }
+        .option-item {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex: 1;
+            min-width: 140px;
+        }
+        .option-item label {
+            font-size: 13px;
+            color: #d4d4d8;
+        }
+        .select-input {
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            color: #f4f4f5;
+            font-size: 13px;
+            outline: none;
+            cursor: pointer;
+        }
+        .select-input option {
+            background: #18181b;
+            color: #f4f4f5;
+        }
+        .thumb-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 12px;
+            margin: 20px 0;
+            max-height: 380px;
+            overflow-y: auto;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 10px;
+        }
+        .thumb-item {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            cursor: grab;
+            user-select: none;
+            transition: all 0.2s;
+        }
+        .thumb-item.dragging {
+            opacity: 0.4;
+        }
+        .thumb-item.drag-over {
+            border-color: rgba(129, 140, 248, 0.6);
+            background: rgba(129, 140, 248, 0.12);
+        }
+        .thumb-img {
+            width: 100%;
+            height: 95px;
+            object-fit: cover;
+            border-radius: 4px;
+            background: #000;
+        }
+        .thumb-name {
+            font-size: 11px;
+            color: #e4e4e7;
+            margin-top: 6px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+            text-align: center;
+        }
+        .thumb-idx {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            background: rgba(0, 0, 0, 0.65);
+            color: #34d399;
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        .thumb-del {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: rgba(239, 68, 68, 0.8);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            cursor: pointer;
+            border: none;
+        }
+        .thumb-del:hover {
+            background: rgba(239, 68, 68, 1);
+        }
+        .list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            font-size: 13px;
+            color: #a1a1aa;
+        }
+        .action-btns {
+            display: flex;
+            gap: 8px;
+        }
+        .sm-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #a1a1aa;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .sm-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #f4f4f5;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <a href="../index.html" class="back-link">← 返回转换工具首页</a>
+
+    <div class="container img2pdf-card">
+        <h1>图片转PDF</h1>
+        <p>将单张或多张图片(JPG/PNG/WebP)合并制作成PDF文档，可自由拖拽排序并设置页面尺寸</p>
+
+        <div class="upload-area" id="uploadArea">
+            <p>点击或拖拽上传图片文件 (可多选)</p>
+            <input type="file" id="imgInput" accept="image/*" multiple>
+        </div>
+
+        <div class="options-bar">
+            <div class="option-item">
+                <label for="pageSizeSelect">页面尺寸标准</label>
+                <select id="pageSizeSelect" class="select-input">
+                    <option value="fit" selected>自适应原图宽高比例</option>
+                    <option value="a4_p">A4 纵向 (Portrait)</option>
+                    <option value="a4_l">A4 横向 (Landscape)</option>
+                </select>
+            </div>
+            <div class="option-item">
+                <label for="marginSelect">页边距留白</label>
+                <select id="marginSelect" class="select-input">
+                    <option value="0" selected>无留白 (贴边填满)</option>
+                    <option value="20">窄边距 (20pt)</option>
+                    <option value="40">适中边距 (40pt)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="list-header" id="listHeader" style="display: none;">
+            <span id="imgCountText">已添加 0 张图片 (可拖拽调整先后顺序)</span>
+            <div class="action-btns">
+                <button type="button" class="sm-btn" id="addMoreBtn">+ 继续添加图片</button>
+                <button type="button" class="sm-btn" id="clearBtn">清空列表</button>
+            </div>
+        </div>
+
+        <div class="thumb-list" id="thumbList" style="display: none;"></div>
+
+        <div style="text-align: center; margin-top: 15px;">
+            <button class="convert-btn" id="generateBtn" style="display: none;">生成 PDF 文档</button>
+            <button class="download-btn" id="downloadBtn">下载 PDF 文档</button>
+        </div>
+
+        <div class="result-box" id="resultBox">
+            <h3>转换成功</h3>
+            <div id="resultInfo" style="color: #a1a1aa; font-size: 14px; margin-top: 6px;"></div>
+        </div>
+
+        <div class="contact-tip">面向大众，有任何想要的功能或者意见，请联系QQ：<strong>1003294905</strong></div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const imgInput = document.getElementById('imgInput');
+        const pageSizeSelect = document.getElementById('pageSizeSelect');
+        const marginSelect = document.getElementById('marginSelect');
+        const listHeader = document.getElementById('listHeader');
+        const imgCountText = document.getElementById('imgCountText');
+        const addMoreBtn = document.getElementById('addMoreBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const thumbList = document.getElementById('thumbList');
+        const generateBtn = document.getElementById('generateBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const resultBox = document.getElementById('resultBox');
+        const resultInfo = document.getElementById('resultInfo');
+
+        let imageList = [];
+        let generatedBlob = null;
+
+        uploadArea.onclick = () => imgInput.click();
+        addMoreBtn.onclick = () => imgInput.click();
+
+        setupDragDrop(uploadArea, (files) => {
+            const validFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+            if (validFiles.length > 0) addImages(validFiles);
+            else showToast('请上传有效的图片文件');
+        });
+
+        imgInput.onchange = (e) => {
+            if (e.target.files.length > 0) {
+                addImages(Array.from(e.target.files));
+                imgInput.value = '';
+            }
+        };
+
+        clearBtn.onclick = () => {
+            imageList = [];
+            renderThumbs();
+            resultBox.style.display = 'none';
+            downloadBtn.style.display = 'none';
+        };
+
+        function addImages(files) {
+            files.forEach(file => {
+                const url = URL.createObjectURL(file);
+                imageList.push({
+                    file: file,
+                    name: file.name,
+                    url: url,
+                    type: file.type
+                });
+            });
+            renderThumbs();
+            resultBox.style.display = 'none';
+            downloadBtn.style.display = 'none';
+        }
+
+        function removeImage(index) {
+            const removed = imageList.splice(index, 1)[0];
+            if (removed && removed.url) URL.revokeObjectURL(removed.url);
+            renderThumbs();
+            resultBox.style.display = 'none';
+            downloadBtn.style.display = 'none';
+        }
+
+        function renderThumbs() {
+            const count = imageList.length;
+            if (count === 0) {
+                listHeader.style.display = 'none';
+                thumbList.style.display = 'none';
+                generateBtn.style.display = 'none';
+                return;
+            }
+
+            listHeader.style.display = 'flex';
+            thumbList.style.display = 'grid';
+            generateBtn.style.display = 'inline-block';
+            imgCountText.textContent = `已添加 ${count} 张图片 (可拖拽调整先后顺序)`;
+
+            thumbList.innerHTML = imageList.map((item, idx) => `
+                <div class="thumb-item" draggable="true" data-idx="${idx}">
+                    <span class="thumb-idx">${idx + 1}</span>
+                    <button class="thumb-del" data-idx="${idx}">✕</button>
+                    <img class="thumb-img" src="${item.url}" alt="${item.name}">
+                    <div class="thumb-name" title="${item.name}">${item.name}</div>
+                </div>
+            `).join('');
+
+            thumbList.querySelectorAll('.thumb-del').forEach(btn => {
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    removeImage(parseInt(btn.dataset.idx));
+                };
+            });
+
+            let dragIdx = -1;
+            thumbList.querySelectorAll('.thumb-item').forEach(item => {
+                item.ondragstart = (e) => {
+                    dragIdx = parseInt(item.dataset.idx);
+                    item.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                };
+                item.ondragend = () => item.classList.remove('dragging');
+                item.ondragover = (e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    item.classList.add('drag-over');
+                };
+                item.ondragleave = () => item.classList.remove('drag-over');
+                item.ondrop = (e) => {
+                    e.preventDefault();
+                    item.classList.remove('drag-over');
+                    const targetIdx = parseInt(item.dataset.idx);
+                    if (dragIdx !== -1 && dragIdx !== targetIdx) {
+                        const [moved] = imageList.splice(dragIdx, 1);
+                        imageList.splice(targetIdx, 0, moved);
+                        renderThumbs();
+                    }
+                };
+            });
+        }
+
+        function fileToImageElement(file) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = reject;
+                img.src = URL.createObjectURL(file);
+            });
+        }
+
+        async function convertImageToJpegBytes(file) {
+            const img = await fileToImageElement(file);
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth || img.width;
+            canvas.height = img.naturalHeight || img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0);
+            return new Promise((resolve) => {
+                canvas.toBlob(async (blob) => {
+                    const buf = await blob.arrayBuffer();
+                    resolve({ bytes: buf, width: canvas.width, height: canvas.height });
+                }, 'image/jpeg', 0.92);
+            });
+        }
+
+        generateBtn.onclick = async () => {
+            if (imageList.length === 0) return;
+
+            generateBtn.disabled = true;
+            generateBtn.textContent = '正在生成 PDF...';
+            resultBox.style.display = 'none';
+            downloadBtn.style.display = 'none';
+
+            const pageSizeMode = pageSizeSelect.value;
+            const margin = parseInt(marginSelect.value, 10);
+            const A4_WIDTH = 595.28;
+            const A4_HEIGHT = 841.89;
+
+            try {
+                const pdfDoc = await PDFLib.PDFDocument.create();
+
+                for (let i = 0; i < imageList.length; i++) {
+                    const item = imageList[i];
+                    let embeddedImg = null;
+                    let imgW = 0, imgH = 0;
+
+                    const isJpg = item.type === 'image/jpeg' || item.name.toLowerCase().endsWith('.jpg') || item.name.toLowerCase().endsWith('.jpeg');
+                    const isPng = item.type === 'image/png' || item.name.toLowerCase().endsWith('.png');
+
+                    if (isJpg) {
+                        try {
+                            const bytes = await item.file.arrayBuffer();
+                            embeddedImg = await pdfDoc.embedJpg(bytes);
+                            imgW = embeddedImg.width;
+                            imgH = embeddedImg.height;
+                        } catch {
+                            const res = await convertImageToJpegBytes(item.file);
+                            embeddedImg = await pdfDoc.embedJpg(res.bytes);
+                            imgW = res.width;
+                            imgH = res.height;
+                        }
+                    } else if (isPng) {
+                        try {
+                            const bytes = await item.file.arrayBuffer();
+                            embeddedImg = await pdfDoc.embedPng(bytes);
+                            imgW = embeddedImg.width;
+                            imgH = embeddedImg.height;
+                        } catch {
+                            const res = await convertImageToJpegBytes(item.file);
+                            embeddedImg = await pdfDoc.embedJpg(res.bytes);
+                            imgW = res.width;
+                            imgH = res.height;
+                        }
+                    } else {
+                        const res = await convertImageToJpegBytes(item.file);
+                        embeddedImg = await pdfDoc.embedJpg(res.bytes);
+                        imgW = res.width;
+                        imgH = res.height;
+                    }
+
+                    let pageW, pageH;
+                    if (pageSizeMode === 'a4_p') {
+                        pageW = A4_WIDTH;
+                        pageH = A4_HEIGHT;
+                    } else if (pageSizeMode === 'a4_l') {
+                        pageW = A4_HEIGHT;
+                        pageH = A4_WIDTH;
+                    } else {
+                        pageW = imgW + margin * 2;
+                        pageH = imgH + margin * 2;
+                    }
+
+                    const page = pdfDoc.addPage([pageW, pageH]);
+                    const availW = Math.max(1, pageW - margin * 2);
+                    const availH = Math.max(1, pageH - margin * 2);
+
+                    const scale = Math.min(availW / imgW, availH / imgH);
+                    const drawW = imgW * scale;
+                    const drawH = imgH * scale;
+
+                    const drawX = margin + (availW - drawW) / 2;
+                    const drawY = margin + (availH - drawH) / 2;
+
+                    page.drawImage(embeddedImg, {
+                        x: drawX,
+                        y: drawY,
+                        width: drawW,
+                        height: drawH
+                    });
+                }
+
+                const pdfBytes = await pdfDoc.save();
+                generatedBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+
+                resultInfo.textContent = `包含 ${imageList.length} 张图片，文档大小：${formatSize(generatedBlob.size)}`;
+                resultBox.style.display = 'block';
+                downloadBtn.style.display = 'inline-block';
+                showToast('PDF 生成成功！');
+            } catch (err) {
+                console.error(err);
+                showToast('生成失败：' + err.message);
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.textContent = '生成 PDF 文档';
+            }
+        };
+
+        downloadBtn.onclick = () => {
+            if (!generatedBlob) return;
+            const firstName = imageList.length > 0 ? imageList[0].name.replace(/\.[^.]+$/, '') : '图片合并';
+            const filename = imageList.length === 1 ? `${firstName}.pdf` : `${firstName}_等${imageList.length}张图片.pdf`;
+            const url = URL.createObjectURL(generatedBlob);
+            downloadFile(url, filename);
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>时间戳转换器 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="在线时间戳转换工具，支持 Unix 秒级/毫秒级时间戳与标准北京时间、UTC 时间双向互转，实时动态时间戳。">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .container {
+            max-width: 760px;
+        }
+        .container h1 {
+            color: #e4e4e7;
+            margin-bottom: 8px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .container > p {
+            color: #a1a1aa;
+            font-size: 15px;
+            margin-bottom: 24px;
+        }
+        .current-time-box {
+            background: rgba(129, 140, 248, 0.08);
+            border: 1px solid rgba(129, 140, 248, 0.2);
+            border-radius: 12px;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .current-time-val {
+            font-size: 18px;
+            font-weight: 600;
+            color: #818cf8;
+            font-family: monospace;
+        }
+        .card-row {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .card-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #e4e4e7;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+        .input-styled {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px 14px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+            font-family: monospace, sans-serif;
+        }
+        .input-styled:focus {
+            border-color: rgba(129, 140, 248, 0.5);
+        }
+        .unit-select {
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #e4e4e7;
+            outline: none;
+            cursor: pointer;
+        }
+        .action-btn {
+            padding: 10px 18px;
+            background: #818cf8;
+            border: none;
+            color: white;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .action-btn:hover {
+            background: #6366f1;
+        }
+        .result-text {
+            font-size: 14px;
+            color: #a1a1aa;
+            margin-top: 8px;
+            line-height: 1.6;
+        }
+        .result-text strong {
+            color: #34d399;
+            font-family: monospace;
+            font-size: 15px;
+            margin-left: 4px;
+        }
+        .copy-tag {
+            cursor: pointer;
+            color: #818cf8;
+            font-size: 12px;
+            margin-left: 8px;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+    <a href="../index.html" class="back-link">← 返回首页</a>
+
+    <div class="container">
+        <h1>时间戳转换器</h1>
+        <p>Unix 时间戳与标准日期时间精准双向转换，支持秒级(10位)、毫秒级(13位)及当前时间实时抓取。</p>
+
+        <div class="current-time-box">
+            <div>
+                <span style="font-size:13px; color:#a1a1aa;">当前北京时间：</span>
+                <span id="nowDate" style="color:#e4e4e7; font-weight:500;">-</span>
+            </div>
+            <div>
+                <span style="font-size:13px; color:#a1a1aa;">Unix 时间戳：</span>
+                <span class="current-time-val" id="nowTimestamp">-</span>
+                <button class="action-btn" id="toggleRunBtn" style="padding:4px 10px; font-size:12px; margin-left:8px;">暂停</button>
+            </div>
+        </div>
+
+        <div class="card-row">
+            <div class="card-title">时间戳 ➔ 转换为常规时间</div>
+            <div class="input-group">
+                <input type="text" class="input-styled" id="tsInput" placeholder="输入时间戳，如 1700000000">
+                <select class="unit-select" id="tsUnit">
+                    <option value="s">秒 (10位)</option>
+                    <option value="ms">毫秒 (13位)</option>
+                </select>
+                <button class="action-btn" id="tsToDateBtn">转换</button>
+                <button class="action-btn" id="tsUseNowBtn" style="background:rgba(255,255,255,0.08);">获取当前</button>
+            </div>
+            <div class="result-text" id="tsResult">北京时间 (Local)：<strong>-</strong></div>
+            <div class="result-text" id="tsResultUtc">世界时间 (UTC)：<strong>-</strong></div>
+        </div>
+
+        <div class="card-row">
+            <div class="card-title">常规时间 ➔ 转换为时间戳</div>
+            <div class="input-group">
+                <input type="text" class="input-styled" id="dateInput" placeholder="输入格式如 2026-09-04 12:00:00">
+                <button class="action-btn" id="dateToTsBtn">转换</button>
+                <button class="action-btn" id="dateUseNowBtn" style="background:rgba(255,255,255,0.08);">填入当前</button>
+            </div>
+            <div class="result-text" id="dateResultSec">秒级时间戳 (10位)：<strong>-</strong></div>
+            <div class="result-text" id="dateResultMs">毫秒时间戳 (13位)：<strong>-</strong></div>
+        </div>
+
+        <div class="contact-tip">面向大众，有任何想要的功能或者意见，请联系QQ：<strong>1003294905</strong></div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        let timer = null;
+        let isRunning = true;
+        const nowDate = document.getElementById('nowDate');
+        const nowTimestamp = document.getElementById('nowTimestamp');
+        const toggleRunBtn = document.getElementById('toggleRunBtn');
+
+        function formatDate(d) {
+            const pad = n => String(n).padStart(2, '0');
+            const Y = d.getFullYear();
+            const M = pad(d.getMonth() + 1);
+            const D = pad(d.getDate());
+            const h = pad(d.getHours());
+            const m = pad(d.getMinutes());
+            const s = pad(d.getSeconds());
+            return `${Y}-${M}-${D} ${h}:${m}:${s}`;
+        }
+
+        function formatUtc(d) {
+            return d.toUTCString();
+        }
+
+        function updateNow() {
+            const now = new Date();
+            nowDate.textContent = formatDate(now);
+            nowTimestamp.textContent = Math.floor(now.getTime() / 1000);
+        }
+
+        timer = setInterval(updateNow, 1000);
+        updateNow();
+
+        toggleRunBtn.onclick = () => {
+            if (isRunning) {
+                clearInterval(timer);
+                toggleRunBtn.textContent = '恢复';
+            } else {
+                updateNow();
+                timer = setInterval(updateNow, 1000);
+                toggleRunBtn.textContent = '暂停';
+            }
+            isRunning = !isRunning;
+        };
+
+        // 时间戳转时间
+        const tsInput = document.getElementById('tsInput');
+        const tsUnit = document.getElementById('tsUnit');
+        const tsToDateBtn = document.getElementById('tsToDateBtn');
+        const tsUseNowBtn = document.getElementById('tsUseNowBtn');
+        const tsResult = document.getElementById('tsResult');
+        const tsResultUtc = document.getElementById('tsResultUtc');
+
+        function convertTs() {
+            let val = tsInput.value.trim();
+            if (!val) return;
+            let num = Number(val);
+            if (isNaN(num)) {
+                tsResult.innerHTML = '北京时间：<strong style="color:#f87171;">请输入有效数字</strong>';
+                return;
+            }
+            if (tsUnit.value === 's') {
+                num = num * 1000;
+            }
+            const d = new Date(num);
+            if (isNaN(d.getTime())) {
+                tsResult.innerHTML = '北京时间：<strong style="color:#f87171;">日期范围超出有效范围</strong>';
+                return;
+            }
+            tsResult.innerHTML = `北京时间 (Local)：<strong>${formatDate(d)}</strong> <span class="copy-tag" onclick="copyText('${formatDate(d)}')">复制</span>`;
+            tsResultUtc.innerHTML = `世界时间 (UTC)：<strong>${formatUtc(d)}</strong> <span class="copy-tag" onclick="copyText('${formatUtc(d)}')">复制</span>`;
+        }
+
+        tsToDateBtn.onclick = convertTs;
+        tsUseNowBtn.onclick = () => {
+            const now = Date.now();
+            tsInput.value = tsUnit.value === 's' ? Math.floor(now / 1000) : now;
+            convertTs();
+        };
+
+        // 时间转时间戳
+        const dateInput = document.getElementById('dateInput');
+        const dateToTsBtn = document.getElementById('dateToTsBtn');
+        const dateUseNowBtn = document.getElementById('dateUseNowBtn');
+        const dateResultSec = document.getElementById('dateResultSec');
+        const dateResultMs = document.getElementById('dateResultMs');
+
+        function convertDate() {
+            let raw = dateInput.value.trim();
+            if (!raw) return;
+            // 兼容 2026-09-04 12:00:00 格式
+            let formatted = raw.replace(/-/g, '/');
+            let ms = Date.parse(formatted);
+            if (isNaN(ms)) {
+                dateResultSec.innerHTML = '秒级时间戳：<strong style="color:#f87171;">无法解析日期格式</strong>';
+                dateResultMs.innerHTML = '';
+                return;
+            }
+            const sec = Math.floor(ms / 1000);
+            dateResultSec.innerHTML = `秒级时间戳 (10位)：<strong>${sec}</strong> <span class="copy-tag" onclick="copyText('${sec}')">复制</span>`;
+            dateResultMs.innerHTML = `毫秒时间戳 (13位)：<strong>${ms}</strong> <span class="copy-tag" onclick="copyText('${ms}')">复制</span>`;
+        }
+
+        dateToTsBtn.onclick = convertDate;
+        dateUseNowBtn.onclick = () => {
+            dateInput.value = formatDate(new Date());
+            convertDate();
+        };
+
+        function copyText(val) {
+            navigator.clipboard.writeText(val).then(() => {
+                showToast('已复制到剪贴板！');
+            });
+        }
+    </script>
+</body>
+</html>

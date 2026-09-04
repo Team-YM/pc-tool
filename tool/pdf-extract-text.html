@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF提取文字 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="免费在线PDF文本提取工具，纯前端快速提取PDF内包含的文字文本内容，支持按页预览、复制文本与一键导出为TXT文档。">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="PDF提取文字 | PC-TOOL">
+    <meta property="og:description" content="免费在线工具集合——图片转换、视频压缩、音频转格式、图片抠图……每一个功能都为效率而生，完全免费，为人民服务！">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/pdf-extract-text.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="zh_CN">
+    <script src="lib/pdf.min.js"></script>
+    <style>
+        #pdfInput { display: none; }
+        .extract-card {
+            max-width: 800px;
+            width: 100%;
+        }
+        .file-info-bar {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .file-info-bar .info-left {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            overflow: hidden;
+        }
+        .file-info-bar .file-name {
+            color: #e4e4e7;
+            font-size: 14px;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 480px;
+        }
+        .file-info-bar .file-meta {
+            font-size: 12px;
+            color: #71717a;
+        }
+        .btn-change {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #a1a1aa;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .btn-change:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #f4f4f5;
+        }
+        .progress-bar-wrap {
+            display: none;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 6px;
+            height: 8px;
+            overflow: hidden;
+            margin: 15px 0 8px 0;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #818cf8, #34d399);
+            width: 0%;
+            transition: width 0.2s ease;
+        }
+        .text-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .stat-badge {
+            font-size: 13px;
+            color: #a1a1aa;
+        }
+        .stat-badge strong {
+            color: #34d399;
+        }
+        .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+        .action-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #f4f4f5;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .action-btn:hover {
+            background: rgba(129, 140, 248, 0.2);
+            border-color: rgba(129, 140, 248, 0.4);
+        }
+        .text-output-area {
+            width: 100%;
+            height: 380px;
+            background: rgba(15, 15, 18, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 16px;
+            color: #e4e4e7;
+            font-size: 14px;
+            line-height: 1.7;
+            resize: vertical;
+            outline: none;
+            box-sizing: border-box;
+            white-space: pre-wrap;
+            word-break: break-all;
+            margin-top: 12px;
+        }
+        .text-output-area:focus {
+            border-color: rgba(129, 140, 248, 0.4);
+        }
+        .extract-options {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin: 15px 0;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 8px;
+            font-size: 13px;
+            color: #d4d4d8;
+        }
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+        .checkbox-label input {
+            accent-color: #818cf8;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <a href="../index.html" class="back-link">← 返回转换工具首页</a>
+
+    <div class="container extract-card">
+        <h1>PDF提取文字</h1>
+        <p>纯前端解析提取PDF中的文本内容，可按页面标记并支持一键复制或导出为TXT文件</p>
+
+        <div class="upload-area" id="uploadArea">
+            <p>点击或拖拽上传 PDF 文件</p>
+            <input type="file" id="pdfInput" accept=".pdf,application/pdf">
+        </div>
+
+        <div class="file-info-bar" id="fileInfoBar">
+            <div class="info-left">
+                <span class="file-name" id="fileName">-</span>
+                <span class="file-meta" id="fileMeta">-</span>
+            </div>
+            <button class="btn-change" id="changeBtn">更换文件</button>
+        </div>
+
+        <div id="optionWrap" style="display: none;">
+            <div class="extract-options">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="addPageHeader" checked>
+                    包含页码分割标记（例如：--- 第 1 页 ---）
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="compactLines" checked>
+                    自动合并过多的空行
+                </label>
+            </div>
+
+            <div style="text-align: center;">
+                <button class="extract-btn" id="startBtn" style="margin: 5px 0;">开始提取文本</button>
+            </div>
+        </div>
+
+        <div class="progress-bar-wrap" id="progressWrap">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div id="progressText" style="display:none; text-align:center; font-size:12px; color:#a1a1aa; margin-bottom: 10px;">正在提取中...</div>
+
+        <div class="result-box" id="resultBox" style="text-align: left; padding: 16px;">
+            <div class="text-actions">
+                <div class="stat-badge" id="statBadge">已提取 <strong>0</strong> 字</div>
+                <div class="btn-group">
+                    <button class="action-btn" id="copyBtn">📋 复制全部文本</button>
+                    <button class="action-btn" id="exportTxtBtn">💾 导出为 TXT</button>
+                </div>
+            </div>
+            <textarea class="text-output-area" id="textOutput" spellcheck="false" placeholder="提取结果将显示在此处..."></textarea>
+        </div>
+
+        <div class="contact-tip">面向大众，有任何想要的功能或者意见，请联系QQ：<strong>1003294905</strong></div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        if (window.pdfjsLib) {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'lib/pdf.worker.min.js';
+        }
+
+        const uploadArea = document.getElementById('uploadArea');
+        const pdfInput = document.getElementById('pdfInput');
+        const fileInfoBar = document.getElementById('fileInfoBar');
+        const fileName = document.getElementById('fileName');
+        const fileMeta = document.getElementById('fileMeta');
+        const changeBtn = document.getElementById('changeBtn');
+        const optionWrap = document.getElementById('optionWrap');
+        const addPageHeader = document.getElementById('addPageHeader');
+        const compactLines = document.getElementById('compactLines');
+        const startBtn = document.getElementById('startBtn');
+        const progressWrap = document.getElementById('progressWrap');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
+        const resultBox = document.getElementById('resultBox');
+        const statBadge = document.getElementById('statBadge');
+        const copyBtn = document.getElementById('copyBtn');
+        const exportTxtBtn = document.getElementById('exportTxtBtn');
+        const textOutput = document.getElementById('textOutput');
+
+        let currentFile = null;
+        let pdfDoc = null;
+        let pageCount = 0;
+        let extractedFullText = '';
+
+        uploadArea.onclick = () => pdfInput.click();
+        setupDragDrop(uploadArea, (files) => {
+            const pdfs = Array.from(files).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+            if (pdfs.length > 0) handleFile(pdfs[0]);
+            else showToast('请上传有效的PDF文件');
+        });
+
+        pdfInput.onchange = (e) => {
+            if (e.target.files.length > 0) handleFile(e.target.files[0]);
+        };
+
+        changeBtn.onclick = () => pdfInput.click();
+
+        async function handleFile(file) {
+            currentFile = file;
+            fileName.textContent = file.name;
+            fileMeta.textContent = '解析文档结构...';
+            fileInfoBar.style.display = 'flex';
+            uploadArea.style.display = 'none';
+            resultBox.style.display = 'none';
+
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+                pdfDoc = await loadingTask.promise;
+                pageCount = pdfDoc.numPages;
+                fileMeta.textContent = `${formatSize(file.size)} · 共 ${pageCount} 页`;
+                optionWrap.style.display = 'block';
+            } catch (err) {
+                console.error(err);
+                showToast('解析PDF失败，文件可能受密码保护或已损坏');
+                fileInfoBar.style.display = 'none';
+                uploadArea.style.display = 'block';
+                optionWrap.style.display = 'none';
+            }
+        }
+
+        startBtn.onclick = async () => {
+            if (!pdfDoc || pageCount === 0) return;
+
+            startBtn.disabled = true;
+            startBtn.textContent = '正在提取...';
+            resultBox.style.display = 'none';
+            progressWrap.style.display = 'block';
+            progressText.style.display = 'block';
+            progressBar.style.width = '0%';
+
+            const withHeader = addPageHeader.checked;
+            const compact = compactLines.checked;
+            const pageTexts = [];
+
+            try {
+                for (let i = 1; i <= pageCount; i++) {
+                    progressText.textContent = `正在提取第 ${i} / ${pageCount} 页文字...`;
+                    progressBar.style.width = `${Math.round((i - 0.5) / pageCount * 100)}%`;
+
+                    const page = await pdfDoc.getPage(i);
+                    const textContent = await page.getTextContent();
+                    
+                    let lastY = null;
+                    let pageLines = [];
+                    let currentLine = '';
+
+                    for (const item of textContent.items) {
+                        if (lastY !== null && Math.abs(item.transform[5] - lastY) > 5) {
+                            pageLines.push(currentLine);
+                            currentLine = '';
+                        }
+                        currentLine += item.str;
+                        lastY = item.transform[5];
+                    }
+                    if (currentLine) pageLines.push(currentLine);
+
+                    let pageStr = pageLines.join('\n');
+                    if (compact) {
+                        pageStr = pageStr.replace(/\n\s*\n\s*\n+/g, '\n\n');
+                    }
+
+                    if (withHeader) {
+                        pageTexts.push(`--- 第 ${i} 页 ---\n${pageStr}`);
+                    } else {
+                        pageTexts.push(pageStr);
+                    }
+
+                    progressBar.style.width = `${Math.round(i / pageCount * 100)}%`;
+                }
+
+                extractedFullText = pageTexts.join('\n\n');
+                textOutput.value = extractedFullText;
+
+                const charCount = extractedFullText.replace(/\s+/g, '').length;
+                statBadge.innerHTML = `共提取 <strong>${charCount}</strong> 个字符 (含标点，不含空白)`;
+
+                if (charCount === 0) {
+                    showToast('未提取到可读文本，此PDF可能为纯扫描图片', 4000);
+                } else {
+                    showToast('文本提取完成！');
+                }
+
+                resultBox.style.display = 'block';
+            } catch (err) {
+                console.error(err);
+                showToast('提取文本失败：' + err.message);
+            } finally {
+                startBtn.disabled = false;
+                startBtn.textContent = '开始提取文本';
+                progressWrap.style.display = 'none';
+                progressText.style.display = 'none';
+            }
+        };
+
+        copyBtn.onclick = async () => {
+            if (!textOutput.value) return;
+            try {
+                await navigator.clipboard.writeText(textOutput.value);
+                showToast('已复制到剪贴板！');
+            } catch {
+                textOutput.select();
+                document.execCommand('copy');
+                showToast('已复制到剪贴板！');
+            }
+        };
+
+        exportTxtBtn.onclick = () => {
+            if (!textOutput.value) return;
+            const blob = new Blob([textOutput.value], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const base = currentFile ? currentFile.name.replace(/\.pdf$/i, '') : '提取文本';
+            downloadFile(url, `${base}_提取文字.txt`);
+        };
+    </script>
+</body>
+</html>

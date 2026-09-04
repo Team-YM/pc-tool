@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>随机数生成器 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .container { max-width: 680px; }
+        .container h1 { margin-bottom: 8px; }
+        .container > p { margin-bottom: 24px; }
+        .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+        .input-group label { display: block; color: #a1a1aa; font-size: 13px; margin-bottom: 6px; }
+        .input-styled { width: 100%; padding: 12px; border: 1px solid rgba(255,255,255,.1); border-radius: 8px; background: rgba(255,255,255,.05); color: #f4f4f5; font-size: 16px; outline: none; }
+        .input-styled:focus { border-color: rgba(52,211,153,.6); }
+        .option-row { display: flex; align-items: center; gap: 8px; margin-top: 18px; color: #a1a1aa; font-size: 14px; }
+        .option-row input { accent-color: #34d399; }
+        .actions { text-align: center; margin: 14px -10px 0; }
+        .result-box { display: block; min-height: 92px; margin-top: 24px; padding: 20px; word-break: break-all; color: #a7f3d0; font-size: 24px; font-variant-numeric: tabular-nums; }
+        .result-box.empty { color: #71717a; font-size: 16px; }
+        .copy-btn { display: none; margin: 14px auto 0; }
+        .copy-btn.show { display: block; }
+        @media (max-width: 480px) { .form-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+    <a href="../index.html" class="back-link">← 返回首页</a>
+    <main class="container">
+        <h1>随机数生成器</h1>
+        <p>生成指定范围内的随机整数或小数，支持一次生成多个结果。</p>
+        <div class="form-grid">
+            <div class="input-group"><label for="min">最小值</label><input class="input-styled" id="min" type="number" value="1"></div>
+            <div class="input-group"><label for="max">最大值</label><input class="input-styled" id="max" type="number" value="100"></div>
+            <div class="input-group"><label for="count">生成数量</label><input class="input-styled" id="count" type="number" min="1" max="100" value="1"></div>
+            <div class="input-group"><label for="decimals">小数位数（0 为整数）</label><input class="input-styled" id="decimals" type="number" min="0" max="10" value="0"></div>
+        </div>
+        <label class="option-row"><input type="checkbox" id="unique"> 结果不重复（范围不足时无法生成）</label>
+        <div class="actions"><button class="btn" id="generateBtn">生成随机数</button></div>
+        <div class="result-box empty" id="result">点击上方按钮生成结果</div>
+        <button class="btn copy-btn" id="copyBtn">复制结果</button>
+    </main>
+    <script src="common.js"></script>
+    <script>
+        var result = document.getElementById('result');
+        var copyBtn = document.getElementById('copyBtn');
+        document.getElementById('generateBtn').onclick = function () {
+            var min = Number(document.getElementById('min').value);
+            var max = Number(document.getElementById('max').value);
+            var count = Number(document.getElementById('count').value);
+            var decimals = Number(document.getElementById('decimals').value);
+            var unique = document.getElementById('unique').checked;
+            if (!Number.isFinite(min) || !Number.isFinite(max) || min > max || !Number.isInteger(count) || count < 1 || count > 100 || !Number.isInteger(decimals) || decimals < 0 || decimals > 10) { showToast('请输入有效的范围、数量和小数位数'); return; }
+            var integerMode = decimals === 0;
+            var available = integerMode ? Math.floor(max) - Math.ceil(min) + 1 : Infinity;
+            if (unique && integerMode && count > available) { showToast('当前整数范围不足以生成不重复结果'); return; }
+            if (unique && min === max && count > 1) { showToast('当前范围不足以生成不重复结果'); return; }
+            var values = [], seen = {}, attempts = 0;
+            while (values.length < count && attempts < 10000) {
+                attempts++;
+                var value = integerMode ? Math.floor(Math.random() * (Math.floor(max) - Math.ceil(min) + 1)) + Math.ceil(min) : Math.random() * (max - min) + min;
+                value = integerMode ? value : Number(value.toFixed(decimals));
+                if (unique && seen[value]) continue;
+                seen[value] = true; values.push(value);
+            }
+            if (values.length < count) { showToast('当前范围不足以生成不重复结果'); return; }
+            result.classList.remove('empty'); result.textContent = values.join('，'); copyBtn.classList.add('show');
+        };
+        copyBtn.onclick = function () { navigator.clipboard.writeText(result.textContent).then(function () { showToast('结果已复制'); }); };
+    </script>
+</body>
+</html>

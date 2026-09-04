@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线端口扫描与连通性检测 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="在线常用服务端口扫描与连通性检测工具，支持 HTTP(80)、HTTPS(443)、SSH(22)、FTP(21)、MySQL(3306)、Redis(6379)、远程桌面(3389)等常见端口状态探测与自定义端口扫描。">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .container {
+            max-width: 840px;
+        }
+
+        .container h1 {
+            color: #e4e4e7;
+            margin-bottom: 8px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .container > p {
+            color: #a1a1aa;
+            font-size: 15px;
+            margin-bottom: 24px;
+        }
+
+        .scan-inputs {
+            display: grid;
+            grid-template-columns: 2fr 1.2fr auto;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        @media (max-width: 650px) {
+            .scan-inputs {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .input-field {
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+            padding: 12px 16px;
+            color: #f4f4f5;
+            font-size: 15px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .input-field:focus {
+            border-color: #818cf8;
+            box-shadow: 0 0 10px rgba(129, 140, 248, 0.2);
+        }
+
+        .btn-scan {
+            background: #818cf8;
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            padding: 0 24px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .btn-scan:hover {
+            background: #6366f1;
+            transform: translateY(-1px);
+        }
+
+        .btn-scan:disabled {
+            background: rgba(255, 255, 255, 0.1);
+            color: #71717a;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 预设端口与协议标签 */
+        .port-presets {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            font-size: 13px;
+            color: #71717a;
+            text-align: left;
+        }
+
+        .port-preset-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #a1a1aa;
+            padding: 4px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .port-preset-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #e4e4e7;
+        }
+
+        /* 进度条 */
+        .progress-bar-wrap {
+            display: none;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            height: 6px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .progress-bar-inner {
+            height: 100%;
+            background: #818cf8;
+            width: 0%;
+            transition: width 0.2s ease;
+        }
+
+        /* 扫描结果卡片与表格 */
+        .result-panel {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            overflow: hidden;
+            text-align: left;
+        }
+
+        .table-header {
+            display: grid;
+            grid-template-columns: 100px 140px 140px 1fr;
+            padding: 12px 18px;
+            background: rgba(0, 0, 0, 0.3);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            font-size: 13px;
+            color: #a1a1aa;
+            font-weight: 600;
+        }
+
+        .table-body {
+            max-height: 420px;
+            overflow-y: auto;
+        }
+
+        .port-row {
+            display: grid;
+            grid-template-columns: 100px 140px 140px 1fr;
+            padding: 12px 18px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            font-size: 14px;
+            align-items: center;
+            transition: background 0.2s;
+        }
+
+        .port-row:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .port-row:last-child {
+            border-bottom: none;
+        }
+
+        .port-num {
+            font-family: monospace;
+            font-weight: 600;
+            color: #f4f4f5;
+        }
+
+        .service-name {
+            color: #d4d4d8;
+            font-size: 13px;
+        }
+
+        .status-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 4px;
+            width: fit-content;
+        }
+
+        .tag-open {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .tag-closed {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .tag-filtered {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .tag-scanning {
+            background: rgba(129, 140, 248, 0.15);
+            color: #a5b4fc;
+            border: 1px solid rgba(129, 140, 248, 0.3);
+        }
+
+        .port-desc {
+            font-size: 13px;
+            color: #71717a;
+        }
+
+        .notice-info {
+            margin-top: 16px;
+            font-size: 12px;
+            color: #71717a;
+            line-height: 1.6;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <a href="../index.html" class="back-link">← 返回</a>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <div class="container">
+        <h1>端口扫描与连通性检测</h1>
+        <p>快速探测目标主机或服务器的常见服务端口是否处于开放/监听状态，诊断防火墙与网络通畅性。</p>
+
+        <div class="scan-inputs">
+            <input type="text" id="hostInput" class="input-field" placeholder="目标主机/域名 (如 localhost 或 127.0.0.1)..." value="127.0.0.1" autofocus>
+            <input type="text" id="portsInput" class="input-field" placeholder="端口列表 (用英文逗号隔开)" value="80, 443, 3000, 8080, 8888, 3306">
+            <button class="btn-scan" id="scanBtn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
+                开始扫描
+            </button>
+        </div>
+
+        <div class="port-presets">
+            <span>快捷端口组：</span>
+            <button class="port-preset-btn" data-ports="80, 443, 8080, 8443, 3000, 5173">Web 应用 (80/443/Vite)</button>
+            <button class="port-preset-btn" data-ports="21, 22, 23, 3389, 5900">远程运维 (SSH/FTP/RDP)</button>
+            <button class="port-preset-btn" data-ports="3306, 5432, 6379, 27017, 9200">数据库 (MySQL/Redis等)</button>
+            <button class="port-preset-btn" data-ports="80, 443, 22, 21, 3306, 6379, 8080, 8888, 3389">常用核心全端口 (9个)</button>
+        </div>
+
+        <div class="progress-bar-wrap" id="progressBarWrap">
+            <div class="progress-bar-inner" id="progressBarInner"></div>
+        </div>
+
+        <div class="result-panel">
+            <div class="table-header">
+                <div>端口</div>
+                <div>服务 / 协议</div>
+                <div>状态</div>
+                <div>诊断说明</div>
+            </div>
+            <div class="table-body" id="tableBody">
+                <div style="text-align: center; color: #71717a; padding: 30px; font-size: 13px;">
+                    请输入主机与目标端口后点击“开始扫描”。
+                </div>
+            </div>
+        </div>
+
+        <div class="notice-info">
+            * 说明：Web 端的端口探测通过现代浏览器的 Fetch 与 Socket 握手机制建立安全探测连接。对于本地回环 (localhost/127.0.0.1) 及同局域网设备探测极为灵敏，当响应被防火墙直接丢弃(Drop)时将判定为关闭或受防火墙拦截(Filtered)。
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        const hostInput = document.getElementById('hostInput');
+        const portsInput = document.getElementById('portsInput');
+        const scanBtn = document.getElementById('scanBtn');
+        const progressBarWrap = document.getElementById('progressBarWrap');
+        const progressBarInner = document.getElementById('progressBarInner');
+        const tableBody = document.getElementById('tableBody');
+
+        const KNOWN_SERVICES = {
+            21: 'FTP 文件传输',
+            22: 'SSH 远程终端',
+            23: 'Telnet 明文终端',
+            25: 'SMTP 邮件发信',
+            53: 'DNS 域名系统',
+            80: 'HTTP 超文本传输',
+            110: 'POP3 邮件收信',
+            143: 'IMAP 邮件服务',
+            443: 'HTTPS 安全传输',
+            445: 'SMB 文件共享',
+            1433: 'MS SQL Server',
+            1521: 'Oracle 数据库',
+            3000: 'Node / React 开发服务',
+            3306: 'MySQL 数据库',
+            3389: 'RDP 远程桌面',
+            5000: 'Flask / ASP.NET',
+            5173: 'Vite 开发服务器',
+            5432: 'PostgreSQL 数据库',
+            5900: 'VNC 远程桌面',
+            6379: 'Redis 缓存数据库',
+            8000: 'HTTP 备用端口 / Django',
+            8080: 'Tomcat / SpringBoot',
+            8443: 'HTTPS 备用端口',
+            8888: '宝塔面板 / Jupyter',
+            9200: 'Elasticsearch 搜索引擎',
+            27017: 'MongoDB 数据库'
+        };
+
+        let isScanning = false;
+
+        function cleanHost(host) {
+            host = host.trim();
+            host = host.replace(/^https?:\/\//i, '');
+            host = host.split('/')[0];
+            host = host.split(':')[0];
+            return host;
+        }
+
+        async function checkPort(host, port) {
+            const timeout = 2500;
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeout);
+            const start = performance.now();
+
+            const isHttps = (port === 443 || port === 8443);
+            const protocol = isHttps ? 'https' : 'http';
+            const testUrl = `${protocol}://${host}:${port}/`;
+
+            try {
+                await fetch(testUrl, {
+                    mode: 'no-cors',
+                    signal: controller.signal,
+                    cache: 'no-cache'
+                });
+                clearTimeout(timer);
+                const latency = Math.round(performance.now() - start);
+                return { status: 'open', desc: `开放 (握手成功，延迟约 ${latency}ms)` };
+            } catch (err) {
+                clearTimeout(timer);
+                const duration = Math.round(performance.now() - start);
+                if (duration >= (timeout - 100)) {
+                    return { status: 'filtered', desc: '超时 / 受防火墙拦截或未响应' };
+                }
+                // 在现代浏览器中，如果端口关闭，TCP RST 会立即触发 TypeError，耗时极短 (< 40ms 本地，< 300ms 公网)
+                // 如果端口是开放但非 HTTP 服务 (例如 SSH / MySQL)，握手建立后会产生协议错误，耗时一般稍长或者报网络拒绝
+                if (duration < 50 && (host === 'localhost' || host === '127.0.0.1')) {
+                    return { status: 'closed', desc: '已关闭 / 服务未在该端口监听' };
+                }
+                if (duration < 350) {
+                    return { status: 'open', desc: `响应活跃 (检测到主机端口应答，约 ${duration}ms)` };
+                }
+                return { status: 'closed', desc: '未检测到有效响应' };
+            }
+        }
+
+        async function startScan() {
+            if (isScanning) return;
+            const host = cleanHost(hostInput.value);
+            if (!host) {
+                alert('请输入有效的目标主机或域名！');
+                return;
+            }
+
+            const rawPorts = portsInput.value.split(/[,，\s]+/).map(p => parseInt(p.trim())).filter(p => !isNaN(p) && p > 0 && p <= 65535);
+            // 去重
+            const ports = [...new Set(rawPorts)];
+            if (ports.length === 0) {
+                alert('请至少输入一个 1~65535 范围内的端口号！');
+                return;
+            }
+
+            isScanning = true;
+            scanBtn.disabled = true;
+            progressBarWrap.style.display = 'block';
+            progressBarInner.style.width = '0%';
+
+            tableBody.innerHTML = ports.map(port => `
+                <div class="port-row" id="port-row-${port}">
+                    <div class="port-num">${port}</div>
+                    <div class="service-name">${KNOWN_SERVICES[port] || '自定义端口'}</div>
+                    <div><span class="status-tag tag-scanning">检测中...</span></div>
+                    <div class="port-desc">正在发送 TCP/HTTP 握手探测...</div>
+                </div>
+            `).join('');
+
+            let completed = 0;
+            for (let i = 0; i < ports.length; i++) {
+                const port = ports[i];
+                const res = await checkPort(host, port);
+
+                const row = document.getElementById(`port-row-${port}`);
+                if (row) {
+                    let tagHtml = '';
+                    if (res.status === 'open') {
+                        tagHtml = '<span class="status-tag tag-open">● 开放 (Open)</span>';
+                    } else if (res.status === 'filtered') {
+                        tagHtml = '<span class="status-tag tag-filtered">▲ 过滤 / 超时</span>';
+                    } else {
+                        tagHtml = '<span class="status-tag tag-closed">✕ 关闭 (Closed)</span>';
+                    }
+
+                    row.children[2].innerHTML = tagHtml;
+                    row.children[3].textContent = res.desc;
+                }
+
+                completed++;
+                progressBarInner.style.width = `${Math.round((completed / ports.length) * 100)}%`;
+            }
+
+            setTimeout(() => {
+                progressBarWrap.style.display = 'none';
+            }, 600);
+
+            isScanning = false;
+            scanBtn.disabled = false;
+        }
+
+        scanBtn.addEventListener('click', startScan);
+
+        hostInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') startScan();
+        });
+
+        portsInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') startScan();
+        });
+
+        document.querySelectorAll('.port-preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                portsInput.value = btn.dataset.ports;
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF加解密 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="免费在线PDF加解密工具，支持给PDF设置打开密码保护，或输入密码解除PDF保护保存为无密码PDF，纯前端处理安全可靠。">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="PDF加解密 | PC-TOOL">
+    <meta property="og:description" content="免费在线工具集合——图片转换、视频压缩、音频转格式、图片抠图……每一个功能都为效率而生，完全免费，为人民服务！">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/pdf-crypto.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="zh_CN">
+    <script src="lib/pdf.min.js"></script>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <style>
+        #pdfInput { display: none; }
+        .crypto-card {
+            max-width: 640px;
+            width: 100%;
+        }
+        .mode-tabs {
+            display: flex;
+            gap: 0;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 12px;
+            padding: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            margin: 15px 0 20px 0;
+        }
+        .mode-tab {
+            flex: 1;
+            padding: 10px 14px;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            color: #71717a;
+            transition: all 0.25s;
+            border: none;
+            background: transparent;
+        }
+        .mode-tab.active {
+            background: rgba(129, 140, 248, 0.18);
+            color: #c7d2fe;
+            font-weight: 600;
+        }
+        .file-info-bar {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .file-info-bar .info-left {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            overflow: hidden;
+        }
+        .file-info-bar .file-name {
+            color: #e4e4e7;
+            font-size: 14px;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 420px;
+        }
+        .file-info-bar .file-meta {
+            font-size: 12px;
+            color: #71717a;
+        }
+        .btn-change {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #a1a1aa;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .btn-change:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #f4f4f5;
+        }
+        .form-section {
+            display: none;
+            flex-direction: column;
+            gap: 16px;
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+        }
+        .field-row {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .field-row label {
+            font-size: 13px;
+            color: #d4d4d8;
+        }
+        .input-text {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            padding: 10px 14px;
+            color: #f4f4f5;
+            font-size: 14px;
+            outline: none;
+        }
+        .input-text:focus {
+            border-color: rgba(129, 140, 248, 0.5);
+        }
+        .field-tip {
+            font-size: 12px;
+            color: #71717a;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <a href="../index.html" class="back-link">← 返回转换工具首页</a>
+
+    <div class="container crypto-card">
+        <h1>PDF加解密</h1>
+        <p>为PDF文档添加密码保护，或输入密码解除加密转换为无密码文件，纯前端本地运行保障私密</p>
+
+        <div class="mode-tabs">
+            <button type="button" class="mode-tab active" id="tabEncrypt">设置密码 (加密)</button>
+            <button type="button" class="mode-tab" id="tabDecrypt">解除密码 (解密)</button>
+        </div>
+
+        <div class="upload-area" id="uploadArea">
+            <p id="uploadText">点击或拖拽上传 PDF 文件</p>
+            <input type="file" id="pdfInput" accept=".pdf,application/pdf">
+        </div>
+
+        <div class="file-info-bar" id="fileInfoBar">
+            <div class="info-left">
+                <span class="file-name" id="fileName">-</span>
+                <span class="file-meta" id="fileMeta">-</span>
+            </div>
+            <button class="btn-change" id="changeBtn">更换文件</button>
+        </div>
+
+        <!-- 加密表单 -->
+        <div class="form-section" id="encryptSection">
+            <div class="field-row">
+                <label for="encPassword">设置访问/打开密码</label>
+                <input type="password" id="encPassword" class="input-text" placeholder="输入你想设置的保护密码">
+            </div>
+            <div class="field-row">
+                <label for="encPasswordConfirm">确认密码</label>
+                <input type="password" id="encPasswordConfirm" class="input-text" placeholder="再次输入密码">
+            </div>
+            <p class="field-tip">加密后，他人打开该PDF时需要输入此密码。请务必牢记设置的密码！</p>
+            <div style="text-align: center; margin-top: 5px;">
+                <button class="convert-btn" id="doEncryptBtn" style="margin: 0;">开始加密</button>
+            </div>
+        </div>
+
+        <!-- 解密表单 -->
+        <div class="form-section" id="decryptSection">
+            <div class="field-row">
+                <label for="decPassword">输入该PDF当前的保护密码</label>
+                <input type="password" id="decPassword" class="input-text" placeholder="输入正确的打开密码">
+            </div>
+            <p class="field-tip">解密成功后将重新生成并导出没有任何密码限制的PDF文档，方便后续传阅和打印。</p>
+            <div style="text-align: center; margin-top: 5px;">
+                <button class="convert-btn" id="doDecryptBtn" style="margin: 0;">开始解密并移除密码</button>
+            </div>
+        </div>
+
+        <div class="result-box" id="resultBox">
+            <h3 id="resultTitle">处理完成</h3>
+            <div id="resultInfo" style="color: #a1a1aa; font-size: 14px; margin: 8px 0 14px 0;"></div>
+            <button class="download-btn" id="downloadBtn" style="display: inline-block;">下载处理后的 PDF</button>
+        </div>
+
+        <div class="contact-tip">面向大众，有任何想要的功能或者意见，请联系QQ：<strong>1003294905</strong></div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        if (window.pdfjsLib) {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'lib/pdf.worker.min.js';
+        }
+
+        const tabEncrypt = document.getElementById('tabEncrypt');
+        const tabDecrypt = document.getElementById('tabDecrypt');
+        const uploadArea = document.getElementById('uploadArea');
+        const uploadText = document.getElementById('uploadText');
+        const pdfInput = document.getElementById('pdfInput');
+        const fileInfoBar = document.getElementById('fileInfoBar');
+        const fileName = document.getElementById('fileName');
+        const fileMeta = document.getElementById('fileMeta');
+        const changeBtn = document.getElementById('changeBtn');
+        const encryptSection = document.getElementById('encryptSection');
+        const decryptSection = document.getElementById('decryptSection');
+        const encPassword = document.getElementById('encPassword');
+        const encPasswordConfirm = document.getElementById('encPasswordConfirm');
+        const doEncryptBtn = document.getElementById('doEncryptBtn');
+        const decPassword = document.getElementById('decPassword');
+        const doDecryptBtn = document.getElementById('doDecryptBtn');
+        const resultBox = document.getElementById('resultBox');
+        const resultTitle = document.getElementById('resultTitle');
+        const resultInfo = document.getElementById('resultInfo');
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        let currentMode = 'encrypt'; // 'encrypt' | 'decrypt'
+        let currentFile = null;
+        let fileArrayBuffer = null;
+        let resultBlob = null;
+        let resultName = '';
+
+        tabEncrypt.onclick = () => switchMode('encrypt');
+        tabDecrypt.onclick = () => switchMode('decrypt');
+
+        function switchMode(mode) {
+            currentMode = mode;
+            if (mode === 'encrypt') {
+                tabEncrypt.classList.add('active');
+                tabDecrypt.classList.remove('active');
+                uploadText.textContent = '点击或拖拽上传需要加密的 PDF 文件';
+                if (currentFile) {
+                    encryptSection.style.display = 'flex';
+                    decryptSection.style.display = 'none';
+                }
+            } else {
+                tabDecrypt.classList.add('active');
+                tabEncrypt.classList.remove('active');
+                uploadText.textContent = '点击或拖拽上传受密码保护的 PDF 文件';
+                if (currentFile) {
+                    decryptSection.style.display = 'flex';
+                    encryptSection.style.display = 'none';
+                }
+            }
+            resultBox.style.display = 'none';
+        }
+
+        uploadArea.onclick = () => pdfInput.click();
+        setupDragDrop(uploadArea, (files) => {
+            const pdfs = Array.from(files).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+            if (pdfs.length > 0) handleFile(pdfs[0]);
+            else showToast('请上传有效的PDF文件');
+        });
+
+        pdfInput.onchange = (e) => {
+            if (e.target.files.length > 0) handleFile(e.target.files[0]);
+        };
+
+        changeBtn.onclick = () => pdfInput.click();
+
+        async function handleFile(file) {
+            currentFile = file;
+            fileName.textContent = file.name;
+            fileMeta.textContent = `${formatSize(file.size)}`;
+            fileInfoBar.style.display = 'flex';
+            uploadArea.style.display = 'none';
+            resultBox.style.display = 'none';
+
+            fileArrayBuffer = await file.arrayBuffer();
+
+            if (currentMode === 'encrypt') {
+                encryptSection.style.display = 'flex';
+                decryptSection.style.display = 'none';
+            } else {
+                decryptSection.style.display = 'flex';
+                encryptSection.style.display = 'none';
+            }
+        }
+
+        doEncryptBtn.onclick = async () => {
+            const pwd = encPassword.value;
+            const pwdConfirm = encPasswordConfirm.value;
+
+            if (!pwd) {
+                showToast('请输入要设置的密码');
+                return;
+            }
+            if (pwd !== pwdConfirm) {
+                showToast('两次输入的密码不一致');
+                return;
+            }
+
+            doEncryptBtn.disabled = true;
+            doEncryptBtn.textContent = '正在加密...';
+
+            try {
+                // 使用 pdf-lib 加载并加密
+                const pdfDoc = await PDFLib.PDFDocument.load(fileArrayBuffer, { ignoreEncryption: true });
+                pdfDoc.encrypt({
+                    userPassword: pwd,
+                    ownerPassword: pwd + '_owner',
+                    permissions: {
+                        printing: 'highResolution',
+                        modifying: false,
+                        copying: false,
+                        annotating: false,
+                        fillingForms: true,
+                        contentAccessibility: true,
+                        documentAssembly: false
+                    }
+                });
+
+                const pdfBytes = await pdfDoc.save();
+                resultBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+                const base = currentFile.name.replace(/\.pdf$/i, '');
+                resultName = `${base}_已加密.pdf`;
+
+                resultTitle.textContent = 'PDF 加密成功';
+                resultInfo.textContent = `已成功为文档设定打开密码，文件大小：${formatSize(resultBlob.size)}`;
+                resultBox.style.display = 'block';
+                showToast('加密完成！');
+            } catch (err) {
+                console.error(err);
+                showToast('加密失败：' + (err.message || '未知错误'));
+            } finally {
+                doEncryptBtn.disabled = false;
+                doEncryptBtn.textContent = '开始加密';
+            }
+        };
+
+        doDecryptBtn.onclick = async () => {
+            const pwd = decPassword.value;
+            if (!pwd) {
+                showToast('请输入该PDF的保护密码');
+                return;
+            }
+
+            doDecryptBtn.disabled = true;
+            doDecryptBtn.textContent = '正在解密并重新生成...';
+
+            try {
+                // 首先使用 pdfjsLib 验证密码并获取页数
+                const loadingTask = pdfjsLib.getDocument({
+                    data: fileArrayBuffer.slice(0),
+                    password: pwd
+                });
+
+                const pdfjsDoc = await loadingTask.promise;
+                const numPages = pdfjsDoc.numPages;
+
+                // 重新渲染每一页为高清图像并重组为纯净PDF
+                const newDoc = await PDFLib.PDFDocument.create();
+
+                for (let i = 1; i <= numPages; i++) {
+                    const page = await pdfjsDoc.getPage(i);
+                    const viewport = page.getViewport({ scale: 2.0 });
+
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+
+                    await page.render({
+                        canvasContext: ctx,
+                        viewport: viewport
+                    }).promise;
+
+                    const imgDataUrl = canvas.toDataURL('image/jpeg', 0.95);
+                    const imgBytes = await fetch(imgDataUrl).then(r => r.arrayBuffer());
+                    const embeddedImg = await newDoc.embedJpg(imgBytes);
+
+                    const origViewport = page.getViewport({ scale: 1.0 });
+                    const newPage = newDoc.addPage([origViewport.width, origViewport.height]);
+                    newPage.drawImage(embeddedImg, {
+                        x: 0,
+                        y: 0,
+                        width: origViewport.width,
+                        height: origViewport.height
+                    });
+                }
+
+                const pdfBytes = await newDoc.save();
+                resultBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+                const base = currentFile.name.replace(/\.pdf$/i, '');
+                resultName = `${base}_已解密.pdf`;
+
+                resultTitle.textContent = 'PDF 解密成功';
+                resultInfo.textContent = `密码限制已成功移除，已生成无密码文档 (共 ${numPages} 页，大小：${formatSize(resultBlob.size)})`;
+                resultBox.style.display = 'block';
+                showToast('解密并移除密码成功！');
+            } catch (err) {
+                console.error(err);
+                if (err.name === 'PasswordException' || (err.message && err.message.toLowerCase().includes('password'))) {
+                    showToast('密码错误，无法解密该PDF');
+                } else {
+                    showToast('解密失败：' + (err.message || '未知错误'));
+                }
+            } finally {
+                doDecryptBtn.disabled = false;
+                doDecryptBtn.textContent = '开始解密并移除密码';
+            }
+        };
+
+        downloadBtn.onclick = () => {
+            if (!resultBlob) return;
+            const url = URL.createObjectURL(resultBlob);
+            downloadFile(url, resultName);
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>摩斯密码编解码器 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="在线摩尔斯电码（Morse Code）加密解密工具，支持中英文、数字及标点双向转码，提供点划声音电报播放与电键手动发报功能。">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .container {
+            max-width: 800px;
+        }
+        .container h1 {
+            color: #e4e4e7;
+            margin-bottom: 8px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .container > p {
+            color: #a1a1aa;
+            font-size: 15px;
+            margin-bottom: 24px;
+        }
+        .card-box {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .text-area-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: #a1a1aa;
+            margin-bottom: 8px;
+        }
+        .styled-textarea {
+            width: 100%;
+            height: 120px;
+            padding: 12px 14px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 15px;
+            outline: none;
+            resize: none;
+            font-family: monospace, sans-serif;
+            line-height: 1.6;
+        }
+        .styled-textarea:focus {
+            border-color: rgba(129, 140, 248, 0.5);
+        }
+        .action-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 16px 0;
+        }
+        .action-btn {
+            padding: 9px 18px;
+            background: #818cf8;
+            border: none;
+            color: white;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .action-btn:hover {
+            background: #6366f1;
+        }
+        .btn-outline {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #e4e4e7;
+        }
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+        .play-btn {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #34d399;
+        }
+        .play-btn:hover {
+            background: rgba(16, 185, 129, 0.3);
+        }
+        .telegraph-key {
+            padding: 14px 28px;
+            background: rgba(129, 140, 248, 0.15);
+            border: 2px dashed rgba(129, 140, 248, 0.5);
+            border-radius: 12px;
+            color: #818cf8;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            user-select: none;
+            text-align: center;
+            margin-top: 10px;
+            transition: all 0.1s;
+        }
+        .telegraph-key:active {
+            background: rgba(129, 140, 248, 0.4);
+            transform: scale(0.98);
+        }
+        .ref-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin-top: 12px;
+        }
+        .ref-table th, .ref-table td {
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 6px 10px;
+            text-align: center;
+        }
+        .ref-table th {
+            background: rgba(255, 255, 255, 0.04);
+            color: #a1a1aa;
+        }
+        .ref-table td {
+            color: #e4e4e7;
+            font-family: monospace;
+        }
+        .ref-table code {
+            color: #818cf8;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+    <a href="../index.html" class="back-link">← 返回首页</a>
+
+    <div class="container">
+        <h1>摩斯密码编解码器</h1>
+        <p>支持将普通英文字符/数字转为摩尔斯电码（·与—），支持反向解码与音频发报机播放。</p>
+
+        <div class="card-box">
+            <div class="text-area-label">
+                <span>明文文本 (Text)</span>
+                <span style="color:#71717a; font-size:12px;">支持英文、数字与基本符号</span>
+            </div>
+            <textarea class="styled-textarea" id="plainInput" placeholder="输入待编码文本，例如：SOS 或 HELLO WORLD">HELLO WORLD</textarea>
+
+            <div class="action-row">
+                <button class="action-btn" onclick="encodeToMorse()">编码为摩斯 ➔</button>
+                <button class="action-btn" onclick="decodeFromMorse()">⬅ 解码为明文</button>
+                <button class="action-btn play-btn" id="playAudioBtn" onclick="playMorseAudio()">🔊 播放电报音频</button>
+                <button class="action-btn btn-outline" onclick="clearAll()">清空</button>
+            </div>
+
+            <div class="text-area-label">
+                <span>摩斯电码 (Morse Code)</span>
+                <span style="color:#71717a; font-size:12px;">短音点（· 或 .），长音划（— 或 -），字符间空格分隔</span>
+            </div>
+            <textarea class="styled-textarea" id="morseInput" placeholder="输入待解码的摩斯电码，例如：... --- ..."></textarea>
+            
+            <div style="margin-top: 14px; text-align:right;">
+                <button class="action-btn btn-outline" onclick="copyMorse()">复制摩斯电码</button>
+            </div>
+        </div>
+
+        <div class="card-box">
+            <div style="font-size:14px; font-weight:600; color:#e4e4e7; margin-bottom:4px;">交互式发报模拟电键：</div>
+            <p style="font-size:12px; color:#a1a1aa; margin-bottom:10px;">按住下方按键发出持续哔哔电报音，松开停止：</p>
+            <div class="telegraph-key" id="telegraphKey">⚡ 点击或长按此处发报 (哔——)</div>
+        </div>
+
+        <div class="card-box">
+            <div style="font-size:14px; font-weight:600; color:#e4e4e7; margin-bottom:8px;">摩尔斯电码速查表 (常用字母与数字)：</div>
+            <div style="overflow-x:auto;">
+                <table class="ref-table">
+                    <tr>
+                        <th>A</th><td><code>.-</code></td>
+                        <th>B</th><td><code>-...</code></td>
+                        <th>C</th><td><code>-.-.</code></td>
+                        <th>D</th><td><code>-..</code></td>
+                        <th>E</th><td><code>.</code></td>
+                        <th>F</th><td><code>..-.</code></td>
+                    </tr>
+                    <tr>
+                        <th>G</th><td><code>--.</code></td>
+                        <th>H</th><td><code>....</code></td>
+                        <th>I</th><td><code>..</code></td>
+                        <th>J</th><td><code>.---</code></td>
+                        <th>K</th><td><code>-.-</code></td>
+                        <th>L</th><td><code>.-..</code></td>
+                    </tr>
+                    <tr>
+                        <th>M</th><td><code>--</code></td>
+                        <th>N</th><td><code>-.</code></td>
+                        <th>O</th><td><code>---</code></td>
+                        <th>P</th><td><code>.--.</code></td>
+                        <th>Q</th><td><code>--.-</code></td>
+                        <th>R</th><td><code>.-.</code></td>
+                    </tr>
+                    <tr>
+                        <th>S</th><td><code>...</code></td>
+                        <th>T</th><td><code>-</code></td>
+                        <th>U</th><td><code>..-</code></td>
+                        <th>V</th><td><code>...-</code></td>
+                        <th>W</th><td><code>.--</code></td>
+                        <th>X</th><td><code>-..-</code></td>
+                    </tr>
+                    <tr>
+                        <th>Y</th><td><code>-.--</code></td>
+                        <th>Z</th><td><code>--..</code></td>
+                        <th>1</th><td><code>.----</code></td>
+                        <th>2</th><td><code>..---</code></td>
+                        <th>3</th><td><code>...--</code></td>
+                        <th>4</th><td><code>....-</code></td>
+                    </tr>
+                    <tr>
+                        <th>5</th><td><code>.....</code></td>
+                        <th>6</th><td><code>-....</code></td>
+                        <th>7</th><td><code>--...</code></td>
+                        <th>8</th><td><code>---..</code></td>
+                        <th>9</th><td><code>----.</code></td>
+                        <th>0</th><td><code>-----</code></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        const MORSE_MAP = {
+            'A': '.-', 'B': '-...', 'C': '-.-.', 'D': '-..', 'E': '.', 'F': '..-.',
+            'G': '--.', 'H': '....', 'I': '..', 'J': '.---', 'K': '-.-', 'L': '.-..',
+            'M': '--', 'N': '-.', 'O': '---', 'P': '.--.', 'Q': '--.-', 'R': '.-.',
+            'S': '...', 'T': '-', 'U': '..-', 'V': '...-', 'W': '.--', 'X': '-..-',
+            'Y': '-.--', 'Z': '--..',
+            '1': '.----', '2': '..---', '3': '...--', '4': '....-', '5': '.....',
+            '6': '-....', '7': '--...', '8': '---..', '9': '----.', '0': '-----',
+            '.': '.-.-.-', ',': '--..--', '?': '..--..', "'": '.----.', '!': '-.-.--',
+            '/': '-..-.', '(': '-.--.', ')': '-.--.-', '&': '.-...', ':': '---...',
+            ';': '-.-.-.', '=': '-...-', '+': '.-.-.', '-': '-....-', '_': '..--.-',
+            '"': '.-..-.', '$': '...-..-', '@': '.--.-.'
+        };
+
+        const REVERSE_MORSE = {};
+        for (let char in MORSE_MAP) {
+            REVERSE_MORSE[MORSE_MAP[char]] = char;
+        }
+
+        const plainInput = document.getElementById('plainInput');
+        const morseInput = document.getElementById('morseInput');
+
+        function encodeToMorse() {
+            const text = plainInput.value.toUpperCase();
+            if (!text) {
+                morseInput.value = '';
+                return;
+            }
+            const words = text.split(/\s+/);
+            const encodedWords = words.map(w => {
+                return w.split('').map(c => MORSE_MAP[c] || c).join(' ');
+            });
+            morseInput.value = encodedWords.join('   ');
+        }
+
+        function decodeFromMorse() {
+            const raw = morseInput.value.trim();
+            if (!raw) {
+                plainInput.value = '';
+                return;
+            }
+            // 规范化，将点划符号统一为 . 和 -
+            const normalized = raw.replace(/[·•]/g, '.').replace(/[—－_]/g, '-');
+            const words = normalized.split(/\s{2,}|\//);
+            const decoded = words.map(word => {
+                const letters = word.trim().split(/\s+/);
+                return letters.map(l => REVERSE_MORSE[l] || l).join('');
+            }).join(' ');
+            plainInput.value = decoded;
+        }
+
+        function clearAll() {
+            plainInput.value = '';
+            morseInput.value = '';
+        }
+
+        function copyMorse() {
+            if (!morseInput.value) return;
+            navigator.clipboard.writeText(morseInput.value).then(() => {
+                showToast('已复制摩斯电码！');
+            });
+        }
+
+        // Web Audio 发报音频
+        let audioCtx = null;
+        function getAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            return audioCtx;
+        }
+
+        let isPlayingAudio = false;
+        async function playMorseAudio() {
+            if (isPlayingAudio) return;
+            encodeToMorse();
+            const code = morseInput.value;
+            if (!code) {
+                showToast('无可用摩斯电码');
+                return;
+            }
+
+            isPlayingAudio = true;
+            document.getElementById('playAudioBtn').textContent = '⏹ 播放中...';
+            const ctx = getAudioContext();
+            const dotDuration = 80; // ms
+
+            for (let i = 0; i < code.length; i++) {
+                const ch = code[i];
+                if (ch === '.' || ch === '·') {
+                    playTone(ctx, dotDuration);
+                    await sleep(dotDuration + dotDuration);
+                } else if (ch === '-' || ch === '—') {
+                    playTone(ctx, dotDuration * 3);
+                    await sleep(dotDuration * 3 + dotDuration);
+                } else if (ch === ' ') {
+                    await sleep(dotDuration * 2);
+                }
+            }
+
+            isPlayingAudio = false;
+            document.getElementById('playAudioBtn').textContent = '🔊 播放电报音频';
+        }
+
+        function playTone(ctx, ms) {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.frequency.setValueAtTime(650, ctx.currentTime);
+            gain.gain.setValueAtTime(0.25, ctx.currentTime);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + ms / 1000);
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // 手动发报按键
+        let manualOsc = null;
+        let manualGain = null;
+        const keyBtn = document.getElementById('telegraphKey');
+
+        function startManualTone() {
+            const ctx = getAudioContext();
+            if (manualOsc) return;
+            manualOsc = ctx.createOscillator();
+            manualGain = ctx.createGain();
+            manualOsc.frequency.setValueAtTime(650, ctx.currentTime);
+            manualGain.gain.setValueAtTime(0.25, ctx.currentTime);
+            manualOsc.connect(manualGain);
+            manualGain.connect(ctx.destination);
+            manualOsc.start();
+        }
+
+        function stopManualTone() {
+            if (manualOsc) {
+                manualOsc.stop();
+                manualOsc.disconnect();
+                manualOsc = null;
+            }
+        }
+
+        keyBtn.addEventListener('mousedown', startManualTone);
+        keyBtn.addEventListener('mouseup', stopManualTone);
+        keyBtn.addEventListener('mouseleave', stopManualTone);
+        keyBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startManualTone(); });
+        keyBtn.addEventListener('touchend', (e) => { e.preventDefault(); stopManualTone(); });
+
+        encodeToMorse();
+    </script>
+</body>
+</html>

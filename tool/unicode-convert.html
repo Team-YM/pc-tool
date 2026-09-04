@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unicode 字符编解码转换 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="在线 Unicode 转换工具，支持普通文本与 \uXXXX、&#xXXXX;、&#DDDD; 等多种 Unicode 格式双向互转，纯本地运行。">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .container {
+            max-width: 760px;
+        }
+        .container h1 {
+            color: #e4e4e7;
+            margin-bottom: 8px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .container > p {
+            color: #a1a1aa;
+            font-size: 15px;
+            margin-bottom: 24px;
+        }
+        .tab-switch {
+            display: flex;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            border: none;
+            background: transparent;
+            color: #a1a1aa;
+            font-size: 15px;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tab-btn.active {
+            background: rgba(255, 255, 255, 0.12);
+            color: #ffffff;
+            font-weight: 600;
+        }
+        .format-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+            font-size: 14px;
+            color: #d4d4d8;
+            flex-wrap: wrap;
+        }
+        .format-row label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+        .box-section {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 16px;
+            text-align: left;
+        }
+        .box-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #a1a1aa;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .textarea-styled {
+            width: 100%;
+            height: 140px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 12px 14px;
+            color: #e4e4e7;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: vertical;
+            outline: none;
+            font-family: Consolas, Monaco, monospace;
+        }
+        .textarea-styled:focus {
+            border-color: rgba(129, 140, 248, 0.5);
+        }
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .action-btn {
+            flex: 1;
+            padding: 12px 20px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .primary-btn {
+            background: #818cf8;
+            color: #ffffff;
+        }
+        .primary-btn:hover {
+            background: #6366f1;
+        }
+        .secondary-btn {
+            background: rgba(255, 255, 255, 0.08);
+            color: #d4d4d8;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .secondary-btn:hover {
+            background: rgba(255, 255, 255, 0.14);
+        }
+        .copy-btn {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+    <a href="../index.html" class="back-link">← 返回首页</a>
+
+    <div class="container">
+        <h1>Unicode 转换</h1>
+        <p>支持中文及各类特殊字符转换为 \uXXXX 或 HTML Unicode 实体，纯本地解析互转。</p>
+
+        <div class="tab-switch">
+            <button class="tab-btn active" id="tabToUnicode">文本 ➔ Unicode</button>
+            <button class="tab-btn" id="tabToText">Unicode ➔ 文本</button>
+        </div>
+
+        <div class="format-row" id="formatOptions">
+            <span>编码格式：</span>
+            <label><input type="radio" name="uniFmt" value="u" checked> \uXXXX (JS/Java风格)</label>
+            <label><input type="radio" name="uniFmt" value="hex"> &amp;#xXXXX; (十六进制实体)</label>
+            <label><input type="radio" name="uniFmt" value="dec"> &amp;#DDDDD; (十进制实体)</label>
+        </div>
+
+        <div class="box-section">
+            <div class="box-label">
+                <span id="inputLabel">输入需要编码的纯文本：</span>
+            </div>
+            <textarea class="textarea-styled" id="inputText" placeholder="例如：你好，世界！"></textarea>
+        </div>
+
+        <div class="btn-group">
+            <button class="action-btn primary-btn" id="convertBtn">执行转换</button>
+            <button class="action-btn secondary-btn" id="clearBtn">清空内容</button>
+        </div>
+
+        <div class="box-section">
+            <div class="box-label">
+                <span id="outputLabel">转换结果：</span>
+                <button class="copy-btn" id="copyBtn" style="display:none;">复制结果</button>
+            </div>
+            <textarea class="textarea-styled" id="outputText" placeholder="转换结果将在此展示..." readonly></textarea>
+        </div>
+
+        <div class="contact-tip">面向大众，有任何想要的功能或者意见，请联系QQ：<strong>1003294905</strong></div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        let mode = 'toUnicode';
+        const tabToUnicode = document.getElementById('tabToUnicode');
+        const tabToText = document.getElementById('tabToText');
+        const inputText = document.getElementById('inputText');
+        const outputText = document.getElementById('outputText');
+        const inputLabel = document.getElementById('inputLabel');
+        const outputLabel = document.getElementById('outputLabel');
+        const formatOptions = document.getElementById('formatOptions');
+        const convertBtn = document.getElementById('convertBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const copyBtn = document.getElementById('copyBtn');
+
+        function setMode(m) {
+            mode = m;
+            if (m === 'toUnicode') {
+                tabToUnicode.classList.add('active');
+                tabToText.classList.remove('active');
+                inputLabel.textContent = '输入需要编码的纯文本：';
+                outputLabel.textContent = 'Unicode 编码结果：';
+                formatOptions.style.display = 'flex';
+                inputText.placeholder = '例如：你好，世界！';
+            } else {
+                tabToText.classList.add('active');
+                tabToUnicode.classList.remove('active');
+                inputLabel.textContent = '输入需要还原的 Unicode 字符串：';
+                outputLabel.textContent = '还原文本结果：';
+                formatOptions.style.display = 'none';
+                inputText.placeholder = '例如：\\u4f60\\u597d\\uff0c\\u4e16\\u754c\\uff01 或 &#20320;&#22909;';
+            }
+            if (inputText.value) handleConvert();
+        }
+
+        tabToUnicode.onclick = () => setMode('toUnicode');
+        tabToText.onclick = () => setMode('toText');
+
+        function textToUnicode(str, fmt) {
+            let res = '';
+            for (let i = 0; i < str.length; i++) {
+                const code = str.charCodeAt(i);
+                if (code > 127) {
+                    if (fmt === 'u') {
+                        res += '\\u' + code.toString(16).padStart(4, '0');
+                    } else if (fmt === 'hex') {
+                        res += '&#x' + code.toString(16) + ';';
+                    } else if (fmt === 'dec') {
+                        res += '&#' + code + ';';
+                    }
+                } else {
+                    res += str[i];
+                }
+            }
+            return res;
+        }
+
+        function unicodeToText(str) {
+            // 支持 \uXXXX 格式
+            str = str.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+            // 支持 &#xXXXX; 格式
+            str = str.replace(/&#x([0-9a-fA-F]{1,6});?/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+            // 支持 &#DDDD; 格式
+            str = str.replace(/&#([0-9]{1,7});?/g, (_, dec) => String.fromCharCode(parseInt(dec, 10)));
+            return str;
+        }
+
+        function handleConvert() {
+            const raw = inputText.value;
+            if (!raw) {
+                outputText.value = '';
+                copyBtn.style.display = 'none';
+                return;
+            }
+            if (mode === 'toUnicode') {
+                const fmt = document.querySelector('input[name="uniFmt"]:checked').value;
+                outputText.value = textToUnicode(raw, fmt);
+            } else {
+                outputText.value = unicodeToText(raw);
+            }
+            copyBtn.style.display = outputText.value ? 'inline-block' : 'none';
+        }
+
+        convertBtn.onclick = handleConvert;
+        document.querySelectorAll('input[name="uniFmt"]').forEach(r => r.onchange = handleConvert);
+
+        clearBtn.onclick = () => {
+            inputText.value = '';
+            outputText.value = '';
+            copyBtn.style.display = 'none';
+        };
+
+        copyBtn.onclick = () => {
+            if (!outputText.value) return;
+            navigator.clipboard.writeText(outputText.value).then(() => {
+                copyBtn.textContent = '已复制！';
+                setTimeout(() => copyBtn.textContent = '复制结果', 1800);
+            });
+        };
+    </script>
+</body>
+</html>

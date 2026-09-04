@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片转SVG矢量图</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="免费在线图片转SVG矢量图工具，支持位图轮廓边缘追踪、彩色分层矢量化与单色二值化转换，纯浏览器端处理。">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="图片转SVG矢量图 | PC-TOOL">
+    <meta property="og:description" content="在线位图转SVG矢量图，支持色彩分层与阈值调优，导出无损缩放SVG代码与文件。">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/image-to-svg.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="zh_CN">
+    <style>
+        .container {
+            max-width: 860px;
+            width: 100%;
+        }
+
+        .settings-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin: 18px 0;
+        }
+
+        .setting-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .setting-group label {
+            font-size: 13px;
+            color: #a1a1aa;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .setting-group label span {
+            color: #818cf8;
+            font-weight: 600;
+        }
+
+        .setting-group select,
+        .setting-group input[type="range"] {
+            outline: none;
+        }
+
+        .setting-group select {
+            height: 36px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #e4e4e7;
+            border-radius: 6px;
+            padding: 0 10px;
+            font-size: 14px;
+        }
+
+        .setting-group input[type="range"] {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            -webkit-appearance: none;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .setting-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #818cf8;
+        }
+
+        .preview-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 15px;
+        }
+
+        @media (max-width: 640px) {
+            .preview-columns { grid-template-columns: 1fr; }
+        }
+
+        .preview-box {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .preview-box h4 {
+            font-size: 13px;
+            color: #a1a1aa;
+            margin-bottom: 8px;
+        }
+
+        .preview-screen {
+            width: 100%;
+            height: 320px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: repeating-conic-gradient(#1c1c22 0% 25%, #141418 0% 50%) 50% / 14px 14px;
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .preview-screen img,
+        .preview-screen svg {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .code-box {
+            margin-top: 20px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 14px;
+        }
+
+        .code-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            color: #a1a1aa;
+            margin-bottom: 8px;
+        }
+
+        .code-textarea {
+            width: 100%;
+            height: 120px;
+            background: transparent;
+            border: none;
+            color: #a5b4fc;
+            font-family: monospace;
+            font-size: 12px;
+            resize: vertical;
+            outline: none;
+            line-height: 1.4;
+        }
+
+        .btn-center {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 18px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+    <a href="../index.html" class="back-link">← 返回转换工具首页</a>
+
+    <div class="container">
+        <h1>图片转 SVG 矢量图</h1>
+        <p>将位图轮廓像素进行矢量追踪拟合，支持单色线条/剪影与彩色分层矢量化，导出标准 SVG 文件</p>
+
+        <div class="upload-area" id="uploadArea">
+            <p>点击或拖拽上传图片（支持 JPG、PNG、图标等）</p>
+            <input type="file" id="fileInput" accept="image/*">
+        </div>
+
+        <div id="vectorWorkspace" style="display:none;">
+            <div class="settings-bar">
+                <div class="setting-group">
+                    <label>转换模式</label>
+                    <select id="modeSelect">
+                        <option value="monochrome">单色剪影 / 矢量轮廓</option>
+                        <option value="color">多色分层 (图标插画)</option>
+                    </select>
+                </div>
+                <div class="setting-group" id="thresholdGroup">
+                    <label>二值化阈值 <span id="threshVal">128</span></label>
+                    <input type="range" id="threshRange" min="10" max="240" value="128">
+                </div>
+                <div class="setting-group" id="colorsGroup" style="display:none;">
+                    <label>颜色层级数 <span id="colorsVal">8</span></label>
+                    <input type="range" id="colorsRange" min="2" max="16" value="8">
+                </div>
+                <div class="setting-group">
+                    <label>曲线平滑拟合 <span id="smoothVal">1.5</span></label>
+                    <input type="range" id="smoothRange" min="1" max="4" value="1.5" step="0.5">
+                </div>
+            </div>
+
+            <div class="preview-columns">
+                <div class="preview-box">
+                    <h4>位图原图</h4>
+                    <div class="preview-screen">
+                        <img id="origImg" alt="原图">
+                    </div>
+                </div>
+                <div class="preview-box">
+                    <h4>SVG 矢量预览 (无损放大)</h4>
+                    <div class="preview-screen" id="svgContainer"></div>
+                </div>
+            </div>
+
+            <div class="code-box">
+                <div class="code-title">
+                    <span>SVG 源码</span>
+                    <button class="tool-btn" id="copyCodeBtn" style="padding:4px 10px;font-size:12px;background:rgba(129,140,248,0.2);color:#c4b5fd;border-radius:4px;cursor:pointer;border:none;">复制代码</button>
+                </div>
+                <textarea class="code-textarea" id="svgCode" readonly></textarea>
+            </div>
+
+            <div class="btn-center">
+                <button class="btn" id="downloadSvgBtn" style="background:rgba(129,140,248,0.3);border-color:rgba(129,140,248,0.4);">下载 SVG 文件</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        var uploadArea = document.getElementById('uploadArea');
+        var fileInput = document.getElementById('fileInput');
+        var vectorWorkspace = document.getElementById('vectorWorkspace');
+        var origImg = document.getElementById('origImg');
+        var svgContainer = document.getElementById('svgContainer');
+        var svgCode = document.getElementById('svgCode');
+        var modeSelect = document.getElementById('modeSelect');
+        var thresholdGroup = document.getElementById('thresholdGroup');
+        var colorsGroup = document.getElementById('colorsGroup');
+        var threshRange = document.getElementById('threshRange');
+        var threshVal = document.getElementById('threshVal');
+        var colorsRange = document.getElementById('colorsRange');
+        var colorsVal = document.getElementById('colorsVal');
+        var smoothRange = document.getElementById('smoothRange');
+        var smoothVal = document.getElementById('smoothVal');
+        var copyCodeBtn = document.getElementById('copyCodeBtn');
+        var downloadSvgBtn = document.getElementById('downloadSvgBtn');
+
+        var currentImg = null;
+        var currentSvgText = '';
+
+        uploadArea.addEventListener('click', function() { fileInput.click(); });
+        uploadArea.addEventListener('dragover', function(e) { e.preventDefault(); });
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', function(e) {
+            if (e.target.files.length) handleFile(e.target.files[0]);
+        });
+
+        function handleFile(file) {
+            if (!file || !file.type.startsWith('image/')) return;
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                var img = new Image();
+                img.onload = function() {
+                    currentImg = img;
+                    origImg.src = e.target.result;
+                    vectorWorkspace.style.display = 'block';
+                    renderSvg();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        modeSelect.addEventListener('change', function() {
+            if (modeSelect.value === 'color') {
+                thresholdGroup.style.display = 'none';
+                colorsGroup.style.display = 'flex';
+            } else {
+                thresholdGroup.style.display = 'flex';
+                colorsGroup.style.display = 'none';
+            }
+            renderSvg();
+        });
+
+        threshRange.addEventListener('input', function() {
+            threshVal.innerText = threshRange.value;
+            renderSvg();
+        });
+
+        colorsRange.addEventListener('input', function() {
+            colorsVal.innerText = colorsRange.value;
+            renderSvg();
+        });
+
+        smoothRange.addEventListener('input', function() {
+            smoothVal.innerText = smoothRange.value;
+            renderSvg();
+        });
+
+        function renderSvg() {
+            if (!currentImg) return;
+            // 限制分辨率以保证浏览器矢量化流畅度
+            var maxDim = 320;
+            var scale = Math.min(1, maxDim / Math.max(currentImg.width, currentImg.height));
+            var w = Math.round(currentImg.width * scale);
+            var h = Math.round(currentImg.height * scale);
+
+            var c = document.createElement('canvas');
+            c.width = w;
+            c.height = h;
+            var ctx = c.getContext('2d');
+            ctx.drawImage(currentImg, 0, 0, w, h);
+            var imgData = ctx.getImageData(0, 0, w, h);
+            var d = imgData.data;
+
+            var svgContent = '';
+            var mode = modeSelect.value;
+            var step = 1;
+
+            if (mode === 'monochrome') {
+                var th = parseInt(threshRange.value, 10);
+                var pathD = '';
+
+                // 行合并多边形矢量追踪 (Run-length path generation)
+                for (var y = 0; y < h; y++) {
+                    var inSpan = false;
+                    var startX = 0;
+                    for (var x = 0; x < w; x++) {
+                        var idx = (y * w + x) * 4;
+                        var alpha = d[idx + 3];
+                        var gray = 0.299 * d[idx] + 0.587 * d[idx + 1] + 0.114 * d[idx + 2];
+                        var isDark = alpha > 128 && gray < th;
+
+                        if (isDark) {
+                            if (!inSpan) {
+                                inSpan = true;
+                                startX = x;
+                            }
+                        } else {
+                            if (inSpan) {
+                                inSpan = false;
+                                pathD += 'M' + startX + ' ' + y + 'h' + (x - startX) + 'v1h-' + (x - startX) + 'z ';
+                            }
+                        }
+                    }
+                    if (inSpan) {
+                        pathD += 'M' + startX + ' ' + y + 'h' + (w - startX) + 'v1h-' + (w - startX) + 'z ';
+                    }
+                }
+
+                svgContent = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + w + ' ' + h + '" width="100%" height="100%">' +
+                    '<path fill="#e4e4e7" shape-rendering="crispEdges" d="' + pathD + '" />' +
+                    '</svg>';
+            } else {
+                // 多色彩层矢量化
+                var numColors = parseInt(colorsRange.value, 10);
+                var quantStep = Math.max(16, Math.floor(256 / numColors));
+                var colorPaths = {};
+
+                for (var y = 0; y < h; y++) {
+                    var curColorKey = null;
+                    var startX = 0;
+
+                    for (var x = 0; x < w; x++) {
+                        var idx = (y * w + x) * 4;
+                        var a = d[idx + 3];
+                        if (a < 50) {
+                            if (curColorKey) {
+                                colorPaths[curColorKey] = (colorPaths[curColorKey] || '') + 'M' + startX + ' ' + y + 'h' + (x - startX) + 'v1h-' + (x - startX) + 'z ';
+                                curColorKey = null;
+                            }
+                            continue;
+                        }
+
+                        var qr = Math.floor(d[idx] / quantStep) * quantStep;
+                        var qg = Math.floor(d[idx + 1] / quantStep) * quantStep;
+                        var qb = Math.floor(d[idx + 2] / quantStep) * quantStep;
+                        var key = 'rgb(' + qr + ',' + qg + ',' + qb + ')';
+
+                        if (key === curColorKey) {
+                            continue;
+                        } else {
+                            if (curColorKey) {
+                                colorPaths[curColorKey] = (colorPaths[curColorKey] || '') + 'M' + startX + ' ' + y + 'h' + (x - startX) + 'v1h-' + (x - startX) + 'z ';
+                            }
+                            curColorKey = key;
+                            startX = x;
+                        }
+                    }
+                    if (curColorKey) {
+                        colorPaths[curColorKey] = (colorPaths[curColorKey] || '') + 'M' + startX + ' ' + y + 'h' + (w - startX) + 'v1h-' + (w - startX) + 'z ';
+                    }
+                }
+
+                var pathsStr = '';
+                for (var col in colorPaths) {
+                    pathsStr += '<path fill="' + col + '" shape-rendering="crispEdges" d="' + colorPaths[col] + '" />\n';
+                }
+
+                svgContent = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + w + ' ' + h + '" width="100%" height="100%">\n' +
+                    pathsStr +
+                    '</svg>';
+            }
+
+            currentSvgText = svgContent;
+            svgContainer.innerHTML = svgContent;
+            svgCode.value = svgContent;
+        }
+
+        copyCodeBtn.addEventListener('click', function() {
+            navigator.clipboard.writeText(currentSvgText).then(function() {
+                copyCodeBtn.innerText = '已复制！';
+                setTimeout(function() { copyCodeBtn.innerText = '复制代码'; }, 1500);
+            });
+        });
+
+        downloadSvgBtn.addEventListener('click', function() {
+            if (!currentSvgText) return;
+            var blob = new Blob([currentSvgText], { type: 'image/svg+xml;charset=utf-8' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.download = 'vectorized.svg';
+            a.href = url;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+    </script>
+</body>
+</html>

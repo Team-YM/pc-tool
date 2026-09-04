@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF拆分 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="免费在线PDF拆分工具，支持提取指定页面、按固定页数分割、自定义页码范围拆分，纯浏览器端处理，安全快速。">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="PDF拆分 | PC-TOOL">
+    <meta property="og:description" content="免费在线工具集合——图片转换、视频压缩、音频转格式、图片抠图……每一个功能都为效率而生，完全免费，为人民服务！">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/pdf-split.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="zh_CN">
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <style>
+        #pdfInput { display: none; }
+        .split-card {
+            max-width: 680px;
+            width: 100%;
+        }
+        .file-info-bar {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .file-info-bar .info-left {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            overflow: hidden;
+        }
+        .file-info-bar .file-name {
+            color: #e4e4e7;
+            font-size: 14px;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 420px;
+        }
+        .file-info-bar .file-meta {
+            font-size: 12px;
+            color: #71717a;
+        }
+        .btn-change {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #a1a1aa;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .btn-change:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #f4f4f5;
+        }
+        .options-group {
+            display: none;
+            flex-direction: column;
+            gap: 16px;
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+        }
+        .mode-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .mode-pill {
+            flex: 1;
+            min-width: 120px;
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            color: #a1a1aa;
+            cursor: pointer;
+            font-size: 13px;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        .mode-pill.active {
+            background: rgba(129, 140, 248, 0.15);
+            border-color: rgba(129, 140, 248, 0.4);
+            color: #c7d2fe;
+            font-weight: 500;
+        }
+        .input-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .input-row label {
+            font-size: 14px;
+            color: #d4d4d8;
+            white-space: nowrap;
+        }
+        .input-text {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            padding: 9px 12px;
+            color: #f4f4f5;
+            font-size: 14px;
+            outline: none;
+        }
+        .input-text:focus {
+            border-color: rgba(129, 140, 248, 0.5);
+        }
+        .input-hint {
+            font-size: 12px;
+            color: #71717a;
+            line-height: 1.5;
+        }
+        .download-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <a href="../index.html" class="back-link">← 返回转换工具首页</a>
+
+    <div class="container split-card">
+        <h1>PDF拆分</h1>
+        <p>支持按单页分割、自定义页码范围拆分或提取指定页面，纯前端离线安全处理</p>
+
+        <div class="upload-area" id="uploadArea">
+            <p>点击或拖拽上传 PDF 文件</p>
+            <input type="file" id="pdfInput" accept=".pdf,application/pdf">
+        </div>
+
+        <div class="file-info-bar" id="fileInfoBar">
+            <div class="info-left">
+                <span class="file-name" id="fileName">-</span>
+                <span class="file-meta" id="fileMeta">-</span>
+            </div>
+            <button class="btn-change" id="changeBtn">更换文件</button>
+        </div>
+
+        <div class="options-group" id="optionsGroup">
+            <div class="mode-row">
+                <button type="button" class="mode-pill active" data-mode="all">每页拆分为独立PDF</button>
+                <button type="button" class="mode-pill" data-mode="range">自定义页码拆分</button>
+                <button type="button" class="mode-pill" data-mode="everyN">每隔N页拆分一次</button>
+            </div>
+
+            <div id="rangeInputWrap" style="display: none;">
+                <div class="input-row">
+                    <label for="rangeInput">提取/拆分范围：</label>
+                    <input type="text" id="rangeInput" class="input-text" placeholder="例: 1-3, 5, 8-10">
+                </div>
+                <p class="input-hint" style="margin-top: 6px;">输入想要提取的页码或区间（从第 1 页开始计算）。以分号或逗号分隔每个独立的拆分段，如：1-3, 5 代表拆出两个PDF文件（1到3页为1个，第5页为1个）。</p>
+            </div>
+
+            <div id="everyNInputWrap" style="display: none;">
+                <div class="input-row">
+                    <label for="everyNInput">固定每</label>
+                    <input type="number" id="everyNInput" class="input-text" style="max-width: 100px;" value="1" min="1">
+                    <label>页为一个新PDF</label>
+                </div>
+                <p class="input-hint" style="margin-top: 6px;">例如共10页的PDF，设置为 2 时，将分割为 5 个PDF（1-2页, 3-4页, ...）。</p>
+            </div>
+
+            <div style="text-align: center; margin-top: 10px;">
+                <button class="convert-btn" id="splitBtn" style="margin: 0;">开始拆分</button>
+            </div>
+        </div>
+
+        <div class="result-box" id="resultBox">
+            <h3 id="resultTitle">拆分完成</h3>
+            <div class="size-info" id="sizeInfo" style="margin-top: 8px; color: #a1a1aa; font-size: 14px;"></div>
+            <div class="download-group" id="downloadGroup"></div>
+        </div>
+
+        <div class="contact-tip">面向大众，有任何想要的功能或者意见，请联系QQ：<strong>1003294905</strong></div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const pdfInput = document.getElementById('pdfInput');
+        const fileInfoBar = document.getElementById('fileInfoBar');
+        const fileName = document.getElementById('fileName');
+        const fileMeta = document.getElementById('fileMeta');
+        const changeBtn = document.getElementById('changeBtn');
+        const optionsGroup = document.getElementById('optionsGroup');
+        const modePills = document.querySelectorAll('.mode-pill');
+        const rangeInputWrap = document.getElementById('rangeInputWrap');
+        const rangeInput = document.getElementById('rangeInput');
+        const everyNInputWrap = document.getElementById('everyNInputWrap');
+        const everyNInput = document.getElementById('everyNInput');
+        const splitBtn = document.getElementById('splitBtn');
+        const resultBox = document.getElementById('resultBox');
+        const sizeInfo = document.getElementById('sizeInfo');
+        const downloadGroup = document.getElementById('downloadGroup');
+
+        let currentPdfFile = null;
+        let currentPdfDoc = null;
+        let totalPages = 0;
+        let activeMode = 'all';
+
+        uploadArea.onclick = () => pdfInput.click();
+        setupDragDrop(uploadArea, (files) => {
+            const pdfs = Array.from(files).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+            if (pdfs.length > 0) handlePdfFile(pdfs[0]);
+            else showToast('请上传有效的PDF文件');
+        });
+
+        pdfInput.onchange = (e) => {
+            if (e.target.files.length > 0) handlePdfFile(e.target.files[0]);
+        };
+
+        changeBtn.onclick = () => pdfInput.click();
+
+        modePills.forEach(pill => {
+            pill.onclick = () => {
+                modePills.forEach(p => p.classList.remove('active'));
+                pill.classList.add('active');
+                activeMode = pill.dataset.mode;
+                rangeInputWrap.style.display = activeMode === 'range' ? 'block' : 'none';
+                everyNInputWrap.style.display = activeMode === 'everyN' ? 'block' : 'none';
+                resultBox.style.display = 'none';
+            };
+        });
+
+        async function handlePdfFile(file) {
+            currentPdfFile = file;
+            fileName.textContent = file.name;
+            fileMeta.textContent = '读取中...';
+            fileInfoBar.style.display = 'flex';
+            uploadArea.style.display = 'none';
+            resultBox.style.display = 'none';
+
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                currentPdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+                totalPages = currentPdfDoc.getPageCount();
+                fileMeta.textContent = `${formatSize(file.size)} · 共 ${totalPages} 页`;
+                optionsGroup.style.display = 'flex';
+                rangeInput.placeholder = `例: 1-${Math.min(totalPages, 3)}, ${totalPages}`;
+            } catch (err) {
+                console.error(err);
+                showToast('读取PDF失败，文件可能受损或受加密密码保护');
+                fileInfoBar.style.display = 'none';
+                uploadArea.style.display = 'block';
+                optionsGroup.style.display = 'none';
+            }
+        }
+
+        function parseRangeSegments(str, maxPages) {
+            const rawParts = str.split(/[,;\n]/).map(s => s.trim()).filter(Boolean);
+            const segments = [];
+            for (const part of rawParts) {
+                if (part.includes('-')) {
+                    const [startStr, endStr] = part.split('-');
+                    const start = parseInt(startStr, 10);
+                    const end = parseInt(endStr, 10);
+                    if (isNaN(start) || isNaN(end) || start < 1 || end < start) continue;
+                    const pageIndices = [];
+                    for (let p = Math.max(1, start); p <= Math.min(maxPages, end); p++) {
+                        pageIndices.push(p - 1);
+                    }
+                    if (pageIndices.length > 0) {
+                        segments.push({ label: `${Math.max(1, start)}-${Math.min(maxPages, end)}`, pages: pageIndices });
+                    }
+                } else {
+                    const p = parseInt(part, 10);
+                    if (!isNaN(p) && p >= 1 && p <= maxPages) {
+                        segments.push({ label: `第${p}页`, pages: [p - 1] });
+                    }
+                }
+            }
+            return segments;
+        }
+
+        splitBtn.onclick = async () => {
+            if (!currentPdfDoc || totalPages === 0) return;
+
+            let segments = [];
+            if (activeMode === 'all') {
+                for (let i = 0; i < totalPages; i++) {
+                    segments.push({ label: `第${i + 1}页`, pages: [i] });
+                }
+            } else if (activeMode === 'everyN') {
+                const step = parseInt(everyNInput.value, 10);
+                if (isNaN(step) || step <= 0) {
+                    showToast('请输入有效的拆分间隔页数');
+                    return;
+                }
+                for (let i = 0; i < totalPages; i += step) {
+                    const end = Math.min(i + step, totalPages);
+                    const list = [];
+                    for (let p = i; p < end; p++) list.push(p);
+                    segments.push({ label: `${i + 1}-${end}页`, pages: list });
+                }
+            } else if (activeMode === 'range') {
+                const text = rangeInput.value.trim();
+                if (!text) {
+                    showToast('请输入要拆分的页码或区间');
+                    return;
+                }
+                segments = parseRangeSegments(text, totalPages);
+                if (segments.length === 0) {
+                    showToast('未能解析到有效页码，请输入 1 到 ' + totalPages + ' 之间的有效页码');
+                    return;
+                }
+            }
+
+            splitBtn.disabled = true;
+            splitBtn.textContent = '拆分中...';
+            resultBox.style.display = 'none';
+            downloadGroup.innerHTML = '';
+
+            try {
+                const generatedPdfs = [];
+                const baseName = currentPdfFile.name.replace(/\.pdf$/i, '');
+
+                for (let i = 0; i < segments.length; i++) {
+                    const seg = segments[i];
+                    const subDoc = await PDFLib.PDFDocument.create();
+                    const copiedPages = await subDoc.copyPages(currentPdfDoc, seg.pages);
+                    copiedPages.forEach(page => subDoc.addPage(page));
+                    const pdfBytes = await subDoc.save();
+                    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                    generatedPdfs.push({
+                        name: `${baseName}_拆分_${seg.label}.pdf`,
+                        blob: blob,
+                        size: blob.size
+                    });
+                }
+
+                if (generatedPdfs.length === 1) {
+                    const single = generatedPdfs[0];
+                    const url = URL.createObjectURL(single.blob);
+                    sizeInfo.textContent = `成功提取 1 个PDF文件 (${formatSize(single.size)})`;
+                    const btn = document.createElement('button');
+                    btn.className = 'download-btn';
+                    btn.style.display = 'inline-block';
+                    btn.textContent = `下载 ${single.name}`;
+                    btn.onclick = () => downloadFile(url, single.name);
+                    downloadGroup.appendChild(btn);
+                } else {
+                    sizeInfo.textContent = `共拆分出 ${generatedPdfs.length} 个PDF文件，支持单独下载或一键打包`;
+                    
+                    const zipBtn = document.createElement('button');
+                    zipBtn.className = 'download-btn';
+                    zipBtn.style.display = 'inline-block';
+                    zipBtn.style.background = 'rgba(129, 140, 248, 0.4)';
+                    zipBtn.style.borderColor = 'rgba(129, 140, 248, 0.5)';
+                    zipBtn.textContent = '打包下载为 ZIP';
+                    zipBtn.onclick = async () => {
+                        zipBtn.disabled = true;
+                        zipBtn.textContent = '正在打包...';
+                        const zip = new JSZip();
+                        generatedPdfs.forEach(item => {
+                            zip.file(item.name, item.blob);
+                        });
+                        const zipBlob = await zip.generateAsync({ type: 'blob' });
+                        const zipUrl = URL.createObjectURL(zipBlob);
+                        downloadFile(zipUrl, `${baseName}_PDF拆分.zip`);
+                        zipBtn.disabled = false;
+                        zipBtn.textContent = '打包下载为 ZIP';
+                    };
+                    downloadGroup.appendChild(zipBtn);
+
+                    generatedPdfs.forEach(item => {
+                        const itemUrl = URL.createObjectURL(item.blob);
+                        const btn = document.createElement('button');
+                        btn.className = 'btn';
+                        btn.style.fontSize = '13px';
+                        btn.style.padding = '8px 14px';
+                        btn.textContent = `${item.name} (${formatSize(item.size)})`;
+                        btn.onclick = () => downloadFile(itemUrl, item.name);
+                        downloadGroup.appendChild(btn);
+                    });
+                }
+
+                resultBox.style.display = 'block';
+                showToast('拆分完成');
+            } catch (err) {
+                console.error(err);
+                showToast('拆分过程中发生错误：' + err.message);
+            } finally {
+                splitBtn.disabled = false;
+                splitBtn.textContent = '开始拆分';
+            }
+        };
+    </script>
+</body>
+</html>

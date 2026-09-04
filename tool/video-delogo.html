@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>视频去水印</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="免费在线视频去水印与消除工具，支持矩形框选与画笔涂抹、高斯模糊遮罩、纯色覆盖与周边纹理马赛克，纯浏览器端处理，安全免费。">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="视频去水印 | PC-TOOL">
+    <meta property="og:description" content="免费在线工具集合——视频去水印、图片转换、视频压缩、音频转格式……每一个功能都为效率而生，完全免费，为人民服务！">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/video-delogo.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="zh_CN">
+    <style>
+        .container {
+            max-width: 860px;
+        }
+        #videoInput { display: none; }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            padding: 12px 18px;
+            margin: 16px 0;
+        }
+
+        .tool-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .tool-btn {
+            padding: 7px 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #d4d4d8;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .tool-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .tool-btn.active {
+            background: rgba(129, 140, 248, 0.25);
+            border-color: rgba(129, 140, 248, 0.6);
+            color: #c4b5fd;
+        }
+
+        .tool-select {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #e4e4e7;
+            padding: 6px 10px;
+            border-radius: 6px;
+            outline: none;
+            font-size: 13px;
+        }
+
+        /* 视频编辑与框选容器 */
+        .stage-container {
+            position: relative;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            display: none;
+            margin: 15px auto;
+            max-width: 100%;
+            user-select: none;
+        }
+
+        .stage-container video {
+            display: block;
+            max-width: 100%;
+            max-height: 420px;
+            margin: 0 auto;
+        }
+
+        .stage-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+            z-index: 10;
+        }
+
+        .tip-box {
+            font-size: 12px;
+            color: #71717a;
+            text-align: center;
+            margin-top: 6px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 3px;
+            margin: 15px 0 6px;
+            display: none;
+            overflow: hidden;
+        }
+
+        .progress-bar .fill {
+            height: 100%;
+            background: linear-gradient(90deg, #818cf8, #34d399);
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.2s;
+        }
+
+        .status-text {
+            font-size: 13px;
+            color: #a1a1aa;
+            text-align: center;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <a href="../index.html" class="back-link">← 返回工具首页</a>
+
+    <div class="container">
+        <h1>视频去水印</h1>
+        <p>在画面上框选或涂抹水印区域，通过高斯模糊、智能马赛克或周围颜色修补消除水印</p>
+
+        <div class="upload-area" id="uploadArea">
+            <p>点击或拖拽上传视频文件</p>
+            <input type="file" id="videoInput" accept="video/*">
+        </div>
+
+        <div id="videoMeta" style="text-align:center; margin:10px 0; display:none;">
+            <p id="fileName" style="color:#e4e4e7; font-size:14px;"></p>
+        </div>
+
+        <div id="editTools" style="display:none;">
+            <div class="toolbar">
+                <div class="tool-group">
+                    <label style="color:#a1a1aa; font-size:13px;">消除方式:</label>
+                    <select class="tool-select" id="modeSelect">
+                        <option value="blur" selected>高斯模糊消除 (推荐)</option>
+                        <option value="mosaic">马赛克遮盖</option>
+                        <option value="black">黑色遮条</option>
+                    </select>
+                </div>
+
+                <div class="tool-group">
+                    <label style="color:#a1a1aa; font-size:13px;">强度:</label>
+                    <input type="range" id="strengthRange" min="5" max="30" value="15" style="width:90px;">
+                    <span id="strengthVal" style="color:#d4d4d8; font-size:13px; min-width:28px;">15</span>
+                </div>
+
+                <div class="tool-group">
+                    <button class="tool-btn" id="clearBoxesBtn">清空选区</button>
+                </div>
+            </div>
+
+            <!-- 舞台：视频 + 遮罩交互画板 -->
+            <div class="stage-container" id="stageContainer">
+                <video id="sourceVideo" controls playsinline></video>
+                <canvas class="stage-canvas" id="stageCanvas"></canvas>
+            </div>
+            <div class="tip-box">操作提示：在视频上方按住鼠标左键并拖拽，即可拉出需要消除的水印区域框（支持多处框选）</div>
+        </div>
+
+        <div class="progress-bar" id="progressBar">
+            <div class="fill" id="progressFill"></div>
+        </div>
+        <div class="status-text" id="statusText">处理中...</div>
+
+        <div style="text-align:center; margin-top:16px;">
+            <button class="convert-btn" id="startBtn" style="display:none;">开始去水印并导出</button>
+            <button class="download-btn" id="downloadBtn">下载处理后视频</button>
+        </div>
+
+        <div class="result-box" id="resultBox">
+            <h3>去水印完成</h3>
+            <div class="size-info" id="sizeInfo"></div>
+        </div>
+
+        <div class="contact-tip">面向大众，有任何想要的功能或者意见，请联系QQ：<strong>1003294905</strong></div>
+    </div>
+
+    <!-- 后台离屏画布 -->
+    <canvas id="offscreenCanvas" style="display:none;"></canvas>
+
+    <script src="common.js"></script>
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const videoInput = document.getElementById('videoInput');
+        const videoMeta = document.getElementById('videoMeta');
+        const fileName = document.getElementById('fileName');
+        const editTools = document.getElementById('editTools');
+        const modeSelect = document.getElementById('modeSelect');
+        const strengthRange = document.getElementById('strengthRange');
+        const strengthVal = document.getElementById('strengthVal');
+        const clearBoxesBtn = document.getElementById('clearBoxesBtn');
+        const stageContainer = document.getElementById('stageContainer');
+        const sourceVideo = document.getElementById('sourceVideo');
+        const stageCanvas = document.getElementById('stageCanvas');
+        const sCtx = stageCanvas.getContext('2d');
+        const offscreenCanvas = document.getElementById('offscreenCanvas');
+        const offCtx = offscreenCanvas.getContext('2d');
+        const startBtn = document.getElementById('startBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        const statusText = document.getElementById('statusText');
+        const resultBox = document.getElementById('resultBox');
+        const sizeInfo = document.getElementById('sizeInfo');
+
+        let videoFile = null;
+        let removeBoxes = []; // 存储相对比例坐标 {x, y, w, h} (0~1)
+        let isDrawing = false;
+        let startX = 0, startY = 0;
+        let currentDragRect = null;
+        let exportedBlobUrl = null;
+        let isProcessing = false;
+
+        uploadArea.onclick = () => videoInput.click();
+        setupDragDrop(uploadArea, (files) => {
+            if (files[0]?.type.startsWith('video/')) handleVideo(files[0]);
+            else showToast('请上传有效的视频文件');
+        });
+        videoInput.onchange = (e) => {
+            if (e.target.files[0]) handleVideo(e.target.files[0]);
+        };
+
+        function handleVideo(file) {
+            videoFile = file;
+            fileName.textContent = `当前视频：${file.name} (${formatSize(file.size)})`;
+            videoMeta.style.display = 'block';
+
+            if (sourceVideo.src) URL.revokeObjectURL(sourceVideo.src);
+            sourceVideo.src = URL.createObjectURL(file);
+            stageContainer.style.display = 'block';
+            editTools.style.display = 'block';
+            startBtn.style.display = 'inline-block';
+            resultBox.style.display = 'none';
+            downloadBtn.style.display = 'none';
+            removeBoxes = [];
+
+            sourceVideo.onloadedmetadata = () => {
+                resizeStageCanvas();
+                drawStageCanvas();
+            };
+        }
+
+        window.addEventListener('resize', () => {
+            if (videoFile) {
+                resizeStageCanvas();
+                drawStageCanvas();
+            }
+        });
+
+        function resizeStageCanvas() {
+            stageCanvas.width = sourceVideo.clientWidth;
+            stageCanvas.height = sourceVideo.clientHeight;
+        }
+
+        strengthRange.oninput = () => {
+            strengthVal.textContent = strengthRange.value;
+            drawStageCanvas();
+        };
+        modeSelect.onchange = () => drawStageCanvas();
+
+        clearBoxesBtn.onclick = () => {
+            removeBoxes = [];
+            drawStageCanvas();
+        };
+
+        // 交互绘制框选
+        stageCanvas.onmousedown = (e) => {
+            const rect = stageCanvas.getBoundingClientRect();
+            startX = e.clientX - rect.left;
+            startY = e.clientY - rect.top;
+            isDrawing = true;
+            currentDragRect = null;
+        };
+
+        stageCanvas.onmousemove = (e) => {
+            if (!isDrawing) return;
+            const rect = stageCanvas.getBoundingClientRect();
+            const curX = e.clientX - rect.left;
+            const curY = e.clientY - rect.top;
+
+            const x = Math.min(startX, curX);
+            const y = Math.min(startY, curY);
+            const w = Math.abs(curX - startX);
+            const h = Math.abs(curY - startY);
+
+            currentDragRect = { x, y, w, h };
+            drawStageCanvas();
+        };
+
+        window.addEventListener('mouseup', () => {
+            if (isDrawing && currentDragRect && currentDragRect.w > 5 && currentDragRect.h > 5) {
+                // 存为比例坐标，适应任何分辨率
+                removeBoxes.push({
+                    x: currentDragRect.x / stageCanvas.width,
+                    y: currentDragRect.y / stageCanvas.height,
+                    w: currentDragRect.w / stageCanvas.width,
+                    h: currentDragRect.h / stageCanvas.height
+                });
+            }
+            isDrawing = false;
+            currentDragRect = null;
+            drawStageCanvas();
+        });
+
+        function drawStageCanvas() {
+            sCtx.clearRect(0, 0, stageCanvas.width, stageCanvas.height);
+
+            // 绘制已确认的所有选区
+            removeBoxes.forEach((box, i) => {
+                const rx = box.x * stageCanvas.width;
+                const ry = box.y * stageCanvas.height;
+                const rw = box.w * stageCanvas.width;
+                const rh = box.h * stageCanvas.height;
+
+                sCtx.fillStyle = 'rgba(239, 68, 68, 0.25)';
+                sCtx.fillRect(rx, ry, rw, rh);
+                sCtx.lineWidth = 1.5;
+                sCtx.strokeStyle = '#ef4444';
+                sCtx.strokeRect(rx, ry, rw, rh);
+
+                sCtx.fillStyle = '#ef4444';
+                sCtx.font = '11px sans-serif';
+                sCtx.fillText(`水印区 #${i + 1}`, rx + 4, Math.max(14, ry + 14));
+            });
+
+            // 正在拉动的选区
+            if (currentDragRect) {
+                sCtx.fillStyle = 'rgba(129, 140, 248, 0.3)';
+                sCtx.fillRect(currentDragRect.x, currentDragRect.y, currentDragRect.w, currentDragRect.h);
+                sCtx.lineWidth = 1.5;
+                sCtx.strokeStyle = '#818cf8';
+                sCtx.strokeRect(currentDragRect.x, currentDragRect.y, currentDragRect.w, currentDragRect.h);
+            }
+        }
+
+        // 应用消除区域至画布
+        function applyDelogo(ctx, width, height) {
+            const mode = modeSelect.value;
+            const strength = parseInt(strengthRange.value);
+
+            removeBoxes.forEach(box => {
+                const bx = Math.round(box.x * width);
+                const by = Math.round(box.y * height);
+                const bw = Math.round(box.w * width);
+                const bh = Math.round(box.h * height);
+
+                if (bw <= 0 || bh <= 0) return;
+
+                if (mode === 'black') {
+                    ctx.fillStyle = '#000000';
+                    ctx.fillRect(bx, by, bw, bh);
+                } else if (mode === 'mosaic') {
+                    // 马赛克算法
+                    const blockSize = Math.max(4, Math.round(strength * 0.8));
+                    const imgData = ctx.getImageData(bx, by, bw, bh);
+                    const d = imgData.data;
+
+                    for (let y = 0; y < bh; y += blockSize) {
+                        for (let x = 0; x < bw; x += blockSize) {
+                            const pIdx = (y * bw + x) * 4;
+                            const r = d[pIdx];
+                            const g = d[pIdx + 1];
+                            const b = d[pIdx + 2];
+
+                            for (let ny = y; ny < Math.min(bh, y + blockSize); ny++) {
+                                for (let nx = x; nx < Math.min(bw, x + blockSize); nx++) {
+                                    const tIdx = (ny * bw + nx) * 4;
+                                    d[tIdx] = r;
+                                    d[tIdx + 1] = g;
+                                    d[tIdx + 2] = b;
+                                }
+                            }
+                        }
+                    }
+                    ctx.putImageData(imgData, bx, by);
+                } else {
+                    // 高斯模糊处理：通过双向降采样再重绘模拟高效平滑模糊
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.rect(bx, by, bw, bh);
+                    ctx.clip();
+
+                    ctx.filter = `blur(${strength}px)`;
+                    ctx.drawImage(ctx.canvas, bx, by, bw, bh, bx - 2, by - 2, bw + 4, bh + 4);
+                    ctx.restore();
+                }
+            });
+        }
+
+        startBtn.onclick = async () => {
+            if (!videoFile || isProcessing) return;
+            if (removeBoxes.length === 0) {
+                showToast('请在上方视频中拖拽框选水印区域');
+                return;
+            }
+            isProcessing = true;
+
+            startBtn.disabled = true;
+            startBtn.textContent = '去水印处理中...';
+            progressBar.style.display = 'block';
+            statusText.style.display = 'block';
+            progressFill.style.width = '0%';
+            resultBox.style.display = 'none';
+            downloadBtn.style.display = 'none';
+
+            try {
+                const offVideo = document.createElement('video');
+                offVideo.src = URL.createObjectURL(videoFile);
+                offVideo.muted = true;
+                offVideo.playsInline = true;
+                offVideo.preload = 'auto';
+
+                await new Promise((res, rej) => {
+                    offVideo.onloadedmetadata = res;
+                    offVideo.onerror = rej;
+                });
+
+                const vw = offVideo.videoWidth || 1280;
+                const vh = offVideo.videoHeight || 720;
+                const duration = offVideo.duration;
+                offscreenCanvas.width = vw;
+                offscreenCanvas.height = vh;
+
+                const fps = 30;
+                const canvasStream = offscreenCanvas.captureStream(fps);
+                let finalStream = canvasStream;
+                let audioCtx = null;
+
+                try {
+                    const ab = await videoFile.arrayBuffer();
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    const decoded = await audioCtx.decodeAudioData(ab);
+                    const dest = audioCtx.createMediaStreamDestination();
+                    const src = audioCtx.createBufferSource();
+                    src.buffer = decoded;
+                    src.connect(dest);
+                    src.start(0);
+
+                    const at = dest.stream.getAudioTracks();
+                    if (at.length > 0) {
+                        finalStream = new MediaStream([
+                            ...canvasStream.getVideoTracks(),
+                            at[0]
+                        ]);
+                    }
+                } catch (e) {
+                    console.warn('无音频轨道或音频解析跳过：', e);
+                }
+
+                let mimeType = 'video/webm;codecs=vp8';
+                if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1')) {
+                    mimeType = 'video/mp4;codecs=avc1';
+                } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+                    mimeType = 'video/webm;codecs=vp9';
+                } else if (MediaRecorder.isTypeSupported('video/webm')) {
+                    mimeType = 'video/webm';
+                }
+
+                const recorder = new MediaRecorder(finalStream, mimeType ? { mimeType } : {});
+                const chunks = [];
+                recorder.ondataavailable = (e) => {
+                    if (e.data && e.data.size > 0) chunks.push(e.data);
+                };
+
+                const recorderStop = new Promise(resolve => recorder.onstop = resolve);
+                recorder.start();
+                await offVideo.play();
+
+                await new Promise((resolve) => {
+                    function renderLoop() {
+                        if (offVideo.paused || offVideo.ended) {
+                            resolve();
+                            return;
+                        }
+                        offCtx.drawImage(offVideo, 0, 0, vw, vh);
+                        applyDelogo(offCtx, vw, vh);
+
+                        const pct = Math.min(99, Math.round((offVideo.currentTime / duration) * 100));
+                        progressFill.style.width = pct + '%';
+                        statusText.textContent = `消除水印渲染中: ${pct}%`;
+
+                        requestAnimationFrame(renderLoop);
+                    }
+                    offVideo.onended = resolve;
+                    renderLoop();
+                });
+
+                progressFill.style.width = '100%';
+                statusText.textContent = '合成封装视频...';
+
+                setTimeout(() => {
+                    if (recorder.state === 'recording') recorder.stop();
+                    if (audioCtx) audioCtx.close();
+                }, 100);
+
+                await recorderStop;
+
+                const finalBlob = new Blob(chunks, { type: recorder.mimeType || 'video/webm' });
+                if (exportedBlobUrl) URL.revokeObjectURL(exportedBlobUrl);
+                exportedBlobUrl = URL.createObjectURL(finalBlob);
+
+                sizeInfo.innerHTML = `已处理水印区：<span class="highlight">${removeBoxes.length} 处</span><br>` +
+                                     `消除方式：<span class="highlight">${modeSelect.options[modeSelect.selectedIndex].text}</span><br>` +
+                                     `输出视频大小：<span class="highlight">${formatSize(finalBlob.size)}</span>`;
+
+                resultBox.style.display = 'block';
+                downloadBtn.style.display = 'inline-block';
+                statusText.textContent = '去水印完成！';
+                showToast('去水印处理成功！');
+            } catch (err) {
+                console.error(err);
+                statusText.textContent = '处理出错：' + err.message;
+                showToast('处理失败：' + err.message);
+            } finally {
+                isProcessing = false;
+                startBtn.disabled = false;
+                startBtn.textContent = '开始去水印并导出';
+            }
+        };
+
+        downloadBtn.onclick = () => {
+            if (!exportedBlobUrl) return;
+            const ext = exportedBlobUrl.includes('mp4') ? 'mp4' : 'webm';
+            const base = (videoFile?.name || 'video').replace(/\.\w+$/, '');
+            downloadFile(exportedBlobUrl, `${base}_delogo.${ext}`);
+        };
+    </script>
+</body>
+</html>

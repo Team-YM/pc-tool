@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>视频加水印</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="免费在线视频加水印工具，支持文字水印与图片水印，可调节位置、透明度、字体大小及缩放比例，纯浏览器端处理，安全免费。">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="视频加水印 | PC-TOOL">
+    <meta property="og:description" content="免费在线工具集合——视频加水印、图片转换、视频压缩、音频转格式……每一个功能都为效率而生，完全免费，为人民服务！">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/video-watermark.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="zh_CN">
+    <style>
+        .container {
+            max-width: 820px;
+        }
+        #videoInput, #watermarkImgInput { display: none; }
+
+        .type-toggle {
+            display: flex;
+            margin: 18px 0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+            width: fit-content;
+        }
+        .type-btn {
+            padding: 9px 22px;
+            border: none;
+            background: rgba(255, 255, 255, 0.04);
+            color: #a1a1aa;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.25s;
+        }
+        .type-btn.active {
+            background: rgba(129, 140, 248, 0.25);
+            color: #e4e4e7;
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 14px;
+            margin: 16px 0;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            padding: 16px 18px;
+        }
+
+        .control-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .control-item label {
+            color: #a1a1aa;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+        .control-item input[type="text"],
+        .control-item input[type="number"],
+        .control-item select {
+            padding: 6px 10px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #e4e4e7;
+            font-size: 13px;
+            outline: none;
+        }
+        .control-item input[type="color"] {
+            border: none;
+            width: 38px;
+            height: 32px;
+            border-radius: 6px;
+            background: transparent;
+            cursor: pointer;
+        }
+        .control-item input[type="range"] {
+            width: 110px;
+        }
+        .control-item span.val {
+            color: #d4d4d8;
+            font-size: 13px;
+            min-width: 40px;
+            text-align: right;
+        }
+
+        .img-upload-btn {
+            padding: 7px 14px;
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.04);
+            color: #cbd5e1;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .img-upload-btn:hover {
+            border-color: rgba(129, 140, 248, 0.6);
+            background: rgba(129, 140, 248, 0.1);
+        }
+
+        /* 预览区域 */
+        .preview-wrapper {
+            position: relative;
+            margin: 18px 0;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            display: none;
+            text-align: center;
+        }
+        .preview-wrapper video {
+            display: block;
+            max-width: 100%;
+            max-height: 380px;
+            margin: 0 auto;
+        }
+        .watermark-overlay {
+            position: absolute;
+            pointer-events: none;
+            user-select: none;
+            white-space: pre;
+            z-index: 5;
+            transition: all 0.1s;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 3px;
+            margin: 15px 0 6px;
+            display: none;
+            overflow: hidden;
+        }
+        .progress-bar .fill {
+            height: 100%;
+            background: linear-gradient(90deg, #818cf8, #34d399);
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.2s;
+        }
+
+        .status-text {
+            font-size: 13px;
+            color: #a1a1aa;
+            text-align: center;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <a href="../index.html" class="back-link">← 返回工具首页</a>
+
+    <div class="container">
+        <h1>视频加水印</h1>
+        <p>为视频叠加自定义文字水印或图片LOGO，支持全屏预览与参数实时调整</p>
+
+        <div class="upload-area" id="uploadArea">
+            <p>点击或拖拽上传视频文件</p>
+            <input type="file" id="videoInput" accept="video/*">
+        </div>
+
+        <div id="videoMeta" style="text-align:center; margin:10px 0; display:none;">
+            <p id="fileName" style="color:#e4e4e7; font-size:14px;"></p>
+        </div>
+
+        <div id="settingsBox" style="display:none;">
+            <div class="type-toggle">
+                <button class="type-btn active" id="textTypeBtn">文字水印</button>
+                <button class="type-btn" id="imageTypeBtn">图片水印</button>
+            </div>
+
+            <!-- 文字水印配置 -->
+            <div class="controls-grid" id="textControls">
+                <div class="control-item" style="grid-column: 1 / -1;">
+                    <label>水印内容:</label>
+                    <input type="text" id="watermarkText" value="PC-TOOL 原创制作" style="flex:1;">
+                </div>
+                <div class="control-item">
+                    <label>字体大小:</label>
+                    <input type="range" id="fontSizeRange" min="14" max="72" value="28">
+                    <span class="val" id="fontSizeVal">28px</span>
+                </div>
+                <div class="control-item">
+                    <label>文字颜色:</label>
+                    <input type="color" id="fontColor" value="#ffffff">
+                </div>
+                <div class="control-item">
+                    <label>透明度:</label>
+                    <input type="range" id="textOpacityRange" min="10" max="100" value="85">
+                    <span class="val" id="textOpacityVal">85%</span>
+                </div>
+                <div class="control-item">
+                    <label>水印位置:</label>
+                    <select id="textPositionSelect">
+                        <option value="bottom-right" selected>右下角</option>
+                        <option value="bottom-left">左下角</option>
+                        <option value="top-right">右上角</option>
+                        <option value="top-left">左上角</option>
+                        <option value="center">居中</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 图片水印配置 -->
+            <div class="controls-grid" id="imageControls" style="display:none;">
+                <div class="control-item" style="grid-column: 1 / -1;">
+                    <label>水印图片:</label>
+                    <button class="img-upload-btn" id="uploadImgBtn">选择图片 (PNG/JPG/SVG)</button>
+                    <input type="file" id="watermarkImgInput" accept="image/*">
+                    <span id="imgNameTip" style="font-size:12px; color:#71717a; margin-left:8px;">未选择图片</span>
+                </div>
+                <div class="control-item">
+                    <label>缩放比例:</label>
+                    <input type="range" id="imgScaleRange" min="10" max="100" value="25">
+                    <span class="val" id="imgScaleVal">25%</span>
+                </div>
+                <div class="control-item">
+                    <label>透明度:</label>
+                    <input type="range" id="imgOpacityRange" min="10" max="100" value="85">
+                    <span class="val" id="imgOpacityVal">85%</span>
+                </div>
+                <div class="control-item">
+                    <label>水印位置:</label>
+                    <select id="imgPositionSelect">
+                        <option value="bottom-right" selected>右下角</option>
+                        <option value="bottom-left">左下角</option>
+                        <option value="top-right">右上角</option>
+                        <option value="top-left">左上角</option>
+                        <option value="center">居中</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 视频实时预览（带水印模拟层） -->
+            <div class="preview-wrapper" id="previewWrapper">
+                <video id="previewVideo" controls playsinline></video>
+                <div class="watermark-overlay" id="watermarkOverlay"></div>
+            </div>
+        </div>
+
+        <div class="progress-bar" id="progressBar">
+            <div class="fill" id="progressFill"></div>
+        </div>
+        <div class="status-text" id="statusText">处理中...</div>
+
+        <div style="text-align:center; margin-top:15px;">
+            <button class="convert-btn" id="exportBtn" style="display:none;">导出带水印视频</button>
+            <button class="download-btn" id="downloadBtn">下载视频</button>
+        </div>
+
+        <div class="result-box" id="resultBox">
+            <h3>导出完成</h3>
+            <div class="size-info" id="sizeInfo"></div>
+        </div>
+
+        <div class="contact-tip">面向大众，有任何想要的功能或者意见，请联系QQ：<strong>1003294905</strong></div>
+    </div>
+
+    <canvas id="hiddenCanvas" style="display:none;"></canvas>
+
+    <script src="common.js"></script>
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const videoInput = document.getElementById('videoInput');
+        const videoMeta = document.getElementById('videoMeta');
+        const fileName = document.getElementById('fileName');
+        const settingsBox = document.getElementById('settingsBox');
+        const textTypeBtn = document.getElementById('textTypeBtn');
+        const imageTypeBtn = document.getElementById('imageTypeBtn');
+        const textControls = document.getElementById('textControls');
+        const imageControls = document.getElementById('imageControls');
+        const previewWrapper = document.getElementById('previewWrapper');
+        const previewVideo = document.getElementById('previewVideo');
+        const watermarkOverlay = document.getElementById('watermarkOverlay');
+        const exportBtn = document.getElementById('exportBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        const statusText = document.getElementById('statusText');
+        const resultBox = document.getElementById('resultBox');
+        const sizeInfo = document.getElementById('sizeInfo');
+        const hiddenCanvas = document.getElementById('hiddenCanvas');
+        const hCtx = hiddenCanvas.getContext('2d');
+
+        // 文字设置
+        const watermarkText = document.getElementById('watermarkText');
+        const fontSizeRange = document.getElementById('fontSizeRange');
+        const fontSizeVal = document.getElementById('fontSizeVal');
+        const fontColor = document.getElementById('fontColor');
+        const textOpacityRange = document.getElementById('textOpacityRange');
+        const textOpacityVal = document.getElementById('textOpacityVal');
+        const textPositionSelect = document.getElementById('textPositionSelect');
+
+        // 图片设置
+        const uploadImgBtn = document.getElementById('uploadImgBtn');
+        const watermarkImgInput = document.getElementById('watermarkImgInput');
+        const imgNameTip = document.getElementById('imgNameTip');
+        const imgScaleRange = document.getElementById('imgScaleRange');
+        const imgScaleVal = document.getElementById('imgScaleVal');
+        const imgOpacityRange = document.getElementById('imgOpacityRange');
+        const imgOpacityVal = document.getElementById('imgOpacityVal');
+        const imgPositionSelect = document.getElementById('imgPositionSelect');
+
+        let videoFile = null;
+        let watermarkImg = null;
+        let currentMode = 'text'; // text | image
+        let exportedBlobUrl = null;
+        let isExporting = false;
+
+        uploadArea.onclick = () => videoInput.click();
+        setupDragDrop(uploadArea, (files) => {
+            if (files[0]?.type.startsWith('video/')) handleVideo(files[0]);
+            else showToast('请上传有效的视频文件');
+        });
+        videoInput.onchange = (e) => {
+            if (e.target.files[0]) handleVideo(e.target.files[0]);
+        };
+
+        function handleVideo(file) {
+            videoFile = file;
+            fileName.textContent = `当前文件：${file.name} (${formatSize(file.size)})`;
+            videoMeta.style.display = 'block';
+
+            if (previewVideo.src) URL.revokeObjectURL(previewVideo.src);
+            previewVideo.src = URL.createObjectURL(file);
+            previewWrapper.style.display = 'block';
+            settingsBox.style.display = 'block';
+            exportBtn.style.display = 'inline-block';
+            resultBox.style.display = 'none';
+            downloadBtn.style.display = 'none';
+
+            previewVideo.onloadedmetadata = () => {
+                updateOverlay();
+            };
+        }
+
+        // 切换模式
+        textTypeBtn.onclick = () => {
+            currentMode = 'text';
+            textTypeBtn.classList.add('active');
+            imageTypeBtn.classList.remove('active');
+            textControls.style.display = 'grid';
+            imageControls.style.display = 'none';
+            updateOverlay();
+        };
+        imageTypeBtn.onclick = () => {
+            currentMode = 'image';
+            imageTypeBtn.classList.add('active');
+            textTypeBtn.classList.remove('active');
+            textControls.style.display = 'none';
+            imageControls.style.display = 'grid';
+            updateOverlay();
+        };
+
+        // 图片水印选择
+        uploadImgBtn.onclick = () => watermarkImgInput.click();
+        watermarkImgInput.onchange = (e) => {
+            const f = e.target.files[0];
+            if (!f) return;
+            imgNameTip.textContent = f.name;
+            const img = new Image();
+            img.src = URL.createObjectURL(f);
+            img.onload = () => {
+                watermarkImg = img;
+                updateOverlay();
+            };
+        };
+
+        // 联动更新预览
+        [watermarkText, fontColor, textPositionSelect, imgPositionSelect].forEach(el => el.oninput = updateOverlay);
+        fontSizeRange.oninput = () => { fontSizeVal.textContent = fontSizeRange.value + 'px'; updateOverlay(); };
+        textOpacityRange.oninput = () => { textOpacityVal.textContent = textOpacityRange.value + '%'; updateOverlay(); };
+        imgScaleRange.oninput = () => { imgScaleVal.textContent = imgScaleRange.value + '%'; updateOverlay(); };
+        imgOpacityRange.oninput = () => { imgOpacityVal.textContent = imgOpacityRange.value + '%'; updateOverlay(); };
+
+        function updateOverlay() {
+            watermarkOverlay.innerHTML = '';
+            watermarkOverlay.style = '';
+
+            const padding = 20;
+            const pos = currentMode === 'text' ? textPositionSelect.value : imgPositionSelect.value;
+            const opacity = (currentMode === 'text' ? textOpacityRange.value : imgOpacityRange.value) / 100;
+
+            let posStyle = 'position: absolute; z-index: 5; pointer-events: none;';
+            if (pos === 'bottom-right') posStyle += `right: ${padding}px; bottom: ${padding}px;`;
+            else if (pos === 'bottom-left') posStyle += `left: ${padding}px; bottom: ${padding}px;`;
+            else if (pos === 'top-right') posStyle += `right: ${padding}px; top: ${padding}px;`;
+            else if (pos === 'top-left') posStyle += `left: ${padding}px; top: ${padding}px;`;
+            else if (pos === 'center') posStyle += `left: 50%; top: 50%; transform: translate(-50%, -50%);`;
+
+            watermarkOverlay.style = posStyle;
+
+            if (currentMode === 'text') {
+                const span = document.createElement('span');
+                span.textContent = watermarkText.value || '水印文本';
+                span.style.color = fontColor.value;
+                span.style.fontSize = fontSizeRange.value + 'px';
+                span.style.fontWeight = 'bold';
+                span.style.opacity = opacity;
+                span.style.textShadow = '0 2px 4px rgba(0,0,0,0.8)';
+                span.style.fontFamily = 'sans-serif';
+                watermarkOverlay.appendChild(span);
+            } else if (currentMode === 'image' && watermarkImg) {
+                const img = document.createElement('img');
+                img.src = watermarkImg.src;
+                const scale = parseInt(imgScaleRange.value) / 100;
+                img.style.maxWidth = `${Math.round(240 * scale)}px`;
+                img.style.opacity = opacity;
+                img.style.filter = 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))';
+                watermarkOverlay.appendChild(img);
+            }
+        }
+
+        // 绘制帧上的水印
+        function drawWatermarkOnCanvas(ctx, width, height) {
+            const padding = Math.round(width * 0.03); // 动态留边
+            if (currentMode === 'text') {
+                const text = watermarkText.value || '';
+                const baseSize = parseInt(fontSizeRange.value);
+                const scaleFactor = width / 640;
+                const actualFontSize = Math.max(16, Math.round(baseSize * Math.min(2.5, Math.max(0.75, scaleFactor))));
+                const opacity = parseInt(textOpacityRange.value) / 100;
+                const pos = textPositionSelect.value;
+
+                ctx.save();
+                ctx.globalAlpha = opacity;
+                ctx.font = `bold ${actualFontSize}px sans-serif`;
+                ctx.fillStyle = fontColor.value;
+                ctx.shadowColor = 'rgba(0,0,0,0.85)';
+                ctx.shadowBlur = 6;
+                ctx.shadowOffsetX = 2;
+                ctx.shadowOffsetY = 2;
+
+                const metrics = ctx.measureText(text);
+                const textW = metrics.width;
+                const textH = actualFontSize;
+
+                let tx = padding;
+                let ty = height - padding;
+
+                if (pos === 'bottom-right') {
+                    tx = width - textW - padding;
+                    ty = height - padding;
+                } else if (pos === 'bottom-left') {
+                    tx = padding;
+                    ty = height - padding;
+                } else if (pos === 'top-right') {
+                    tx = width - textW - padding;
+                    ty = padding + textH;
+                } else if (pos === 'top-left') {
+                    tx = padding;
+                    ty = padding + textH;
+                } else if (pos === 'center') {
+                    tx = (width - textW) / 2;
+                    ty = (height + textH) / 2;
+                }
+
+                ctx.fillText(text, tx, ty);
+                ctx.restore();
+            } else if (currentMode === 'image' && watermarkImg) {
+                const scale = parseInt(imgScaleRange.value) / 100;
+                const opacity = parseInt(imgOpacityRange.value) / 100;
+                const pos = imgPositionSelect.value;
+
+                // 依据原图比例与画布宽度进行适当换算
+                const targetW = Math.round(width * 0.3 * scale);
+                const aspect = watermarkImg.height / watermarkImg.width;
+                const targetH = Math.round(targetW * aspect);
+
+                let ix = padding;
+                let iy = height - targetH - padding;
+
+                if (pos === 'bottom-right') {
+                    ix = width - targetW - padding;
+                    iy = height - targetH - padding;
+                } else if (pos === 'bottom-left') {
+                    ix = padding;
+                    iy = height - targetH - padding;
+                } else if (pos === 'top-right') {
+                    ix = width - targetW - padding;
+                    iy = padding;
+                } else if (pos === 'top-left') {
+                    ix = padding;
+                    iy = padding;
+                } else if (pos === 'center') {
+                    ix = (width - targetW) / 2;
+                    iy = (height - targetH) / 2;
+                }
+
+                ctx.save();
+                ctx.globalAlpha = opacity;
+                ctx.shadowColor = 'rgba(0,0,0,0.6)';
+                ctx.shadowBlur = 6;
+                ctx.drawImage(watermarkImg, ix, iy, targetW, targetH);
+                ctx.restore();
+            }
+        }
+
+        // 导出核心逻辑
+        exportBtn.onclick = async () => {
+            if (!videoFile) return;
+            if (currentMode === 'image' && !watermarkImg) {
+                showToast('请先选择水印图片');
+                return;
+            }
+            if (isExporting) return;
+            isExporting = true;
+
+            exportBtn.disabled = true;
+            exportBtn.textContent = '导出中...';
+            progressBar.style.display = 'block';
+            statusText.style.display = 'block';
+            progressFill.style.width = '0%';
+            resultBox.style.display = 'none';
+            downloadBtn.style.display = 'none';
+
+            try {
+                const offVideo = document.createElement('video');
+                offVideo.src = URL.createObjectURL(videoFile);
+                offVideo.muted = true;
+                offVideo.playsInline = true;
+                offVideo.preload = 'auto';
+
+                await new Promise((res, rej) => {
+                    offVideo.onloadedmetadata = res;
+                    offVideo.onerror = rej;
+                });
+
+                const duration = offVideo.duration;
+                const vw = offVideo.videoWidth || 1280;
+                const vh = offVideo.videoHeight || 720;
+                hiddenCanvas.width = vw;
+                hiddenCanvas.height = vh;
+
+                const fps = 30;
+                const canvasStream = hiddenCanvas.captureStream(fps);
+
+                // 音频抽取合并
+                let finalStream = canvasStream;
+                let audioCtx = null;
+                try {
+                    const ab = await videoFile.arrayBuffer();
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    const decoded = await audioCtx.decodeAudioData(ab);
+                    const dest = audioCtx.createMediaStreamDestination();
+                    const srcNode = audioCtx.createBufferSource();
+                    srcNode.buffer = decoded;
+                    srcNode.connect(dest);
+                    srcNode.start(0);
+
+                    const at = dest.stream.getAudioTracks();
+                    if (at.length > 0) {
+                        finalStream = new MediaStream([
+                            ...canvasStream.getVideoTracks(),
+                            at[0]
+                        ]);
+                    }
+                } catch (e) {
+                    console.warn('无音频轨道或解码失败，静音输出：', e);
+                }
+
+                let mimeType = 'video/webm;codecs=vp8';
+                if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1')) {
+                    mimeType = 'video/mp4;codecs=avc1';
+                } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+                    mimeType = 'video/webm;codecs=vp9';
+                } else if (MediaRecorder.isTypeSupported('video/webm')) {
+                    mimeType = 'video/webm';
+                }
+
+                const recorder = new MediaRecorder(finalStream, mimeType ? { mimeType } : {});
+                const chunks = [];
+                recorder.ondataavailable = (e) => {
+                    if (e.data && e.data.size > 0) chunks.push(e.data);
+                };
+
+                const recorderStop = new Promise(resolve => recorder.onstop = resolve);
+                recorder.start();
+                await offVideo.play();
+
+                await new Promise((resolve) => {
+                    function renderFrame() {
+                        if (offVideo.paused || offVideo.ended) {
+                            resolve();
+                            return;
+                        }
+                        hCtx.drawImage(offVideo, 0, 0, vw, vh);
+                        drawWatermarkOnCanvas(hCtx, vw, vh);
+
+                        const pct = Math.min(99, Math.round((offVideo.currentTime / duration) * 100));
+                        progressFill.style.width = pct + '%';
+                        statusText.textContent = `正在写入水印: ${pct}% (总长 ${duration.toFixed(1)}s)`;
+
+                        requestAnimationFrame(renderFrame);
+                    }
+                    offVideo.onended = resolve;
+                    renderFrame();
+                });
+
+                progressFill.style.width = '100%';
+                statusText.textContent = '编码封装中...';
+
+                setTimeout(() => {
+                    if (recorder.state === 'recording') recorder.stop();
+                    if (audioCtx) audioCtx.close();
+                }, 100);
+
+                await recorderStop;
+
+                const finalBlob = new Blob(chunks, { type: recorder.mimeType || 'video/webm' });
+                if (exportedBlobUrl) URL.revokeObjectURL(exportedBlobUrl);
+                exportedBlobUrl = URL.createObjectURL(finalBlob);
+
+                sizeInfo.innerHTML = `原视频大小：${formatSize(videoFile.size)}<br>` +
+                                     `加水印文件：<span class="highlight">${formatSize(finalBlob.size)}</span><br>` +
+                                     `分辨率：<span class="highlight">${vw} × ${vh}</span>`;
+
+                resultBox.style.display = 'block';
+                downloadBtn.style.display = 'inline-block';
+                statusText.textContent = '加水印完成！';
+                showToast('水印添加成功！');
+            } catch (err) {
+                console.error(err);
+                statusText.textContent = '处理出错：' + err.message;
+                showToast('处理失败：' + err.message);
+            } finally {
+                isExporting = false;
+                exportBtn.disabled = false;
+                exportBtn.textContent = '导出带水印视频';
+            }
+        };
+
+        downloadBtn.onclick = () => {
+            if (!exportedBlobUrl) return;
+            const ext = exportedBlobUrl.includes('mp4') ? 'mp4' : 'webm';
+            const base = (videoFile?.name || 'video').replace(/\.\w+$/, '');
+            downloadFile(exportedBlobUrl, `${base}_watermarked.${ext}`);
+        };
+    </script>
+</body>
+</html>

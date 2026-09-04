@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML 实体编解码 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="在线 HTML 实体编解码工具，支持普通文本与 HTML 命名实体(&amp;lt; &amp;gt; &amp;amp; 等)、十进制实体(&amp;#60;)及十六进制实体(&amp;#x3C;)双向转换。">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .container {
+            max-width: 800px;
+        }
+        .container h1 {
+            color: #e4e4e7;
+            margin-bottom: 8px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .container > p {
+            color: #a1a1aa;
+            font-size: 15px;
+            margin-bottom: 24px;
+        }
+        .card-box {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .option-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 16px;
+            align-items: center;
+        }
+        .option-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #d4d4d8;
+            cursor: pointer;
+        }
+        .option-item input[type="radio"],
+        .option-item input[type="checkbox"] {
+            accent-color: #6366f1;
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+        }
+        .textarea-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: #e4e4e7;
+            margin-bottom: 8px;
+        }
+        .text-area {
+            width: 100%;
+            height: 130px;
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            color: #e4e4e7;
+            font-size: 14px;
+            font-family: Consolas, Monaco, "Courier New", monospace;
+            resize: vertical;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .text-area:focus {
+            border-color: #6366f1;
+        }
+        .btn-row {
+            display: flex;
+            gap: 12px;
+            margin: 16px 0;
+            flex-wrap: wrap;
+        }
+        .btn-action {
+            flex: 1;
+            min-width: 130px;
+            padding: 12px 18px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            color: #fff;
+        }
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: #e4e4e7;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.14);
+        }
+        .char-count {
+            font-size: 12px;
+            color: #71717a;
+        }
+        .reference-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+        .reference-table th, .reference-table td {
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 8px 10px;
+            text-align: left;
+        }
+        .reference-table th {
+            background: rgba(255, 255, 255, 0.04);
+            color: #a1a1aa;
+        }
+        .reference-table td {
+            color: #d4d4d8;
+            font-family: Consolas, monospace;
+        }
+        .reference-table code {
+            color: #818cf8;
+            background: rgba(99, 102, 241, 0.1);
+            padding: 2px 5px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <a href="../index.html" class="back-link">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        返回首页
+    </a>
+
+    <div class="container">
+        <h1>HTML 实体编解码</h1>
+        <p>支持将特殊字符转义为 HTML 命名实体、十进制或十六进制字符编码，以及反向解码恢复。</p>
+
+        <div class="card-box">
+            <div class="option-group">
+                <span style="font-size: 14px; font-weight: 600; color: #e4e4e7;">实体编码模式：</span>
+                <label class="option-item">
+                    <input type="radio" name="entityMode" value="named" checked>
+                    <span>常用命名实体 (&amp;lt; &amp;gt; &amp;amp; &amp;quot;)</span>
+                </label>
+                <label class="option-item">
+                    <input type="radio" name="entityMode" value="decimal">
+                    <span>十进制实体 (&amp;#60;)</span>
+                </label>
+                <label class="option-item">
+                    <input type="radio" name="entityMode" value="hex">
+                    <span>十六进制实体 (&amp;#x3C;)</span>
+                </label>
+            </div>
+
+            <div class="option-group">
+                <label class="option-item">
+                    <input type="checkbox" id="encodeAll" value="1">
+                    <span>编码所有非 ASCII 字符（汉字、标点及Emoji符号）</span>
+                </label>
+            </div>
+
+            <div class="textarea-label">
+                <span>输入内容 / 源文本</span>
+                <span class="char-count" id="inputCount">0 字符</span>
+            </div>
+            <textarea id="inputText" class="text-area" placeholder="例如输入：<div class=&quot;box&quot;>PC-TOOL & 实用工具</div> 或粘贴已编码的 HTML 实体"></textarea>
+
+            <div class="btn-row">
+                <button id="btnEncode" class="btn-action btn-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                    编码为实体 ↓
+                </button>
+                <button id="btnDecode" class="btn-action btn-primary" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
+                    解码为文本 ↓
+                </button>
+                <button id="btnExchange" class="btn-action btn-secondary">
+                    上下内容对调 ⇅
+                </button>
+                <button id="btnClear" class="btn-action btn-secondary" style="flex: 0.5;">
+                    清空
+                </button>
+            </div>
+
+            <div class="textarea-label">
+                <span>转换结果</span>
+                <span class="char-count" id="outputCount">0 字符</span>
+            </div>
+            <textarea id="outputText" class="text-area" readonly placeholder="转换后的结果将显示在这里..."></textarea>
+
+            <div style="margin-top: 12px; display: flex; justify-content: flex-end; gap: 8px;">
+                <button id="btnCopy" class="btn-action btn-secondary" style="min-width: 100px; padding: 8px 16px;">
+                    一键复制结果
+                </button>
+            </div>
+        </div>
+
+        <div class="card-box">
+            <h3 style="color: #e4e4e7; font-size: 15px; margin-bottom: 10px;">常见 HTML 实体对照表</h3>
+            <table class="reference-table">
+                <thead>
+                    <tr>
+                        <th>符号</th>
+                        <th>名称</th>
+                        <th>命名实体</th>
+                        <th>十进制实体</th>
+                        <th>十六进制实体</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>&lt;</td>
+                        <td>小于号 (Less than)</td>
+                        <td><code>&amp;lt;</code></td>
+                        <td><code>&amp;#60;</code></td>
+                        <td><code>&amp;#x3C;</code></td>
+                    </tr>
+                    <tr>
+                        <td>&gt;</td>
+                        <td>大于号 (Greater than)</td>
+                        <td><code>&amp;gt;</code></td>
+                        <td><code>&amp;#62;</code></td>
+                        <td><code>&amp;#x3E;</code></td>
+                    </tr>
+                    <tr>
+                        <td>&amp;</td>
+                        <td>和号 (Ampersand)</td>
+                        <td><code>&amp;amp;</code></td>
+                        <td><code>&amp;#38;</code></td>
+                        <td><code>&amp;#x26;</code></td>
+                    </tr>
+                    <tr>
+                        <td>&quot;</td>
+                        <td>双引号 (Quote)</td>
+                        <td><code>&amp;quot;</code></td>
+                        <td><code>&amp;#34;</code></td>
+                        <td><code>&amp;#x22;</code></td>
+                    </tr>
+                    <tr>
+                        <td>&#39;</td>
+                        <td>单引号 (Apostrophe)</td>
+                        <td><code>&amp;apos;</code></td>
+                        <td><code>&amp;#39;</code></td>
+                        <td><code>&amp;#x27;</code></td>
+                    </tr>
+                    <tr>
+                        <td>&copy;</td>
+                        <td>版权符 (Copyright)</td>
+                        <td><code>&amp;copy;</code></td>
+                        <td><code>&amp;#169;</code></td>
+                        <td><code>&amp;#xA9;</code></td>
+                    </tr>
+                    <tr>
+                        <td>&reg;</td>
+                        <td>注册商标 (Registered)</td>
+                        <td><code>&amp;reg;</code></td>
+                        <td><code>&amp;#174;</code></td>
+                        <td><code>&amp;#xAE;</code></td>
+                    </tr>
+                    <tr>
+                        <td>&nbsp;</td>
+                        <td>不换行空格 (Space)</td>
+                        <td><code>&amp;nbsp;</code></td>
+                        <td><code>&amp;#160;</code></td>
+                        <td><code>&amp;#xA0;</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="contact-box" style="margin-top: 24px; padding: 16px; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px dashed rgba(255,255,255,0.08); text-align: center; color: #71717a; font-size: 13px;">
+            提示：所有编解码均在您的浏览器本地进行，不会向任何服务器上传文本内容。
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        const inputText = document.getElementById('inputText');
+        const outputText = document.getElementById('outputText');
+        const inputCount = document.getElementById('inputCount');
+        const outputCount = document.getElementById('outputCount');
+        const btnEncode = document.getElementById('btnEncode');
+        const btnDecode = document.getElementById('btnDecode');
+        const btnExchange = document.getElementById('btnExchange');
+        const btnClear = document.getElementById('btnClear');
+        const btnCopy = document.getElementById('btnCopy');
+        const encodeAll = document.getElementById('encodeAll');
+
+        const namedMap = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&apos;',
+            '©': '&copy;',
+            '®': '&reg;',
+            '™': '&trade;',
+            '¥': '&yen;',
+            '€': '&euro;',
+            '£': '&pound;',
+            '§': '&sect;',
+            '•': '&bull;',
+            '…': '&hellip;',
+            '—': '&mdash;',
+            '–': '&ndash;',
+            ' ': '&nbsp;'
+        };
+
+        function updateCounts() {
+            inputCount.textContent = `${inputText.value.length} 字符`;
+            outputCount.textContent = `${outputText.value.length} 字符`;
+        }
+
+        inputText.addEventListener('input', updateCounts);
+
+        function getSelectedMode() {
+            const radio = document.querySelector('input[name="entityMode"]:checked');
+            return radio ? radio.value : 'named';
+        }
+
+        function encodeHtml() {
+            const text = inputText.value;
+            if (!text) {
+                showToast('请输入需要编码的文本', 'warning');
+                return;
+            }
+
+            const mode = getSelectedMode();
+            const doAll = encodeAll.checked;
+
+            let res = '';
+            for (let i = 0; i < text.length; i++) {
+                const codePoint = text.codePointAt(i);
+                const char = String.fromCodePoint(codePoint);
+
+                // Check surrogate pair
+                if (codePoint > 0xffff) {
+                    i++; // skip next surrogate unit
+                }
+
+                if (mode === 'named') {
+                    if (char !== ' ' && namedMap[char]) {
+                        res += namedMap[char];
+                    } else if (doAll && codePoint > 127) {
+                        res += `&#${codePoint};`;
+                    } else {
+                        res += char;
+                    }
+                } else if (mode === 'decimal') {
+                    if (char === '&' || char === '<' || char === '>' || char === '"' || char === "'" || (doAll && (codePoint > 126 || codePoint < 32))) {
+                        res += `&#${codePoint};`;
+                    } else {
+                        res += char;
+                    }
+                } else if (mode === 'hex') {
+                    if (char === '&' || char === '<' || char === '>' || char === '"' || char === "'" || (doAll && (codePoint > 126 || codePoint < 32))) {
+                        res += `&#x${codePoint.toString(16).toUpperCase()};`;
+                    } else {
+                        res += char;
+                    }
+                }
+            }
+
+            outputText.value = res;
+            updateCounts();
+            showToast('HTML 实体编码成功');
+        }
+
+        function decodeHtml() {
+            const text = inputText.value;
+            if (!text) {
+                showToast('请输入需要解码的 HTML 实体', 'warning');
+                return;
+            }
+
+            try {
+                // Handle numeric entities (both decimal &#123; and hex &#x1F600;) and common named entities
+                let decoded = text.replace(/&#x([0-9a-fA-F]+);/g, (match, hex) => {
+                    return String.fromCodePoint(parseInt(hex, 16));
+                }).replace(/&#([0-9]+);/g, (match, dec) => {
+                    return String.fromCodePoint(parseInt(dec, 10));
+                });
+
+                // DOMParser fallback for all valid named entities
+                const doc = new DOMParser().parseFromString(decoded, 'text/html');
+                decoded = doc.documentElement.textContent;
+
+                outputText.value = decoded;
+                updateCounts();
+                showToast('HTML 实体解码成功');
+            } catch (err) {
+                showToast('解码失败：' + err.message, 'error');
+            }
+        }
+
+        btnEncode.addEventListener('click', encodeHtml);
+        btnDecode.addEventListener('click', decodeHtml);
+
+        btnExchange.addEventListener('click', () => {
+            const temp = inputText.value;
+            inputText.value = outputText.value;
+            outputText.value = temp;
+            updateCounts();
+            showToast('内容已对调');
+        });
+
+        btnClear.addEventListener('click', () => {
+            inputText.value = '';
+            outputText.value = '';
+            updateCounts();
+            showToast('内容已清空');
+        });
+
+        btnCopy.addEventListener('click', () => {
+            if (!outputText.value) {
+                showToast('暂无内容可复制', 'warning');
+                return;
+            }
+            navigator.clipboard.writeText(outputText.value).then(() => {
+                showToast('结果已复制到剪贴板');
+            }).catch(() => {
+                showToast('复制失败，请手动选择复制', 'error');
+            });
+        });
+
+        updateCounts();
+    </script>
+</body>
+</html>

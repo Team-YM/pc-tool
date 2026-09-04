@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON 格式化与校验 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="在线 JSON 格式化、美化、压缩与语法校验工具，支持纯本地处理、一键复制与高亮排版。">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .container {
+            max-width: 860px;
+        }
+        .container h1 {
+            color: #e4e4e7;
+            margin-bottom: 8px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .container > p {
+            color: #a1a1aa;
+            font-size: 15px;
+            margin-bottom: 20px;
+        }
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 16px;
+            align-items: center;
+        }
+        .tool-btn {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #e4e4e7;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .tool-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-1px);
+        }
+        .tool-btn.primary {
+            background: #818cf8;
+            color: #fff;
+            border-color: #818cf8;
+        }
+        .tool-btn.primary:hover {
+            background: #6366f1;
+        }
+        .editor-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        @media (max-width: 768px) {
+            .editor-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .editor-box {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            text-align: left;
+        }
+        .editor-header {
+            font-size: 13px;
+            color: #a1a1aa;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .textarea-styled {
+            width: 100%;
+            height: 380px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 12px 14px;
+            color: #e4e4e7;
+            font-size: 13px;
+            line-height: 1.5;
+            resize: vertical;
+            outline: none;
+            font-family: Consolas, Monaco, "Courier New", monospace;
+            tab-size: 2;
+            transition: border-color 0.2s;
+        }
+        .textarea-styled:focus {
+            border-color: rgba(129, 140, 248, 0.5);
+        }
+        .status-bar {
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            display: none;
+            margin-top: 8px;
+            text-align: left;
+        }
+        .status-bar.success {
+            display: block;
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        .status-bar.error {
+            display: block;
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+    <a href="../index.html" class="back-link">← 返回首页</a>
+
+    <div class="container">
+        <h1>JSON 格式化与校验</h1>
+        <p>支持 JSON 语法美化、压缩单行、转义/去转义及错误精准定位，纯浏览器本地解析。</p>
+
+        <div class="toolbar">
+            <button class="tool-btn primary" id="format2Btn">格式化 (2空格)</button>
+            <button class="tool-btn" id="format4Btn">格式化 (4空格)</button>
+            <button class="tool-btn" id="compressBtn">压缩为单行</button>
+            <button class="tool-btn" id="escapeBtn">转义双引号</button>
+            <button class="tool-btn" id="unescapeBtn">去除转义</button>
+            <button class="tool-btn" id="sampleBtn">填充示例</button>
+            <button class="tool-btn" id="clearBtn">清空全部</button>
+        </div>
+
+        <div class="editor-grid">
+            <div class="editor-box">
+                <div class="editor-header">
+                    <span>输入 JSON 字符串：</span>
+                    <span id="inputStat">0 字符</span>
+                </div>
+                <textarea class="textarea-styled" id="jsonInput" placeholder="在此粘贴或输入 JSON 代码..."></textarea>
+            </div>
+            <div class="editor-box">
+                <div class="editor-header">
+                    <span>处理结果：</span>
+                    <button class="tool-btn" id="copyBtn" style="padding:4px 10px; font-size:12px;">复制结果</button>
+                </div>
+                <textarea class="textarea-styled" id="jsonOutput" placeholder="格式化结果展示区..." readonly></textarea>
+            </div>
+        </div>
+
+        <div id="statusMsg" class="status-bar"></div>
+
+        <div class="contact-tip">面向大众，有任何想要的功能或者意见，请联系QQ：<strong>1003294905</strong></div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        const jsonInput = document.getElementById('jsonInput');
+        const jsonOutput = document.getElementById('jsonOutput');
+        const statusMsg = document.getElementById('statusMsg');
+        const inputStat = document.getElementById('inputStat');
+        const copyBtn = document.getElementById('copyBtn');
+
+        jsonInput.addEventListener('input', () => {
+            inputStat.textContent = jsonInput.value.length + ' 字符';
+        });
+
+        function parseJson(str) {
+            return JSON.parse(str);
+        }
+
+        function showStatus(isSuccess, text) {
+            statusMsg.className = 'status-bar ' + (isSuccess ? 'success' : 'error');
+            statusMsg.textContent = text;
+        }
+
+        function formatJSON(indent) {
+            const raw = jsonInput.value.trim();
+            if (!raw) {
+                showStatus(false, '请先输入 JSON 内容！');
+                return;
+            }
+            try {
+                const parsed = parseJson(raw);
+                const res = JSON.stringify(parsed, null, indent);
+                jsonOutput.value = res;
+                showStatus(true, 'JSON 校验通过，格式化成功！');
+            } catch (err) {
+                jsonOutput.value = '';
+                showStatus(false, 'JSON 语法错误：' + err.message);
+            }
+        }
+
+        document.getElementById('format2Btn').onclick = () => formatJSON(2);
+        document.getElementById('format4Btn').onclick = () => formatJSON(4);
+
+        document.getElementById('compressBtn').onclick = () => {
+            const raw = jsonInput.value.trim();
+            if (!raw) {
+                showStatus(false, '请先输入 JSON 内容！');
+                return;
+            }
+            try {
+                const parsed = parseJson(raw);
+                jsonOutput.value = JSON.stringify(parsed);
+                showStatus(true, '压缩单行成功！');
+            } catch (err) {
+                showStatus(false, 'JSON 语法错误：' + err.message);
+            }
+        };
+
+        document.getElementById('escapeBtn').onclick = () => {
+            const raw = jsonInput.value;
+            if (!raw) return;
+            jsonOutput.value = JSON.stringify(raw);
+            showStatus(true, '已转义双引号与换行符');
+        };
+
+        document.getElementById('unescapeBtn').onclick = () => {
+            const raw = jsonInput.value.trim();
+            if (!raw) return;
+            try {
+                if ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))) {
+                    jsonOutput.value = JSON.parse(raw);
+                } else {
+                    jsonOutput.value = raw.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+                }
+                showStatus(true, '去转义完成');
+            } catch (err) {
+                jsonOutput.value = raw.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+                showStatus(true, '去转义完成 (降级模式)');
+            }
+        };
+
+        document.getElementById('sampleBtn').onclick = () => {
+            const sample = {
+                "name": "PC-TOOL",
+                "site": "https://pc-tool.cn",
+                "features": ["免费", "高效", "开源", "纯本地处理"],
+                "author": {
+                    "nickname": "cute-Fish",
+                    "role": "Developer"
+                },
+                "status": 200,
+                "active": true
+            };
+            jsonInput.value = JSON.stringify(sample);
+            inputStat.textContent = jsonInput.value.length + ' 字符';
+            formatJSON(2);
+        };
+
+        document.getElementById('clearBtn').onclick = () => {
+            jsonInput.value = '';
+            jsonOutput.value = '';
+            inputStat.textContent = '0 字符';
+            statusMsg.style.display = 'none';
+        };
+
+        copyBtn.onclick = () => {
+            if (!jsonOutput.value) return;
+            navigator.clipboard.writeText(jsonOutput.value).then(() => {
+                copyBtn.textContent = '已复制！';
+                setTimeout(() => { copyBtn.textContent = '复制结果'; }, 1800);
+            }).catch(() => {
+                jsonOutput.select();
+                document.execCommand('copy');
+                copyBtn.textContent = '已复制！';
+                setTimeout(() => { copyBtn.textContent = '复制结果'; }, 1800);
+            });
+        };
+    </script>
+</body>
+</html>

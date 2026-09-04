@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片取色器</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="免费在线图片取色器，支持点击放大吸色、RGB/HEX/HSL格式转换与一键复制，提取图片调色板。">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="图片取色器 | PC-TOOL">
+    <meta property="og:description" content="免费在线图片取色工具，高精度像素放大镜吸色，提取主色调。">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/image-color-picker.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="zh_CN">
+    <style>
+        .container {
+            max-width: 860px;
+            width: 100%;
+        }
+
+        .picker-layout {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .picker-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .canvas-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .canvas-wrap {
+            position: relative;
+            max-width: 100%;
+            overflow: auto;
+            border-radius: 8px;
+            cursor: crosshair;
+            background: repeating-conic-gradient(#1e1e24 0% 25%, #16161b 0% 50%) 50% / 16px 16px;
+        }
+
+        #imageCanvas {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .loupe {
+            position: absolute;
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            border: 3px solid #818cf8;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+            pointer-events: none;
+            display: none;
+            overflow: hidden;
+            background: #000;
+            z-index: 20;
+        }
+
+        .loupe canvas {
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+        }
+
+        .loupe::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 8px;
+            height: 8px;
+            transform: translate(-50%, -50%);
+            border: 1.5px solid #fff;
+            box-shadow: 0 0 2px #000;
+            pointer-events: none;
+        }
+
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .panel-box {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .panel-title {
+            font-size: 14px;
+            color: #a1a1aa;
+            margin-bottom: 12px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .color-preview-block {
+            width: 100%;
+            height: 70px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            margin-bottom: 14px;
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
+            transition: background-color 0.15s;
+        }
+
+        .val-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 6px;
+            padding: 6px 10px;
+            margin-bottom: 8px;
+        }
+
+        .val-label {
+            font-size: 12px;
+            color: #71717a;
+            font-weight: 600;
+            width: 44px;
+        }
+
+        .val-text {
+            font-size: 13px;
+            font-family: monospace;
+            color: #e4e4e7;
+            flex: 1;
+            text-align: left;
+            user-select: all;
+        }
+
+        .copy-btn {
+            background: transparent;
+            border: none;
+            color: #818cf8;
+            cursor: pointer;
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: rgba(129, 140, 248, 0.15);
+            color: #a5b4fc;
+        }
+
+        .palette-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+        }
+
+        .palette-item {
+            aspect-ratio: 1;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.15s;
+            position: relative;
+        }
+
+        .palette-item:hover {
+            transform: scale(1.1);
+            border-color: #fff;
+            z-index: 2;
+        }
+
+        .history-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            min-height: 36px;
+        }
+
+        .history-item {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: transform 0.15s;
+        }
+
+        .history-item:hover {
+            transform: scale(1.12);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: rgba(16, 185, 129, 0.9);
+            color: #fff;
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-size: 13px;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.25s ease;
+            z-index: 100;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+    <a href="../index.html" class="back-link">← 返回转换工具首页</a>
+
+    <div class="container">
+        <h1>图片取色器</h1>
+        <p>精准吸取图片中任意像素色彩，支持放大镜定位、格式转换及主色调自动提取</p>
+
+        <div class="upload-area" id="uploadArea">
+            <p>点击或拖拽上传需要取色的图片（支持 JPG、PNG、WebP 等）</p>
+            <input type="file" id="fileInput" accept="image/*">
+        </div>
+
+        <div id="pickerWorkspace" style="display:none;">
+            <div class="picker-layout">
+                <div class="canvas-card">
+                    <div class="canvas-wrap" id="canvasWrap">
+                        <canvas id="imageCanvas"></canvas>
+                        <div class="loupe" id="loupe">
+                            <canvas id="loupeCanvas" width="110" height="110"></canvas>
+                        </div>
+                    </div>
+                    <div style="margin-top:10px;font-size:12px;color:#71717a;">
+                        鼠标移动查看放大镜，点击任意位置吸取颜色并保存历史记录
+                    </div>
+                </div>
+
+                <div class="side-panel">
+                    <div class="panel-box">
+                        <div class="panel-title">当前颜色</div>
+                        <div class="color-preview-block" id="currentColorBox" style="background:#4f46e5;"></div>
+                        <div class="val-row">
+                            <span class="val-label">HEX</span>
+                            <span class="val-text" id="hexVal">#4f46e5</span>
+                            <button class="copy-btn" onclick="copyValue('hexVal')">复制</button>
+                        </div>
+                        <div class="val-row">
+                            <span class="val-label">RGB</span>
+                            <span class="val-text" id="rgbVal">rgb(79, 70, 229)</span>
+                            <button class="copy-btn" onclick="copyValue('rgbVal')">复制</button>
+                        </div>
+                        <div class="val-row">
+                            <span class="val-label">HSL</span>
+                            <span class="val-text" id="hslVal">hsl(244, 76%, 59%)</span>
+                            <button class="copy-btn" onclick="copyValue('hslVal')">复制</button>
+                        </div>
+                    </div>
+
+                    <div class="panel-box">
+                        <div class="panel-title">提取主色调 (调色板)</div>
+                        <div class="palette-grid" id="paletteGrid"></div>
+                    </div>
+
+                    <div class="panel-box">
+                        <div class="panel-title">
+                            <span>取色历史</span>
+                            <button class="copy-btn" style="color:#ef4444;" onclick="clearHistory()">清空</button>
+                        </div>
+                        <div class="history-grid" id="historyGrid"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">已复制到剪贴板</div>
+
+    <script src="common.js"></script>
+    <script>
+        var uploadArea = document.getElementById('uploadArea');
+        var fileInput = document.getElementById('fileInput');
+        var pickerWorkspace = document.getElementById('pickerWorkspace');
+        var canvas = document.getElementById('imageCanvas');
+        var ctx = canvas.getContext('2d');
+        var canvasWrap = document.getElementById('canvasWrap');
+        var loupe = document.getElementById('loupe');
+        var loupeCanvas = document.getElementById('loupeCanvas');
+        var loupeCtx = loupeCanvas.getContext('2d');
+
+        var currentImg = null;
+        var colorHistory = [];
+
+        uploadArea.addEventListener('click', function() { fileInput.click(); });
+        uploadArea.addEventListener('dragover', function(e) { e.preventDefault(); });
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', function(e) {
+            if (e.target.files.length) handleFile(e.target.files[0]);
+        });
+
+        function handleFile(file) {
+            if (!file || !file.type.startsWith('image/')) return;
+            var reader = new FileReader();
+            reader.onload = function(ev) {
+                var img = new Image();
+                img.onload = function() {
+                    currentImg = img;
+                    initCanvas(img);
+                    pickerWorkspace.style.display = 'block';
+                    extractPalette();
+                    // 默认取中心点
+                    var cx = Math.floor(img.width / 2);
+                    var cy = Math.floor(img.height / 2);
+                    pickColorAt(cx, cy, false);
+                };
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function initCanvas(img) {
+            var maxW = 540;
+            var scale = 1;
+            if (img.width > maxW) {
+                scale = maxW / img.width;
+            }
+            canvas.width = Math.round(img.width * scale);
+            canvas.height = Math.round(img.height * scale);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        }
+
+        function getMousePos(e) {
+            var rect = canvas.getBoundingClientRect();
+            var x = Math.floor((e.clientX - rect.left) * (canvas.width / rect.width));
+            var y = Math.floor((e.clientY - rect.top) * (canvas.height / rect.height));
+            return {
+                x: Math.max(0, Math.min(canvas.width - 1, x)),
+                y: Math.max(0, Math.min(canvas.height - 1, y)),
+                clientX: e.clientX,
+                clientY: e.clientY,
+                rect: rect
+            };
+        }
+
+        canvasWrap.addEventListener('mousemove', function(e) {
+            if (!currentImg) return;
+            var pos = getMousePos(e);
+            updateLoupe(pos);
+        });
+
+        canvasWrap.addEventListener('mouseleave', function() {
+            loupe.style.display = 'none';
+        });
+
+        canvasWrap.addEventListener('click', function(e) {
+            if (!currentImg) return;
+            var pos = getMousePos(e);
+            pickColorAt(pos.x, pos.y, true);
+        });
+
+        function updateLoupe(pos) {
+            loupe.style.display = 'block';
+            var wrapRect = canvasWrap.getBoundingClientRect();
+            var lx = pos.clientX - wrapRect.left + 15;
+            var ly = pos.clientY - wrapRect.top + 15;
+
+            // 边界防出界
+            if (lx + 120 > wrapRect.width) lx = pos.clientX - wrapRect.left - 125;
+            if (ly + 120 > wrapRect.height) ly = pos.clientY - wrapRect.top - 125;
+
+            loupe.style.left = lx + 'px';
+            loupe.style.top = ly + 'px';
+
+            // 渲染局部像素
+            var zoom = 9;
+            var sampleSize = Math.floor(110 / zoom);
+            var sx = pos.x - Math.floor(sampleSize / 2);
+            var sy = pos.y - Math.floor(sampleSize / 2);
+
+            loupeCtx.imageSmoothingEnabled = false;
+            loupeCtx.clearRect(0, 0, 110, 110);
+            loupeCtx.drawImage(canvas, sx, sy, sampleSize, sampleSize, 0, 0, 110, 110);
+        }
+
+        function pickColorAt(x, y, record) {
+            var pixel = ctx.getImageData(x, y, 1, 1).data;
+            var r = pixel[0], g = pixel[1], b = pixel[2];
+            applyColor(r, g, b);
+            if (record) {
+                addToHistory(r, g, b);
+            }
+        }
+
+        function applyColor(r, g, b) {
+            var hex = rgbToHex(r, g, b);
+            var hsl = rgbToHsl(r, g, b);
+            document.getElementById('currentColorBox').style.backgroundColor = hex;
+            document.getElementById('hexVal').innerText = hex;
+            document.getElementById('rgbVal').innerText = 'rgb(' + r + ', ' + g + ', ' + b + ')';
+            document.getElementById('hslVal').innerText = 'hsl(' + hsl.h + ', ' + hsl.s + '%, ' + hsl.l + '%)';
+        }
+
+        function addToHistory(r, g, b) {
+            var hex = rgbToHex(r, g, b);
+            if (colorHistory.indexOf(hex) !== -1) return;
+            colorHistory.unshift(hex);
+            if (colorHistory.length > 14) colorHistory.pop();
+            renderHistory();
+        }
+
+        function renderHistory() {
+            var grid = document.getElementById('historyGrid');
+            grid.innerHTML = '';
+            colorHistory.forEach(function(hex) {
+                var item = document.createElement('div');
+                item.className = 'history-item';
+                item.style.backgroundColor = hex;
+                item.title = hex;
+                item.onclick = function() {
+                    var rgb = hexToRgb(hex);
+                    applyColor(rgb.r, rgb.g, rgb.b);
+                };
+                grid.appendChild(item);
+            });
+        }
+
+        function clearHistory() {
+            colorHistory = [];
+            renderHistory();
+        }
+
+        function extractPalette() {
+            var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+            var map = {};
+            var step = 4 * 6; // 采样步进
+            for (var i = 0; i < imgData.length; i += step) {
+                var a = imgData[i + 3];
+                if (a < 128) continue;
+                // 颜色量化分组
+                var qr = Math.round(imgData[i] / 32) * 32;
+                var qg = Math.round(imgData[i + 1] / 32) * 32;
+                var qb = Math.round(imgData[i + 2] / 32) * 32;
+                qr = Math.min(255, qr);
+                qg = Math.min(255, qg);
+                qb = Math.min(255, qb);
+                var key = qr + ',' + qg + ',' + qb;
+                map[key] = (map[key] || 0) + 1;
+            }
+
+            var sorted = Object.keys(map).sort(function(a, b) {
+                return map[b] - map[a];
+            }).slice(0, 10);
+
+            var paletteGrid = document.getElementById('paletteGrid');
+            paletteGrid.innerHTML = '';
+            sorted.forEach(function(k) {
+                var parts = k.split(',').map(Number);
+                var hex = rgbToHex(parts[0], parts[1], parts[2]);
+                var el = document.createElement('div');
+                el.className = 'palette-item';
+                el.style.backgroundColor = hex;
+                el.title = hex;
+                el.onclick = function() {
+                    applyColor(parts[0], parts[1], parts[2]);
+                    addToHistory(parts[0], parts[1], parts[2]);
+                };
+                paletteGrid.appendChild(el);
+            });
+        }
+
+        function rgbToHex(r, g, b) {
+            return '#' + [r, g, b].map(function(x) {
+                var hex = x.toString(16);
+                return hex.length === 1 ? '0' + hex : hex;
+            }).join('');
+        }
+
+        function hexToRgb(hex) {
+            var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : { r: 0, g: 0, b: 0 };
+        }
+
+        function rgbToHsl(r, g, b) {
+            r /= 255; g /= 255; b /= 255;
+            var max = Math.max(r, g, b), min = Math.min(r, g, b);
+            var h, s, l = (max + min) / 2;
+            if (max === min) {
+                h = s = 0;
+            } else {
+                var d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                }
+                h /= 6;
+            }
+            return {
+                h: Math.round(h * 360),
+                s: Math.round(s * 100),
+                l: Math.round(l * 100)
+            };
+        }
+
+        function copyValue(id) {
+            var text = document.getElementById(id).innerText;
+            navigator.clipboard.writeText(text).then(function() {
+                showToast('已复制: ' + text);
+            }).catch(function() {
+                var ta = document.createElement('textarea');
+                ta.value = text;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                showToast('已复制: ' + text);
+            });
+        }
+
+        function showToast(msg) {
+            var toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.classList.add('show');
+            setTimeout(function() { toast.classList.remove('show'); }, 1800);
+        }
+    </script>
+</body>
+</html>

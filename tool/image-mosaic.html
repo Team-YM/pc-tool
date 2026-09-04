@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>马赛克/高斯模糊</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="免费在线马赛克与局部模糊工具，支持方形马赛克、六边形像素、高斯平滑模糊，支持涂抹笔刷与框选遮蔽。">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="马赛克/高斯模糊 | PC-TOOL">
+    <meta property="og:description" content="在线图片隐私打码、马赛克笔刷、高斯模糊消除敏感信息，离线纯浏览器处理。">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/image-mosaic.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="zh_CN">
+    <style>
+        .container {
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            padding: 12px 18px;
+            margin: 18px 0;
+        }
+
+        .tool-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .tool-btn {
+            padding: 7px 14px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #d4d4d8;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .tool-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+        }
+
+        .tool-btn.active {
+            background: rgba(129, 140, 248, 0.25);
+            border-color: rgba(129, 140, 248, 0.6);
+            color: #c4b5fd;
+        }
+
+        .slider-label {
+            font-size: 13px;
+            color: #a1a1aa;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .slider-label input[type="range"] {
+            width: 90px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            -webkit-appearance: none;
+            cursor: pointer;
+        }
+
+        .slider-label input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: #818cf8;
+        }
+
+        .canvas-area {
+            position: relative;
+            background: repeating-conic-gradient(#1c1c22 0% 25%, #141418 0% 50%) 50% / 16px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            overflow: auto;
+            max-height: 540px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            user-select: none;
+        }
+
+        .canvas-container {
+            position: relative;
+            display: inline-block;
+            max-width: 100%;
+        }
+
+        #imageCanvas {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+
+        #maskCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+        }
+
+        .brush-cursor {
+            position: fixed;
+            border: 1.5px solid rgba(129, 140, 248, 0.8);
+            background: rgba(129, 140, 248, 0.15);
+            border-radius: 50%;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            display: none;
+            z-index: 999;
+        }
+
+        .bottom-actions {
+            display: flex;
+            justify-content: center;
+            gap: 14px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+    <a href="../index.html" class="back-link">← 返回转换工具首页</a>
+
+    <div class="container">
+        <h1>马赛克 / 高斯模糊</h1>
+        <p>给图片敏感信息打码，支持像素马赛克与柔和模糊，支持涂抹笔刷、全图打码与局部矩形遮蔽</p>
+
+        <div class="upload-area" id="uploadArea">
+            <p>点击或拖拽上传需要打码模糊的图片</p>
+            <input type="file" id="fileInput" accept="image/*">
+        </div>
+
+        <div id="editorArea" style="display:none;">
+            <div class="toolbar">
+                <div class="tool-group" id="effectTypeGroup">
+                    <button class="tool-btn active" data-effect="pixel">像素马赛克</button>
+                    <button class="tool-btn" data-effect="blur">高斯平滑模糊</button>
+                </div>
+
+                <div class="tool-group" id="toolTypeGroup">
+                    <button class="tool-btn active" data-tool="brush">涂抹画笔</button>
+                    <button class="tool-btn" data-tool="rect">矩形选框</button>
+                    <button class="tool-btn" id="btnApplyAll">全图模糊</button>
+                    <button class="tool-btn" id="btnUndo">撤销</button>
+                    <button class="tool-btn" id="btnReset">重置原图</button>
+                </div>
+
+                <div class="tool-group">
+                    <div class="slider-label">
+                        笔刷大小
+                        <input type="range" id="brushSizeRange" min="8" max="70" value="25">
+                        <span id="brushSizeVal" style="color:#818cf8;min-width:24px;">25</span>
+                    </div>
+                    <div class="slider-label">
+                        打码强度
+                        <input type="range" id="strengthRange" min="4" max="32" value="12">
+                        <span id="strengthVal" style="color:#818cf8;min-width:24px;">12</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="canvas-area">
+                <div class="canvas-container" id="canvasContainer">
+                    <canvas id="imageCanvas"></canvas>
+                    <canvas id="maskCanvas"></canvas>
+                </div>
+            </div>
+
+            <div class="bottom-actions">
+                <button class="btn" id="downloadBtn" style="background:rgba(129,140,248,0.3);border-color:rgba(129,140,248,0.5);">下载已处理图片</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="brush-cursor" id="brushCursor"></div>
+
+    <script src="common.js"></script>
+    <script>
+        var uploadArea = document.getElementById('uploadArea');
+        var fileInput = document.getElementById('fileInput');
+        var editorArea = document.getElementById('editorArea');
+        var imageCanvas = document.getElementById('imageCanvas');
+        var ctx = imageCanvas.getContext('2d');
+        var maskCanvas = document.getElementById('maskCanvas');
+        var maskCtx = maskCanvas.getContext('2d');
+        var brushCursor = document.getElementById('brushCursor');
+        var brushSizeRange = document.getElementById('brushSizeRange');
+        var brushSizeVal = document.getElementById('brushSizeVal');
+        var strengthRange = document.getElementById('strengthRange');
+        var strengthVal = document.getElementById('strengthVal');
+        var effectTypeGroup = document.getElementById('effectTypeGroup');
+        var toolTypeGroup = document.getElementById('toolTypeGroup');
+        var btnApplyAll = document.getElementById('btnApplyAll');
+        var btnUndo = document.getElementById('btnUndo');
+        var btnReset = document.getElementById('btnReset');
+        var downloadBtn = document.getElementById('downloadBtn');
+
+        var currentEffect = 'pixel'; // 'pixel' or 'blur'
+        var currentTool = 'brush';  // 'brush' or 'rect'
+        var isDrawing = false;
+        var startPos = { x: 0, y: 0 };
+        var brushRadius = 25;
+        var mosaicStrength = 12;
+        var historyList = [];
+        var loadedImage = null;
+
+        uploadArea.addEventListener('click', function() { fileInput.click(); });
+        uploadArea.addEventListener('dragover', function(e) { e.preventDefault(); });
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', function(e) {
+            if (e.target.files.length) handleFile(e.target.files[0]);
+        });
+
+        function handleFile(file) {
+            if (!file || !file.type.startsWith('image/')) return;
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                var img = new Image();
+                img.onload = function() {
+                    loadedImage = img;
+                    var w = img.width;
+                    var h = img.height;
+                    imageCanvas.width = w;
+                    imageCanvas.height = h;
+                    maskCanvas.width = w;
+                    maskCanvas.height = h;
+
+                    ctx.drawImage(img, 0, 0);
+                    maskCtx.clearRect(0, 0, w, h);
+                    historyList = [];
+                    pushHistory();
+                    editorArea.style.display = 'block';
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        effectTypeGroup.addEventListener('click', function(e) {
+            if (e.target.classList.contains('tool-btn')) {
+                effectTypeGroup.querySelectorAll('.tool-btn').forEach(function(b) { b.classList.remove('active'); });
+                e.target.classList.add('active');
+                currentEffect = e.target.getAttribute('data-effect');
+            }
+        });
+
+        toolTypeGroup.addEventListener('click', function(e) {
+            if (e.target.hasAttribute('data-tool')) {
+                toolTypeGroup.querySelectorAll('[data-tool]').forEach(function(b) { b.classList.remove('active'); });
+                e.target.classList.add('active');
+                currentTool = e.target.getAttribute('data-tool');
+                if (currentTool === 'rect') brushCursor.style.display = 'none';
+            }
+        });
+
+        brushSizeRange.addEventListener('input', function() {
+            brushRadius = parseInt(brushSizeRange.value, 10);
+            brushSizeVal.innerText = brushRadius;
+            brushCursor.style.width = brushRadius * 2 + 'px';
+            brushCursor.style.height = brushRadius * 2 + 'px';
+        });
+
+        strengthRange.addEventListener('input', function() {
+            mosaicStrength = parseInt(strengthRange.value, 10);
+            strengthVal.innerText = mosaicStrength;
+        });
+
+        function pushHistory() {
+            var data = ctx.getImageData(0, 0, imageCanvas.width, imageCanvas.height);
+            historyList.push(data);
+            if (historyList.length > 10) historyList.shift();
+        }
+
+        btnUndo.addEventListener('click', function() {
+            if (historyList.length > 1) {
+                historyList.pop();
+                var prev = historyList[historyList.length - 1];
+                ctx.putImageData(prev, 0, 0);
+            }
+        });
+
+        btnReset.addEventListener('click', function() {
+            if (!loadedImage) return;
+            ctx.drawImage(loadedImage, 0, 0);
+            pushHistory();
+        });
+
+        function getPos(e) {
+            var rect = imageCanvas.getBoundingClientRect();
+            var scaleX = imageCanvas.width / rect.width;
+            var scaleY = imageCanvas.height / rect.height;
+            return {
+                x: Math.max(0, Math.min(imageCanvas.width, Math.round((e.clientX - rect.left) * scaleX))),
+                y: Math.max(0, Math.min(imageCanvas.height, Math.round((e.clientY - rect.top) * scaleY)))
+            };
+        }
+
+        maskCanvas.addEventListener('mouseenter', function() {
+            if (currentTool === 'brush') brushCursor.style.display = 'block';
+        });
+        maskCanvas.addEventListener('mouseleave', function() {
+            brushCursor.style.display = 'none';
+            if (isDrawing && currentTool === 'brush') {
+                isDrawing = false;
+                pushHistory();
+            }
+        });
+
+        maskCanvas.addEventListener('mousemove', function(e) {
+            brushCursor.style.left = e.clientX + 'px';
+            brushCursor.style.top = e.clientY + 'px';
+
+            if (!isDrawing) return;
+            var pos = getPos(e);
+
+            if (currentTool === 'brush') {
+                applyEffectAt(pos.x, pos.y, brushRadius);
+            } else if (currentTool === 'rect') {
+                maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
+                maskCtx.strokeStyle = '#818cf8';
+                maskCtx.lineWidth = 2;
+                maskCtx.strokeRect(startPos.x, startPos.y, pos.x - startPos.x, pos.y - startPos.y);
+            }
+        });
+
+        maskCanvas.addEventListener('mousedown', function(e) {
+            isDrawing = true;
+            var pos = getPos(e);
+            startPos = pos;
+            if (currentTool === 'brush') {
+                applyEffectAt(pos.x, pos.y, brushRadius);
+            }
+        });
+
+        window.addEventListener('mouseup', function(e) {
+            if (!isDrawing) return;
+            isDrawing = false;
+
+            if (currentTool === 'rect') {
+                maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
+                var pos = getPos(e);
+                var rx = Math.min(startPos.x, pos.x);
+                var ry = Math.min(startPos.y, pos.y);
+                var rw = Math.abs(pos.x - startPos.x);
+                var rh = Math.abs(pos.y - startPos.y);
+                if (rw > 2 && rh > 2) {
+                    applyEffectRect(rx, ry, rw, rh);
+                    pushHistory();
+                }
+            } else if (currentTool === 'brush') {
+                pushHistory();
+            }
+        });
+
+        function applyEffectAt(cx, cy, radius) {
+            var rx = Math.max(0, cx - radius);
+            var ry = Math.max(0, cy - radius);
+            var rw = Math.min(imageCanvas.width - rx, radius * 2);
+            var rh = Math.min(imageCanvas.height - ry, radius * 2);
+
+            if (currentEffect === 'pixel') {
+                processMosaic(rx, ry, rw, rh, mosaicStrength);
+            } else {
+                processBlur(rx, ry, rw, rh, mosaicStrength);
+            }
+        }
+
+        function applyEffectRect(rx, ry, rw, rh) {
+            if (currentEffect === 'pixel') {
+                processMosaic(rx, ry, rw, rh, mosaicStrength);
+            } else {
+                processBlur(rx, ry, rw, rh, mosaicStrength);
+            }
+        }
+
+        btnApplyAll.addEventListener('click', function() {
+            applyEffectRect(0, 0, imageCanvas.width, imageCanvas.height);
+            pushHistory();
+        });
+
+        function processMosaic(x, y, w, h, blockSize) {
+            var imgData = ctx.getImageData(x, y, w, h);
+            var d = imgData.data;
+
+            for (var by = 0; by < h; by += blockSize) {
+                for (var bx = 0; bx < w; bx += blockSize) {
+                    var rSum = 0, gSum = 0, bSum = 0, count = 0;
+                    var actualW = Math.min(blockSize, w - bx);
+                    var actualH = Math.min(blockSize, h - by);
+
+                    for (var dy = 0; dy < actualH; dy++) {
+                        for (var dx = 0; dx < actualW; dx++) {
+                            var p = ((by + dy) * w + (bx + dx)) * 4;
+                            rSum += d[p];
+                            gSum += d[p + 1];
+                            bSum += d[p + 2];
+                            count++;
+                        }
+                    }
+
+                    var avgR = Math.round(rSum / count);
+                    var avgG = Math.round(gSum / count);
+                    var avgB = Math.round(bSum / count);
+
+                    for (var dy2 = 0; dy2 < actualH; dy2++) {
+                        for (var dx2 = 0; dx2 < actualW; dx2++) {
+                            var p2 = ((by + dy2) * w + (bx + dx2)) * 4;
+                            d[p2] = avgR;
+                            d[p2 + 1] = avgG;
+                            d[p2 + 2] = avgB;
+                        }
+                    }
+                }
+            }
+            ctx.putImageData(imgData, x, y);
+        }
+
+        function processBlur(x, y, w, h, radius) {
+            var subCanvas = document.createElement('canvas');
+            subCanvas.width = w;
+            subCanvas.height = h;
+            var subCtx = subCanvas.getContext('2d');
+            subCtx.drawImage(imageCanvas, x, y, w, h, 0, 0, w, h);
+
+            var tempCanvas = document.createElement('canvas');
+            var downScale = Math.max(2, Math.floor(radius / 2));
+            tempCanvas.width = Math.max(1, Math.round(w / downScale));
+            tempCanvas.height = Math.max(1, Math.round(h / downScale));
+            var tempCtx = tempCanvas.getContext('2d');
+
+            tempCtx.drawImage(subCanvas, 0, 0, tempCanvas.width, tempCanvas.height);
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(tempCanvas, 0, 0, tempCanvas.width, tempCanvas.height, x, y, w, h);
+        }
+
+        downloadBtn.addEventListener('click', function() {
+            var a = document.createElement('a');
+            a.download = 'mosaic_blur.png';
+            a.href = imageCanvas.toDataURL('image/png');
+            a.click();
+        });
+    </script>
+</body>
+</html>

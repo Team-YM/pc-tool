@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>进制转换 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="在线进制转换工具，支持二进制(BIN)、八进制(OCT)、十进制(DEC)、十六进制(HEX)及2~36任意自定义进制实时联动换算。">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .container {
+            max-width: 760px;
+        }
+        .container h1 {
+            color: #e4e4e7;
+            margin-bottom: 8px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .container > p {
+            color: #a1a1aa;
+            font-size: 15px;
+            margin-bottom: 24px;
+        }
+        .radix-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 24px;
+            text-align: left;
+        }
+        .radix-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            transition: all 0.2s;
+        }
+        .radix-card:focus-within {
+            border-color: rgba(129, 140, 248, 0.4);
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .radix-badge {
+            width: 90px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #a5b4fc;
+            flex-shrink: 0;
+        }
+        .radix-input {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 10px 12px;
+            color: #fff;
+            font-size: 15px;
+            font-family: Consolas, Monaco, monospace;
+            outline: none;
+        }
+        .radix-input:focus {
+            border-color: rgba(129, 140, 248, 0.6);
+        }
+        .copy-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #d4d4d8;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .copy-btn:hover {
+            background: rgba(129, 140, 248, 0.2);
+            color: #fff;
+        }
+        .custom-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .custom-select {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #e4e4e7;
+            border-radius: 6px;
+            padding: 4px 8px;
+            outline: none;
+            cursor: pointer;
+        }
+        .clear-bar {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .clear-btn {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            padding: 8px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .clear-btn:hover {
+            background: rgba(239, 68, 68, 0.25);
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+    <a href="../index.html" class="back-link">← 返回首页</a>
+
+    <div class="container">
+        <h1>进制转换</h1>
+        <p>支持 2 / 8 / 10 / 16 进制及 2~36 任意进制双向实时联动转换，支持大整数运算与一键复制。</p>
+
+        <div class="clear-bar">
+            <button class="clear-btn" id="clearAllBtn">清空所有输入</button>
+        </div>
+
+        <div class="radix-list">
+            <div class="radix-card">
+                <div class="radix-badge">二进制 (BIN)</div>
+                <input type="text" class="radix-input" id="radix2" placeholder="输入二进制数字 (0, 1)..." data-base="2">
+                <button class="copy-btn" onclick="copyVal('radix2', this)">复制</button>
+            </div>
+
+            <div class="radix-card">
+                <div class="radix-badge">八进制 (OCT)</div>
+                <input type="text" class="radix-input" id="radix8" placeholder="输入八进制数字 (0~7)..." data-base="8">
+                <button class="copy-btn" onclick="copyVal('radix8', this)">复制</button>
+            </div>
+
+            <div class="radix-card">
+                <div class="radix-badge">十进制 (DEC)</div>
+                <input type="text" class="radix-input" id="radix10" placeholder="输入十进制数字 (0~9)..." data-base="10">
+                <button class="copy-btn" onclick="copyVal('radix10', this)">复制</button>
+            </div>
+
+            <div class="radix-card">
+                <div class="radix-badge">十六进制 (HEX)</div>
+                <input type="text" class="radix-input" id="radix16" placeholder="输入十六进制 (0~9, a~f)..." data-base="16">
+                <button class="copy-btn" onclick="copyVal('radix16', this)">复制</button>
+            </div>
+
+            <div class="radix-card">
+                <div class="radix-badge custom-row">
+                    <select class="custom-select" id="customBase">
+                        <option value="32">32 进制</option>
+                        <option value="36">36 进制</option>
+                        <option value="3">3 进制</option>
+                        <option value="4">4 进制</option>
+                        <option value="5">5 进制</option>
+                        <option value="6">6 进制</option>
+                        <option value="7">7 进制</option>
+                        <option value="9">9 进制</option>
+                        <option value="12">12 进制</option>
+                    </select>
+                </div>
+                <input type="text" class="radix-input" id="radixCustom" placeholder="自定义进制输入..." data-base="32">
+                <button class="copy-btn" onclick="copyVal('radixCustom', this)">复制</button>
+            </div>
+        </div>
+
+        <div class="contact-tip">面向大众，有任何想要的功能或者意见，请联系QQ：<strong>1003294905</strong></div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        const inputs = [
+            document.getElementById('radix2'),
+            document.getElementById('radix8'),
+            document.getElementById('radix10'),
+            document.getElementById('radix16'),
+            document.getElementById('radixCustom')
+        ];
+        const customBase = document.getElementById('customBase');
+        const radixCustom = document.getElementById('radixCustom');
+
+        customBase.onchange = () => {
+            radixCustom.setAttribute('data-base', customBase.value);
+            // 如果十进制有值，按新进制刷新
+            const dVal = document.getElementById('radix10').value.trim();
+            if (dVal) updateFromDec(BigInt(dVal));
+        };
+
+        function parseBigIntRadix(str, base) {
+            str = str.trim().toLowerCase();
+            const digits = '0123456789abcdefghijklmnopqrstuvwxyz';
+            let res = 0n;
+            const b = BigInt(base);
+            for (let char of str) {
+                const index = digits.indexOf(char);
+                if (index === -1 || index >= base) {
+                    throw new Error('非法字符: ' + char);
+                }
+                res = res * b + BigInt(index);
+            }
+            return res;
+        }
+
+        function toBigIntRadix(bigNum, base) {
+            if (bigNum === 0n) return '0';
+            const digits = '0123456789abcdefghijklmnopqrstuvwxyz';
+            const b = BigInt(base);
+            let res = '';
+            let n = bigNum;
+            while (n > 0n) {
+                const rem = Number(n % b);
+                res = digits[rem] + res;
+                n = n / b;
+            }
+            return res;
+        }
+
+        function updateFromDec(bigNum, sourceInput) {
+            inputs.forEach(inp => {
+                if (inp === sourceInput) return;
+                const base = parseInt(inp.getAttribute('data-base'));
+                inp.value = toBigIntRadix(bigNum, base);
+            });
+        }
+
+        inputs.forEach(input => {
+            input.addEventListener('input', () => {
+                const val = input.value.trim();
+                if (!val) {
+                    inputs.forEach(inp => { if (inp !== input) inp.value = ''; });
+                    return;
+                }
+                const base = parseInt(input.getAttribute('data-base'));
+                try {
+                    const bigNum = parseBigIntRadix(val, base);
+                    updateFromDec(bigNum, input);
+                } catch (e) {
+                    // 输入非法字符时不更新其他框
+                }
+            });
+        });
+
+        document.getElementById('clearAllBtn').onclick = () => {
+            inputs.forEach(inp => inp.value = '');
+        };
+
+        function copyVal(id, btn) {
+            const val = document.getElementById(id).value;
+            if (!val) return;
+            navigator.clipboard.writeText(val).then(() => {
+                btn.textContent = '已复制！';
+                setTimeout(() => btn.textContent = '复制', 1500);
+            });
+        }
+    </script>
+</body>
+</html>

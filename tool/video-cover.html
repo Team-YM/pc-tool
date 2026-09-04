@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>视频转壁纸/封面提取</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="免费在线视频转壁纸与高清封面提取工具，支持任意帧精准定位、多比例裁切（16:9电脑壁纸、9:16手机壁纸、4:3、1:1方形封面），支持PNG/JPG/WEBP无损导出。">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="视频转壁纸/封面提取 | PC-TOOL">
+    <meta property="og:description" content="免费在线工具集合——视频转壁纸、图片转换、视频压缩、音频转格式……每一个功能都为效率而生，完全免费，为人民服务！">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/video-cover.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="zh_CN">
+    <style>
+        .container {
+            max-width: 820px;
+        }
+        #videoInput { display: none; }
+
+        .timeline-controls {
+            margin: 16px 0;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            padding: 16px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .timeline-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .timeline-row label {
+            color: #a1a1aa;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .timeline-row input[type="range"] {
+            flex: 1;
+        }
+
+        .time-badge {
+            color: #38bdf8;
+            font-size: 14px;
+            font-weight: bold;
+            min-width: 80px;
+            text-align: right;
+        }
+
+        .aspect-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin: 10px 0;
+        }
+
+        .aspect-btn {
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.04);
+            color: #d4d4d8;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .aspect-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .aspect-btn.active {
+            background: rgba(129, 140, 248, 0.25);
+            border-color: rgba(129, 140, 248, 0.6);
+            color: #c4b5fd;
+            font-weight: bold;
+        }
+
+        .settings-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            color: #a1a1aa;
+            font-size: 13px;
+        }
+
+        .settings-row select,
+        .settings-row input[type="number"] {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #e4e4e7;
+            padding: 5px 10px;
+            border-radius: 6px;
+            outline: none;
+            font-size: 13px;
+        }
+
+        .video-box {
+            position: relative;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            display: none;
+            text-align: center;
+            margin: 14px 0;
+        }
+
+        .video-box video {
+            display: block;
+            max-width: 100%;
+            max-height: 380px;
+            margin: 0 auto;
+        }
+
+        .preview-crop-box {
+            display: none;
+            margin-top: 18px;
+            text-align: center;
+        }
+
+        .preview-crop-box img {
+            max-width: 100%;
+            max-height: 420px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-group {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 14px;
+            flex-wrap: wrap;
+        }
+
+        .step-btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: #d4d4d8;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .step-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+<canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <a href="../index.html" class="back-link">← 返回工具首页</a>
+
+    <div class="container">
+        <h1>视频转壁纸/封面提取</h1>
+        <p>定位视频精彩瞬间，转换为高清桌面壁纸、手机壁纸或特定比例社交媒体封面</p>
+
+        <div class="upload-area" id="uploadArea">
+            <p>点击或拖拽上传视频文件</p>
+            <input type="file" id="videoInput" accept="video/*">
+        </div>
+
+        <div id="videoMeta" style="text-align:center; margin:10px 0; display:none;">
+            <p id="fileName" style="color:#e4e4e7; font-size:14px;"></p>
+            <p id="videoResolution" style="color:#71717a; font-size:13px;"></p>
+        </div>
+
+        <div class="video-box" id="videoBox">
+            <video id="playerVideo" controls playsinline preload="auto"></video>
+        </div>
+
+        <div id="editControls" style="display:none;">
+            <div class="timeline-controls">
+                <div class="timeline-row">
+                    <label>精确定位帧:</label>
+                    <input type="range" id="timeSlider" min="0" max="100" step="0.01" value="0">
+                    <span class="time-badge" id="timeBadge">00:00.00</span>
+                </div>
+                <div class="timeline-row" style="justify-content: center;">
+                    <button class="step-btn" id="prevFrameBtn">-1帧 (微调)</button>
+                    <button class="step-btn" id="prevSecBtn">-1秒</button>
+                    <button class="step-btn" id="nextSecBtn">+1秒</button>
+                    <button class="step-btn" id="nextFrameBtn">+1帧 (微调)</button>
+                </div>
+
+                <div class="timeline-row" style="flex-direction:column; align-items:flex-start; margin-top:8px;">
+                    <label>壁纸/封面比例:</label>
+                    <div class="aspect-buttons">
+                        <button class="aspect-btn active" data-aspect="original">原始比例 (原分辨率)</button>
+                        <button class="aspect-btn" data-aspect="16:9">16:9 电脑桌面壁纸</button>
+                        <button class="aspect-btn" data-aspect="9:16">9:16 手机竖屏壁纸</button>
+                        <button class="aspect-btn" data-aspect="4:3">4:3 经典比例</button>
+                        <button class="aspect-btn" data-aspect="1:1">1:1 方形头像/封面</button>
+                        <button class="aspect-btn" data-aspect="21:9">21:9 带鱼屏超宽壁纸</button>
+                    </div>
+                </div>
+
+                <div class="settings-row">
+                    <div>
+                        <label>导出格式: </label>
+                        <select id="formatSelect">
+                            <option value="png" selected>PNG (无损高质量)</option>
+                            <option value="jpeg">JPG (体积小)</option>
+                            <option value="webp">WEBP (高效现代格式)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label>导出质量: </label>
+                        <select id="qualitySelect">
+                            <option value="1.0" selected>100% 原画最高质量</option>
+                            <option value="0.92">92% 高品质</option>
+                            <option value="0.8">80% 适中</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div style="text-align:center;">
+                <button class="convert-btn" id="captureBtn">截取生成封面壁纸</button>
+                <button class="download-btn" id="downloadBtn">下载壁纸图片</button>
+            </div>
+        </div>
+
+        <div class="preview-crop-box" id="previewCropBox">
+            <h3 style="color:#e4e4e7; margin-bottom:10px;">截取预览</h3>
+            <img id="cropPreviewImg" alt="封面预览">
+            <div class="size-info" id="sizeInfo" style="margin-top:10px;"></div>
+        </div>
+
+        <div class="contact-tip">面向大众，有任何想要的功能或者意见，请联系QQ：<strong>1003294905</strong></div>
+    </div>
+
+    <canvas id="hiddenCanvas" style="display:none;"></canvas>
+
+    <script src="common.js"></script>
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const videoInput = document.getElementById('videoInput');
+        const videoMeta = document.getElementById('videoMeta');
+        const fileName = document.getElementById('fileName');
+        const videoResolution = document.getElementById('videoResolution');
+        const videoBox = document.getElementById('videoBox');
+        const playerVideo = document.getElementById('playerVideo');
+        const editControls = document.getElementById('editControls');
+        const timeSlider = document.getElementById('timeSlider');
+        const timeBadge = document.getElementById('timeBadge');
+        const prevFrameBtn = document.getElementById('prevFrameBtn');
+        const nextFrameBtn = document.getElementById('nextFrameBtn');
+        const prevSecBtn = document.getElementById('prevSecBtn');
+        const nextSecBtn = document.getElementById('nextSecBtn');
+        const aspectButtons = document.querySelectorAll('.aspect-btn');
+        const formatSelect = document.getElementById('formatSelect');
+        const qualitySelect = document.getElementById('qualitySelect');
+        const captureBtn = document.getElementById('captureBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const previewCropBox = document.getElementById('previewCropBox');
+        const cropPreviewImg = document.getElementById('cropPreviewImg');
+        const sizeInfo = document.getElementById('sizeInfo');
+        const hiddenCanvas = document.getElementById('hiddenCanvas');
+        const hCtx = hiddenCanvas.getContext('2d');
+
+        let videoFile = null;
+        let selectedAspect = 'original'; // original | 16:9 | 9:16 | 4:3 | 1:1 | 21:9
+        let capturedBlobUrl = null;
+        let capturedBlob = null;
+
+        uploadArea.onclick = () => videoInput.click();
+        setupDragDrop(uploadArea, (files) => {
+            if (files[0]?.type.startsWith('video/')) handleVideo(files[0]);
+            else showToast('请上传有效的视频文件');
+        });
+        videoInput.onchange = (e) => {
+            if (e.target.files[0]) handleVideo(e.target.files[0]);
+        };
+
+        function formatTimeDisplay(sec) {
+            const m = Math.floor(sec / 60);
+            const s = Math.floor(sec % 60);
+            const ms = Math.floor((sec % 1) * 100);
+            return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}.${ms < 10 ? '0' : ''}${ms}`;
+        }
+
+        function handleVideo(file) {
+            videoFile = file;
+            fileName.textContent = `文件：${file.name} (${formatSize(file.size)})`;
+            videoMeta.style.display = 'block';
+
+            if (playerVideo.src) URL.revokeObjectURL(playerVideo.src);
+            playerVideo.src = URL.createObjectURL(file);
+            videoBox.style.display = 'block';
+            editControls.style.display = 'block';
+            previewCropBox.style.display = 'none';
+            downloadBtn.style.display = 'none';
+
+            playerVideo.onloadedmetadata = () => {
+                const dur = playerVideo.duration;
+                timeSlider.max = dur;
+                timeSlider.value = 0;
+                videoResolution.textContent = `分辨率：${playerVideo.videoWidth} × ${playerVideo.videoHeight} | 总时长：${formatTimeDisplay(dur)}`;
+                timeBadge.textContent = formatTimeDisplay(0);
+            };
+        }
+
+        playerVideo.ontimeupdate = () => {
+            if (!timeSlider.matches(':active')) {
+                timeSlider.value = playerVideo.currentTime;
+                timeBadge.textContent = formatTimeDisplay(playerVideo.currentTime);
+            }
+        };
+
+        timeSlider.oninput = () => {
+            const t = parseFloat(timeSlider.value);
+            playerVideo.currentTime = t;
+            timeBadge.textContent = formatTimeDisplay(t);
+        };
+
+        const frameStep = 1 / 30;
+        prevFrameBtn.onclick = () => {
+            playerVideo.currentTime = Math.max(0, playerVideo.currentTime - frameStep);
+        };
+        nextFrameBtn.onclick = () => {
+            playerVideo.currentTime = Math.min(playerVideo.duration, playerVideo.currentTime + frameStep);
+        };
+        prevSecBtn.onclick = () => {
+            playerVideo.currentTime = Math.max(0, playerVideo.currentTime - 1);
+        };
+        nextSecBtn.onclick = () => {
+            playerVideo.currentTime = Math.min(playerVideo.duration, playerVideo.currentTime + 1);
+        };
+
+        aspectButtons.forEach(btn => {
+            btn.onclick = () => {
+                aspectButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedAspect = btn.dataset.aspect;
+            };
+        });
+
+        captureBtn.onclick = async () => {
+            if (!videoFile) return;
+
+            const vw = playerVideo.videoWidth;
+            const vh = playerVideo.videoHeight;
+            if (!vw || !vh) {
+                showToast('视频元数据未加载完毕');
+                return;
+            }
+
+            let cropW = vw, cropH = vh, cropX = 0, cropY = 0;
+
+            if (selectedAspect !== 'original') {
+                const [targetAspectW, targetAspectH] = selectedAspect.split(':').map(Number);
+                const targetRatio = targetAspectW / targetAspectH;
+                const sourceRatio = vw / vh;
+
+                if (sourceRatio > targetRatio) {
+                    // 原图过宽，裁剪左右
+                    cropH = vh;
+                    cropW = Math.round(vh * targetRatio);
+                    cropX = Math.round((vw - cropW) / 2);
+                    cropY = 0;
+                } else {
+                    // 原图过高，裁剪上下
+                    cropW = vw;
+                    cropH = Math.round(vw / targetRatio);
+                    cropX = 0;
+                    cropY = Math.round((vh - cropH) / 2);
+                }
+            }
+
+            hiddenCanvas.width = cropW;
+            hiddenCanvas.height = cropH;
+
+            hCtx.drawImage(playerVideo, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+
+            const format = formatSelect.value;
+            const quality = parseFloat(qualitySelect.value);
+            const mime = format === 'png' ? 'image/png' : format === 'webp' ? 'image/webp' : 'image/jpeg';
+
+            hiddenCanvas.toBlob((blob) => {
+                if (!blob) return;
+                capturedBlob = blob;
+                if (capturedBlobUrl) URL.revokeObjectURL(capturedBlobUrl);
+                capturedBlobUrl = URL.createObjectURL(blob);
+
+                cropPreviewImg.src = capturedBlobUrl;
+                previewCropBox.style.display = 'block';
+                downloadBtn.style.display = 'inline-block';
+
+                sizeInfo.innerHTML = `截取尺寸：<span class="highlight">${cropW} × ${cropH}</span> (${selectedAspect})<br>` +
+                                     `时间节点：<span class="highlight">${formatTimeDisplay(playerVideo.currentTime)}</span><br>` +
+                                     `图片大小：<span class="highlight">${formatSize(blob.size)}</span> (${format.toUpperCase()})`;
+
+                showToast('壁纸截图生成成功！');
+            }, mime, quality);
+        };
+
+        downloadBtn.onclick = () => {
+            if (!capturedBlobUrl) return;
+            const format = formatSelect.value;
+            const base = (videoFile?.name || 'video').replace(/\.\w+$/, '');
+            const timeStr = formatTimeDisplay(playerVideo.currentTime).replace(/[:.]/g, '-');
+            downloadFile(capturedBlobUrl, `${base}_wallpaper_${selectedAspect.replace(':', 'x')}_${timeStr}.${format}`);
+        };
+    </script>
+</body>
+</html>

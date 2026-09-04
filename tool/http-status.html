@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTTP 状态码查询与详解 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="在线 HTTP 状态码速查与深度解析手册，包含 1xx、2xx、3xx、4xx、5xx 完整状态码含义、场景分析、排错方案与中英双语对照，支持模糊搜索与类别筛选。">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .container {
+            max-width: 860px;
+        }
+
+        .container h1 {
+            color: #e4e4e7;
+            margin-bottom: 8px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .container > p {
+            color: #a1a1aa;
+            font-size: 15px;
+            margin-bottom: 24px;
+        }
+
+        .search-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .search-input {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+            padding: 12px 16px;
+            color: #f4f4f5;
+            font-size: 15px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .search-input:focus {
+            border-color: #818cf8;
+            box-shadow: 0 0 10px rgba(129, 140, 248, 0.2);
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .filter-tab {
+            padding: 7px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            color: #a1a1aa;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-tab:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e4e4e7;
+        }
+
+        .filter-tab.active {
+            background: #818cf8;
+            border-color: #818cf8;
+            color: #ffffff;
+        }
+
+        .status-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            text-align: left;
+            max-height: 560px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .status-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .status-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 3px;
+        }
+
+        .status-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 16px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .status-card:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.16);
+            transform: translateX(2px);
+        }
+
+        .status-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+
+        .status-code-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .badge-code {
+            font-family: monospace;
+            font-size: 16px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 6px;
+        }
+
+        .badge-1xx { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+        .badge-2xx { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .badge-3xx { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .badge-4xx { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .badge-5xx { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); }
+
+        .status-title-cn {
+            font-size: 16px;
+            font-weight: 600;
+            color: #f4f4f5;
+        }
+
+        .status-title-en {
+            font-size: 13px;
+            color: #71717a;
+            font-family: monospace;
+        }
+
+        .status-desc {
+            font-size: 14px;
+            color: #a1a1aa;
+            line-height: 1.6;
+        }
+
+        .status-solution {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px dashed rgba(255, 255, 255, 0.08);
+            font-size: 13px;
+            color: #818cf8;
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+        }
+
+        .empty-hint {
+            text-align: center;
+            color: #71717a;
+            padding: 30px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <a href="../index.html" class="back-link">← 返回</a>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <div class="container">
+        <h1>HTTP 状态码查询与详解</h1>
+        <p>快速检索与查看 RFC 标准定义的 HTTP 响应状态码、中英文释义、典型场景及排错建议。</p>
+
+        <div class="search-row">
+            <input type="text" id="searchInput" class="search-input" placeholder="输入状态码或关键词快速检索 (如 404、502、未授权、重定向)..." autofocus>
+        </div>
+
+        <div class="filter-tabs" id="filterTabs">
+            <button class="filter-tab active" data-type="all">全部 (All)</button>
+            <button class="filter-tab" data-type="1">1xx 信息响应</button>
+            <button class="filter-tab" data-type="2">2xx 成功状态</button>
+            <button class="filter-tab" data-type="3">3xx 重定向</button>
+            <button class="filter-tab" data-type="4">4xx 客户端错误</button>
+            <button class="filter-tab" data-type="5">5xx 服务端错误</button>
+        </div>
+
+        <div class="status-list" id="statusList">
+            <!-- 动态渲染 -->
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        const statusData = [
+            // 1xx
+            { code: 100, en: "Continue", cn: "继续请求", desc: "客户端应继续其请求。服务器已收到初始部分，正在等待其余部分。", fix: "通常在客户端包含 Expect: 100-continue 请求头时由服务器响应。" },
+            { code: 101, en: "Switching Protocols", cn: "切换协议", desc: "服务器已理解客户端切换协议的请求，将通过新协议通信。", fix: "常见于 HTTP 升级为 WebSocket (ws:// 或 wss://) 连接握手。" },
+            { code: 102, en: "Processing", cn: "处理中", desc: "WebDAV 扩展。服务器已收到并正在处理请求，但尚未有响应可用。", fix: "防止客户端超时，服务端在执行耗时操作时的阶段性回执。" },
+
+            // 2xx
+            { code: 200, en: "OK", cn: "请求成功", desc: "标准成功响应。请求所期望的内容已在响应主体中返回。", fix: "业务正常，无需额外处理。" },
+            { code: 201, en: "Created", cn: "已创建", desc: "请求已成功实现，而且有一个新的资源已依据请求的需要而建立。", fix: "常用于 POST/PUT 请求新建资源成功，Location 头通常包含新资源 URL。" },
+            { code: 202, en: "Accepted", cn: "已接受", desc: "服务器已接受请求，但尚未处理完成，不保证最终一定执行成功。", fix: "常见于异步任务队列、长时间批处理操作。" },
+            { code: 204, en: "No Content", cn: "无内容", desc: "服务器成功处理了请求，但不需要返回任何实体内容。", fix: "常用于 DELETE 操作或仅需要更新页面状态而无需刷新视图的场景。" },
+            { code: 206, en: "Partial Content", cn: "部分内容", desc: "服务器已成功处理了部分 GET 请求，支持断点续传。", fix: "由客户端 Range 头触发，常用于大文件下载、音视频播放流播放。" },
+
+            // 3xx
+            { code: 301, en: "Moved Permanently", cn: "永久重定向", desc: "请求的资源已被永久移动到新位置，搜索引擎会传递权重。", fix: "客户端及爬虫应更新到响应头 Location 指定的新 URL。" },
+            { code: 302, en: "Found (Moved Temporarily)", cn: "临时重定向", desc: "资源临时从不同的 URI 响应请求，未来应继续使用原 URI。", fix: "常用于未登录跳转登录页、活动临时页面等。" },
+            { code: 304, en: "Not Modified", cn: "未修改 (命中协商缓存)", desc: "资源未改变，客户端可继续使用其本地缓存的副本。", fix: "配合 If-Modified-Since 或 If-None-Match (ETag) 实现 Web 加速，节省带宽。" },
+            { code: 307, en: "Temporary Redirect", cn: "临时重定向 (保持方法)", desc: "临时重定向，但要求客户端在重定向时不改变原有 HTTP 请求方法 (如 POST 仍保持 POST)。", fix: "严格遵循规范的 302 替代者，确保请求方式不被降级为 GET。" },
+            { code: 308, en: "Permanent Redirect", cn: "永久重定向 (保持方法)", desc: "永久重定向，并严格要求客户端在重定向时不改变 HTTP 请求方法。", fix: "严格遵循规范的 301 替代者，现代 API 常推荐使用 308。" },
+
+            // 4xx
+            { code: 400, en: "Bad Request", cn: "错误请求 (语法错误/参数非法)", desc: "由于明显的客户端错误 (如格式错误的请求语法、无效参数)，服务器无法理解。", fix: "排查前端提交的 JSON 格式、必填字段、Query 参数拼写或数据类型。" },
+            { code: 401, en: "Unauthorized", cn: "未授权 (需要身份认证)", desc: "当前请求需要用户验证，通常缺少 Authorization 头或 Token 已失效过期。", fix: "检查请求头中是否携带 Bearer Token / Cookie，或重新引导用户登录。" },
+            { code: 403, en: "Forbidden", cn: "禁止访问 (无权限)", desc: "服务器理解请求客户端的身份，但拒绝授权访问该资源。", fix: "账号权限不足、IP 受到防火墙拉黑或防盗链拦截限制，无需重新登录。" },
+            { code: 404, en: "Not Found", cn: "未找到资源", desc: "服务器无法根据请求的 URI 找到对应的资源。", fix: "检查请求路径拼写是否正确、路由配置或服务端静态文件是否存在。" },
+            { code: 405, en: "Method Not Allowed", cn: "方法禁用", desc: "请求中使用的 HTTP 方法 (如 GET/POST/DELETE) 不被该接口支持。", fix: "检查接口文档，确认该 URL 支持的具体方法 (查看 Allow 响应头)。" },
+            { code: 408, en: "Request Timeout", cn: "请求超时", desc: "服务器等待客户端发送请求的时间过长，已关闭连接。", fix: "检查客户端网络上行延迟、发送大文件的分块上传逻辑。" },
+            { code: 409, en: "Conflict", cn: "资源冲突", desc: "请求与服务器的当前状态冲突，常见于并发编辑或重复主键提交。", fix: "刷新最新数据后重试，或检查唯一性约束字段。" },
+            { code: 413, en: "Payload Too Large", cn: "请求体过大", desc: "请求提交的实体数据超出了服务器愿意或能够处理的限制。", fix: "在 Nginx 中调大 client_max_body_size，或对前端上传图片/文件进行压缩分片。" },
+            { code: 414, en: "URI Too Long", cn: "请求 URI 过长", desc: "客户端请求的 URL 长度超过了服务器可解析的上限。", fix: "避免在 GET 请求 URL 拼接超长参数，建议改为 POST 请求在 Body 中提交。" },
+            { code: 415, en: "Unsupported Media Type", cn: "不支持的媒体类型", desc: "服务器无法处理请求附带的媒体格式。", fix: "检查 Content-Type 头，如应当使用 application/json 还是 multipart/form-data。" },
+            { code: 429, en: "Too Many Requests", cn: "请求过多 (触发限流)", desc: "用户在给定的时间内发送了过多的请求 (Rate Limit)。", fix: "降频请求、增加退避重试机制，或者查看 Retry-After 响应头等待后恢复。" },
+
+            // 5xx
+            { code: 500, en: "Internal Server Error", cn: "服务器内部错误", desc: "服务器遇到了不知道如何处理的情况，通常是后端业务代码崩溃报错。", fix: "查看后端服务异常日志、数据库连接、空指针或未捕获的未处理异常。" },
+            { code: 501, en: "Not Implemented", cn: "尚未实现", desc: "此请求方法不被服务器支持且无法处理 (服务器缺少处理功能)。", fix: "通常表明服务器缺少支持该 HTTP 特性的能力模块。" },
+            { code: 502, en: "Bad Gateway", cn: "网关错误", desc: "作为网关或反向代理的服务器 (如 Nginx) 从上游服务收到了无效响应。", fix: "检查上游应用服务 (如 Node/Java/Python/PHP-FPM) 是否崩溃宕机或端口配置错误。" },
+            { code: 503, en: "Service Unavailable", cn: "服务不可用", desc: "服务器目前无法使用 (由于超载或停机维护)。通常是临时的状态。", fix: "检查服务 CPU/内存占用率、微服务高可用熔断策略，等待维护结束。" },
+            { code: 504, en: "Gateway Timeout", cn: "网关超时", desc: "作为网关或代理的服务器未能及时从上游服务器收到响应。", fix: "排查后端慢查询、耗时死锁操作，调大 Nginx 的 proxy_read_timeout 阈值。" },
+            { code: 505, en: "HTTP Version Not Supported", cn: "HTTP 版本不受支持", desc: "服务器不支持请求中所使用的 HTTP 协议版本。", fix: "客户端改用通用的 HTTP/1.1 或确认服务端是否开启 HTTP/2 支持。" }
+        ];
+
+        const searchInput = document.getElementById('searchInput');
+        const filterTabs = document.getElementById('filterTabs');
+        const statusList = document.getElementById('statusList');
+
+        let currentFilter = 'all';
+
+        function getBadgeClass(code) {
+            const first = Math.floor(code / 100);
+            return `badge-${first}xx`;
+        }
+
+        function renderList() {
+            const query = searchInput.value.trim().toLowerCase();
+            const filtered = statusData.filter(item => {
+                // 分类筛选
+                if (currentFilter !== 'all') {
+                    const first = Math.floor(item.code / 100).toString();
+                    if (first !== currentFilter) return false;
+                }
+
+                // 搜索过滤
+                if (!query) return true;
+                const matchCode = item.code.toString().includes(query);
+                const matchEn = item.en.toLowerCase().includes(query);
+                const matchCn = item.cn.toLowerCase().includes(query);
+                const matchDesc = item.desc.toLowerCase().includes(query);
+                return matchCode || matchEn || matchCn || matchDesc;
+            });
+
+            if (filtered.length === 0) {
+                statusList.innerHTML = `<div class="empty-hint">未找到与 "${query}" 相关的 HTTP 状态码，请尝试其他关键词。</div>`;
+                return;
+            }
+
+            statusList.innerHTML = filtered.map(item => `
+                <div class="status-card" data-code="${item.code}">
+                    <div class="status-card-header">
+                        <div class="status-code-wrap">
+                            <span class="badge-code ${getBadgeClass(item.code)}">${item.code}</span>
+                            <span class="status-title-cn">${item.cn}</span>
+                        </div>
+                        <span class="status-title-en">${item.en}</span>
+                    </div>
+                    <div class="status-desc">${item.desc}</div>
+                    <div class="status-solution">
+                        <span>💡 排错方案 / 场景：</span>
+                        <span>${item.fix}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        filterTabs.addEventListener('click', (e) => {
+            const tab = e.target.closest('.filter-tab');
+            if (!tab) return;
+            filterTabs.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
+            tab.classList.add('active');
+            currentFilter = tab.dataset.type;
+            renderList();
+        });
+
+        searchInput.addEventListener('input', renderList);
+
+        // 初始渲染全部状态码
+        renderList();
+    </script>
+</body>
+</html>

@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User-Agent 解析与检测 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="在线 User-Agent (UA) 解析与浏览器特征检测工具，快速分析客户端操作系统、浏览器内核、设备型号、微信/爬虫识别，纯本地解析。">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .container {
+            max-width: 820px;
+        }
+
+        .container h1 {
+            color: #e4e4e7;
+            margin-bottom: 8px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .container > p {
+            color: #a1a1aa;
+            font-size: 15px;
+            margin-bottom: 24px;
+        }
+
+        .current-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(129, 140, 248, 0.15);
+            border: 1px solid rgba(129, 140, 248, 0.3);
+            color: #a5b4fc;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            margin-bottom: 16px;
+        }
+
+        .ua-box {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .ua-textarea {
+            width: 100%;
+            height: 100px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+            padding: 12px 16px;
+            color: #f4f4f5;
+            font-size: 14px;
+            font-family: Consolas, Monaco, monospace;
+            outline: none;
+            resize: vertical;
+            transition: all 0.2s;
+            line-height: 1.5;
+        }
+
+        .ua-textarea:focus {
+            border-color: #818cf8;
+            box-shadow: 0 0 10px rgba(129, 140, 248, 0.2);
+        }
+
+        .action-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .btn-action {
+            padding: 9px 18px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.06);
+            color: #e4e4e7;
+        }
+
+        .btn-action:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+            transform: translateY(-1px);
+        }
+
+        .btn-primary {
+            background: #818cf8;
+            border-color: #818cf8;
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .btn-primary:hover {
+            background: #6366f1;
+            border-color: #6366f1;
+        }
+
+        /* 预设测试标签 */
+        .sample-tags {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            font-size: 13px;
+            color: #71717a;
+            text-align: left;
+        }
+
+        .tag-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #a1a1aa;
+            padding: 3px 9px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tag-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #e4e4e7;
+        }
+
+        /* 结果展示卡片 */
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .info-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 16px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #a1a1aa;
+            margin-bottom: 8px;
+        }
+
+        .card-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #f4f4f5;
+            word-break: break-word;
+        }
+
+        .card-sub {
+            font-size: 13px;
+            color: #71717a;
+            margin-top: 4px;
+        }
+
+        .raw-table-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 18px;
+            text-align: left;
+        }
+
+        .raw-table-card h3 {
+            font-size: 15px;
+            color: #e4e4e7;
+            margin-bottom: 12px;
+        }
+
+        .prop-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 13px;
+        }
+
+        .prop-row:last-child {
+            border-bottom: none;
+        }
+
+        .prop-label {
+            color: #a1a1aa;
+        }
+
+        .prop-val {
+            color: #f4f4f5;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <a href="../index.html" class="back-link">← 返回</a>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <div class="container">
+        <div class="current-badge">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
+            客户端环境已实时捕获
+        </div>
+
+        <h1>User-Agent 解析与检测</h1>
+        <p>精准解析客户端与各种浏览器的 User-Agent 字符串，快速识别系统版本、浏览器内核、设备品牌与特殊环境应用。</p>
+
+        <div class="ua-box">
+            <textarea id="uaInput" class="ua-textarea" placeholder="输入要解析的 User-Agent 字符串..."></textarea>
+        </div>
+
+        <div class="action-bar">
+            <button class="btn-action btn-primary" id="parseBtn">立即解析</button>
+            <button class="btn-action" id="currentUaBtn">读取当前设备 UA</button>
+            <button class="btn-action" id="copyUaBtn">复制 UA 文本</button>
+            <button class="btn-action" id="clearBtn">清空</button>
+        </div>
+
+        <div class="sample-tags">
+            <span>常用示例：</span>
+            <button class="tag-btn" data-ua="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36">Win10 Chrome</button>
+            <button class="tag-btn" data-ua="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15">Mac Safari</button>
+            <button class="tag-btn" data-ua="Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.49 NetType/WIFI Language/zh_CN">iPhone 微信</button>
+            <button class="tag-btn" data-ua="Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.6478.122 Mobile Safari/537.36">Android 三星</button>
+            <button class="tag-btn" data-ua="Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)">Google 爬虫</button>
+            <button class="tag-btn" data-ua="Mozilla/5.0 (compatible; Baiduspider/2.0; +http://www.baidu.com/search/spider.html)">百度 爬虫</button>
+        </div>
+
+        <div class="result-grid">
+            <div class="info-card">
+                <div class="card-header">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="4.93" y1="4.93" x2="9.17" y2="9.17"/><line x1="14.83" y1="14.83" x2="19.07" y2="19.07"/><line x1="14.83" y1="9.17" x2="19.07" y2="4.93"/><line x1="14.83" y1="9.17" x2="18.36" y2="5.64"/><line x1="4.93" y1="19.07" x2="9.17" y2="14.83"/></svg>
+                    浏览器名称与版本
+                </div>
+                <div class="card-value" id="browserVal">-</div>
+                <div class="card-sub" id="browserSub">-</div>
+            </div>
+
+            <div class="info-card">
+                <div class="card-header">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                    操作系统 (OS)
+                </div>
+                <div class="card-value" id="osVal">-</div>
+                <div class="card-sub" id="osSub">-</div>
+            </div>
+
+            <div class="info-card">
+                <div class="card-header">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fb923c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                    设备类型与型号
+                </div>
+                <div class="card-value" id="deviceVal">-</div>
+                <div class="card-sub" id="deviceSub">-</div>
+            </div>
+
+            <div class="info-card">
+                <div class="card-header">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+                    渲染排版引擎
+                </div>
+                <div class="card-value" id="engineVal">-</div>
+                <div class="card-sub" id="engineSub">-</div>
+            </div>
+        </div>
+
+        <div class="raw-table-card">
+            <h3>检测属性详情</h3>
+            <div class="prop-row">
+                <span class="prop-label">运行架构 / 位数</span>
+                <span class="prop-val" id="archVal">-</span>
+            </div>
+            <div class="prop-row">
+                <span class="prop-label">特殊应用 (微信 / QQ / 钉钉等)</span>
+                <span class="prop-val" id="appVal">-</span>
+            </div>
+            <div class="prop-row">
+                <span class="prop-label">爬虫 / 机器人识别</span>
+                <span class="prop-val" id="botVal">-</span>
+            </div>
+            <div class="prop-row">
+                <span class="prop-label">屏幕分辨率 (当前设备)</span>
+                <span class="prop-val" id="screenVal">-</span>
+            </div>
+            <div class="prop-row">
+                <span class="prop-label">系统语言环境</span>
+                <span class="prop-val" id="langVal">-</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        const uaInput = document.getElementById('uaInput');
+        const parseBtn = document.getElementById('parseBtn');
+        const currentUaBtn = document.getElementById('currentUaBtn');
+        const copyUaBtn = document.getElementById('copyUaBtn');
+        const clearBtn = document.getElementById('clearBtn');
+
+        const browserVal = document.getElementById('browserVal');
+        const browserSub = document.getElementById('browserSub');
+        const osVal = document.getElementById('osVal');
+        const osSub = document.getElementById('osSub');
+        const deviceVal = document.getElementById('deviceVal');
+        const deviceSub = document.getElementById('deviceSub');
+        const engineVal = document.getElementById('engineVal');
+        const engineSub = document.getElementById('engineSub');
+
+        const archVal = document.getElementById('archVal');
+        const appVal = document.getElementById('appVal');
+        const botVal = document.getElementById('botVal');
+        const screenVal = document.getElementById('screenVal');
+        const langVal = document.getElementById('langVal');
+
+        function parseUA(ua) {
+            if (!ua) ua = '';
+
+            // 1. 爬虫检测
+            let isBot = false;
+            let botName = '否 (普通访问客户端)';
+            const botRegex = /(Googlebot|Baiduspider|bingbot|YandexBot|Sogou|360Spider|Bytespider|DuckDuckBot|facebookexternalhit|Twitterbot|Applebot)/i;
+            const botMatch = ua.match(botRegex);
+            if (botMatch) {
+                isBot = true;
+                botName = `搜索引擎爬虫 (${botMatch[1]})`;
+            }
+
+            // 2. 特殊应用/内置环境
+            let appName = '无 (独立浏览器)';
+            if (/MicroMessenger\/([0-9.]+)/i.test(ua)) {
+                appName = '微信内置浏览器 (WeChat ' + RegExp.$1 + ')';
+            } else if (/QQ\/([0-9.]+)/i.test(ua)) {
+                appName = '手机QQ内置 (QQ ' + RegExp.$1 + ')';
+            } else if (/DingTalk\/([0-9.]+)/i.test(ua)) {
+                appName = '钉钉客户端 (DingTalk ' + RegExp.$1 + ')';
+            } else if (/AlipayClient\/([0-9.]+)/i.test(ua)) {
+                appName = '支付宝客户端 (Alipay ' + RegExp.$1 + ')';
+            } else if (/Weibo/i.test(ua)) {
+                appName = '微博内置浏览器';
+            }
+
+            // 3. 操作系统识别
+            let os = '未知操作系统';
+            let osVer = '';
+            if (/Windows NT 10\.0/i.test(ua)) {
+                os = 'Windows 10 / 11';
+            } else if (/Windows NT 6\.3/i.test(ua)) {
+                os = 'Windows 8.1';
+            } else if (/Windows NT 6\.2/i.test(ua)) {
+                os = 'Windows 8';
+            } else if (/Windows NT 6\.1/i.test(ua)) {
+                os = 'Windows 7';
+            } else if (/Windows NT 6\.0/i.test(ua)) {
+                os = 'Windows Vista';
+            } else if (/Windows NT 5\.1/i.test(ua)) {
+                os = 'Windows XP';
+            } else if (/Mac OS X ([0-9_]+)/i.test(ua)) {
+                os = 'macOS';
+                osVer = RegExp.$1.replace(/_/g, '.');
+            } else if (/iPhone OS ([0-9_]+)/i.test(ua)) {
+                os = 'iOS (iPhone)';
+                osVer = RegExp.$1.replace(/_/g, '.');
+            } else if (/iPad.*OS ([0-9_]+)/i.test(ua)) {
+                os = 'iPadOS';
+                osVer = RegExp.$1.replace(/_/g, '.');
+            } else if (/Android ([0-9.]+)/i.test(ua)) {
+                os = 'Android';
+                osVer = RegExp.$1;
+            } else if (/Ubuntu/i.test(ua)) {
+                os = 'Ubuntu Linux';
+            } else if (/Linux/i.test(ua)) {
+                os = 'GNU/Linux';
+            } else if (/CrOS/i.test(ua)) {
+                os = 'Chrome OS';
+            }
+
+            // 4. 架构
+            let arch = '32-bit / 未标明';
+            if (/x86_64|x64|Win64|WOW64|AMD64/i.test(ua)) {
+                arch = '64-bit (x86_64 / x64)';
+            } else if (/arm64|aarch64/i.test(ua)) {
+                arch = '64-bit (ARM64)';
+            } else if (/armv/i.test(ua)) {
+                arch = '32-bit (ARM)';
+            }
+
+            // 5. 设备类型
+            let deviceType = '桌面端 (PC/Laptop)';
+            let deviceDetail = '常规桌面电脑环境';
+            if (/iPhone/i.test(ua)) {
+                deviceType = '移动端 (iPhone)';
+                deviceDetail = 'Apple iOS 设备';
+            } else if (/iPad/i.test(ua)) {
+                deviceType = '平板 (iPad)';
+                deviceDetail = 'Apple 平板设备';
+            } else if (/Android/i.test(ua)) {
+                if (/Mobile/i.test(ua)) {
+                    deviceType = '移动端 (Android 智能手机)';
+                } else {
+                    deviceType = '平板 (Android 平板)';
+                }
+                const m = ua.match(/Android[^;]+;\s*([^;)]+)\s*\)/);
+                if (m && m[1]) deviceDetail = '型号: ' + m[1].replace(/Build\/.*/, '').trim();
+            }
+
+            // 6. 浏览器内核渲染引擎
+            let engine = '未知引擎';
+            let engineVer = '';
+            if (/AppleWebKit\/([0-9.]+)/i.test(ua)) {
+                engine = 'WebKit / Blink';
+                engineVer = RegExp.$1;
+            } else if (/Gecko\/([0-9.]+)/i.test(ua)) {
+                engine = 'Gecko';
+                engineVer = RegExp.$1;
+            } else if (/Trident\/([0-9.]+)/i.test(ua)) {
+                engine = 'Trident';
+                engineVer = RegExp.$1;
+            } else if (/Presto\/([0-9.]+)/i.test(ua)) {
+                engine = 'Presto';
+                engineVer = RegExp.$1;
+            }
+
+            // 7. 浏览器品牌识别
+            let browser = '未知浏览器';
+            let browserVer = '';
+            if (/Edg\/([0-9.]+)/i.test(ua)) {
+                browser = 'Microsoft Edge';
+                browserVer = RegExp.$1;
+            } else if (/OPR\/([0-9.]+)/i.test(ua)) {
+                browser = 'Opera';
+                browserVer = RegExp.$1;
+            } else if (/Chrome\/([0-9.]+)/i.test(ua)) {
+                browser = 'Google Chrome';
+                browserVer = RegExp.$1;
+            } else if (/Firefox\/([0-9.]+)/i.test(ua)) {
+                browser = 'Mozilla Firefox';
+                browserVer = RegExp.$1;
+            } else if (/Version\/([0-9.]+).*Safari/i.test(ua)) {
+                browser = 'Apple Safari';
+                browserVer = RegExp.$1;
+            } else if (/MSIE ([0-9.]+)/i.test(ua) || /Trident\/.*rv:([0-9.]+)/i.test(ua)) {
+                browser = 'Internet Explorer';
+                browserVer = RegExp.$1;
+            }
+
+            return {
+                browser,
+                browserVer,
+                os,
+                osVer,
+                deviceType,
+                deviceDetail,
+                engine,
+                engineVer,
+                arch,
+                appName,
+                botName
+            };
+        }
+
+        function renderResult() {
+            const raw = uaInput.value.trim();
+            const res = parseUA(raw);
+
+            browserVal.textContent = res.browser;
+            browserSub.textContent = res.browserVer ? ('版本号: ' + res.browserVer) : '未检测到确切版本';
+
+            osVal.textContent = res.os;
+            osSub.textContent = res.osVer ? ('内核/发布版本: ' + res.osVer) : '标准发行版';
+
+            deviceVal.textContent = res.deviceType;
+            deviceSub.textContent = res.deviceDetail;
+
+            engineVal.textContent = res.engine;
+            engineSub.textContent = res.engineVer ? ('Engine Ver: ' + res.engineVer) : '标准渲染器';
+
+            archVal.textContent = res.arch;
+            appVal.textContent = res.appName;
+            botVal.textContent = res.botName;
+
+            screenVal.textContent = `${window.screen.width} × ${window.screen.height} (色彩深度: ${window.screen.colorDepth}位)`;
+            langVal.textContent = navigator.languages ? navigator.languages.join(', ') : (navigator.language || '未知');
+        }
+
+        function loadCurrentUA() {
+            uaInput.value = navigator.userAgent;
+            renderResult();
+        }
+
+        parseBtn.addEventListener('click', renderResult);
+        uaInput.addEventListener('input', renderResult);
+        currentUaBtn.addEventListener('click', loadCurrentUA);
+
+        copyUaBtn.addEventListener('click', () => {
+            const text = uaInput.value;
+            if (!text) return;
+            navigator.clipboard.writeText(text).then(() => {
+                const prev = copyUaBtn.textContent;
+                copyUaBtn.textContent = '已复制!';
+                setTimeout(() => { copyUaBtn.textContent = prev; }, 1800);
+            });
+        });
+
+        clearBtn.addEventListener('click', () => {
+            uaInput.value = '';
+            renderResult();
+            uaInput.focus();
+        });
+
+        document.querySelectorAll('.tag-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                uaInput.value = btn.dataset.ua;
+                renderResult();
+            });
+        });
+
+        // 初始化载入本机 UA
+        loadCurrentUA();
+    </script>
+</body>
+</html>

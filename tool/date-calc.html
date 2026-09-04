@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日期时间计算器 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="在线日期时间计算器，支持计算两个日期间隔天数/周数/月数/工作日，日期前后推算，倒计时天数计算等功能。">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .container {
+            max-width: 780px;
+        }
+        .container h1 {
+            color: #e4e4e7;
+            margin-bottom: 8px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .container > p {
+            color: #a1a1aa;
+            font-size: 15px;
+            margin-bottom: 24px;
+        }
+        .tab-nav {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #a1a1aa;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tab-btn:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.08);
+        }
+        .tab-btn.active {
+            background: rgba(129, 140, 248, 0.15);
+            border-color: rgba(129, 140, 248, 0.4);
+            color: #818cf8;
+            font-weight: 600;
+        }
+        .calc-panel {
+            display: none;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 12px;
+            padding: 24px;
+            animation: fadeIn 0.3s ease;
+        }
+        .calc-panel.active {
+            display: block;
+        }
+        .form-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .form-label {
+            width: 90px;
+            font-size: 14px;
+            color: #d4d4d8;
+        }
+        .input-styled {
+            flex: 1;
+            min-width: 180px;
+            padding: 10px 14px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+        }
+        .input-styled:focus {
+            border-color: rgba(129, 140, 248, 0.5);
+        }
+        .select-styled {
+            padding: 10px 14px;
+            background: rgba(24, 24, 27, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+            cursor: pointer;
+        }
+        .action-btn {
+            padding: 10px 22px;
+            background: #818cf8;
+            border: none;
+            color: white;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .action-btn:hover {
+            background: #6366f1;
+        }
+        .btn-today {
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #e4e4e7;
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-today:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+        .result-box {
+            margin-top: 20px;
+            padding: 18px;
+            background: rgba(129, 140, 248, 0.08);
+            border: 1px solid rgba(129, 140, 248, 0.2);
+            border-radius: 10px;
+            line-height: 1.8;
+        }
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            color: #a1a1aa;
+            padding: 4px 0;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
+        }
+        .result-item:last-child {
+            border-bottom: none;
+        }
+        .result-val {
+            color: #34d399;
+            font-size: 16px;
+            font-weight: 600;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+    <a href="../index.html" class="back-link">← 返回首页</a>
+
+    <div class="container">
+        <h1>日期时间计算器</h1>
+        <p>提供日期间隔计算、日期推算增减、倒数日/纪念日计算等多功能时间计算方案。</p>
+
+        <div class="tab-nav">
+            <button class="tab-btn active" data-tab="tab-diff">日期间隔计算</button>
+            <button class="tab-btn" data-tab="tab-add">日期前后推算</button>
+            <button class="tab-btn" data-tab="tab-countdown">重要日倒数</button>
+        </div>
+
+        <!-- 面板1: 日期间隔 -->
+        <div class="calc-panel active" id="tab-diff">
+            <div class="form-row">
+                <span class="form-label">开始日期：</span>
+                <input type="date" class="input-styled" id="diffStart">
+                <button class="btn-today" onclick="setToday('diffStart')">今天</button>
+            </div>
+            <div class="form-row">
+                <span class="form-label">结束日期：</span>
+                <input type="date" class="input-styled" id="diffEnd">
+                <button class="btn-today" onclick="setToday('diffEnd')">今天</button>
+            </div>
+            <div class="form-row" style="margin-top: 20px;">
+                <button class="action-btn" onclick="calcDiff()">计算间隔</button>
+            </div>
+
+            <div class="result-box" id="diffResult" style="display:none;">
+                <div class="result-item">
+                    <span>相差总天数：</span>
+                    <span class="result-val" id="resTotalDays">0 天</span>
+                </div>
+                <div class="result-item">
+                    <span>相当于：</span>
+                    <span class="result-val" id="resFormatYMD">0 年 0 月 0 天</span>
+                </div>
+                <div class="result-item">
+                    <span>相差周数：</span>
+                    <span class="result-val" id="resWeeks">0 周</span>
+                </div>
+                <div class="result-item">
+                    <span>包含工作日（周一至周五）：</span>
+                    <span class="result-val" id="resWorkdays">0 天</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 面板2: 日期推算 -->
+        <div class="calc-panel" id="tab-add">
+            <div class="form-row">
+                <span class="form-label">基准日期：</span>
+                <input type="date" class="input-styled" id="addBaseDate">
+                <button class="btn-today" onclick="setToday('addBaseDate')">今天</button>
+            </div>
+            <div class="form-row">
+                <span class="form-label">推算方式：</span>
+                <select class="select-styled" id="addOp">
+                    <option value="add">往后加 (未来)</option>
+                    <option value="sub">往前减 (过去)</option>
+                </select>
+                <input type="number" class="input-styled" id="addAmount" placeholder="天数" min="1" value="30" style="max-width: 140px;">
+                <select class="select-styled" id="addUnit">
+                    <option value="days">天</option>
+                    <option value="weeks">周</option>
+                    <option value="months">月</option>
+                    <option value="years">年</option>
+                </select>
+            </div>
+            <div class="form-row" style="margin-top: 20px;">
+                <button class="action-btn" onclick="calcAdd()">开始推算</button>
+            </div>
+
+            <div class="result-box" id="addResult" style="display:none;">
+                <div class="result-item">
+                    <span>目标推算日期：</span>
+                    <span class="result-val" id="resAddDate">-</span>
+                </div>
+                <div class="result-item">
+                    <span>星期几：</span>
+                    <span class="result-val" id="resAddWeekDay">-</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 面板3: 倒计时/纪念日 -->
+        <div class="calc-panel" id="tab-countdown">
+            <div class="form-row">
+                <span class="form-label">事件名称：</span>
+                <input type="text" class="input-styled" id="eventName" placeholder="例如：元旦、生日、发薪日" value="目标日">
+            </div>
+            <div class="form-row">
+                <span class="form-label">目标日期：</span>
+                <input type="date" class="input-styled" id="targetDate">
+            </div>
+            <div class="form-row" style="margin-top: 20px;">
+                <button class="action-btn" onclick="calcCountdown()">计算倒数日</button>
+            </div>
+
+            <div class="result-box" id="countResult" style="display:none;">
+                <div class="result-item">
+                    <span id="resCountLabel">距离目标日还有：</span>
+                    <span class="result-val" id="resCountDays">0 天</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const panels = document.querySelectorAll('.calc-panel');
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                tabBtns.forEach(b => b.classList.remove('active'));
+                panels.forEach(p => p.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById(btn.dataset.tab).classList.add('active');
+            });
+        });
+
+        function getTodayStr() {
+            const d = new Date();
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function setToday(inputId) {
+            document.getElementById(inputId).value = getTodayStr();
+        }
+
+        const today = getTodayStr();
+        document.getElementById('diffStart').value = today;
+        document.getElementById('diffEnd').value = today;
+        document.getElementById('addBaseDate').value = today;
+
+        const nextYear = new Date();
+        nextYear.setFullYear(nextYear.getFullYear() + 1);
+        nextYear.setMonth(0);
+        nextYear.setDate(1);
+        document.getElementById('targetDate').value = `${nextYear.getFullYear()}-01-01`;
+
+        function calcDiff() {
+            const startVal = document.getElementById('diffStart').value;
+            const endVal = document.getElementById('diffEnd').value;
+            if (!startVal || !endVal) {
+                showToast('请选择两个日期');
+                return;
+            }
+            const d1 = new Date(startVal + 'T00:00:00');
+            const d2 = new Date(endVal + 'T00:00:00');
+            const diffTime = Math.abs(d2 - d1);
+            const totalDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+            const weeks = (totalDays / 7).toFixed(1);
+
+            let workdays = 0;
+            let cur = new Date(Math.min(d1, d2));
+            const end = new Date(Math.max(d1, d2));
+            while (cur < end) {
+                const day = cur.getDay();
+                if (day !== 0 && day !== 6) {
+                    workdays++;
+                }
+                cur.setDate(cur.getDate() + 1);
+            }
+
+            const early = d1 < d2 ? d1 : d2;
+            const late = d1 < d2 ? d2 : d1;
+            let y = late.getFullYear() - early.getFullYear();
+            let m = late.getMonth() - early.getMonth();
+            let d = late.getDate() - early.getDate();
+            if (d < 0) {
+                m--;
+                const prevMonthLast = new Date(late.getFullYear(), late.getMonth(), 0).getDate();
+                d += prevMonthLast;
+            }
+            if (m < 0) {
+                y--;
+                m += 12;
+            }
+
+            document.getElementById('resTotalDays').textContent = totalDays + ' 天';
+            document.getElementById('resFormatYMD').textContent = `${y} 年 ${m} 个月 ${d} 天`;
+            document.getElementById('resWeeks').textContent = weeks + ' 周';
+            document.getElementById('resWorkdays').textContent = workdays + ' 天';
+            document.getElementById('diffResult').style.display = 'block';
+        }
+
+        function calcAdd() {
+            const baseVal = document.getElementById('addBaseDate').value;
+            const amount = parseInt(document.getElementById('addAmount').value, 10);
+            const unit = document.getElementById('addUnit').value;
+            const op = document.getElementById('addOp').value;
+
+            if (!baseVal || isNaN(amount)) {
+                showToast('请输入有效的日期与推算数值');
+                return;
+            }
+
+            const d = new Date(baseVal + 'T00:00:00');
+            const mult = op === 'add' ? 1 : -1;
+
+            if (unit === 'days') {
+                d.setDate(d.getDate() + amount * mult);
+            } else if (unit === 'weeks') {
+                d.setDate(d.getDate() + amount * 7 * mult);
+            } else if (unit === 'months') {
+                d.setMonth(d.getMonth() + amount * mult);
+            } else if (unit === 'years') {
+                d.setFullYear(d.getFullYear() + amount * mult);
+            }
+
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            const weekDays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+
+            document.getElementById('resAddDate').textContent = `${year}-${month}-${day}`;
+            document.getElementById('resAddWeekDay').textContent = weekDays[d.getDay()];
+            document.getElementById('addResult').style.display = 'block';
+        }
+
+        function calcCountdown() {
+            const name = document.getElementById('eventName').value || '目标日';
+            const targetVal = document.getElementById('targetDate').value;
+            if (!targetVal) {
+                showToast('请选择目标日期');
+                return;
+            }
+
+            const todayMidnight = new Date(getTodayStr() + 'T00:00:00');
+            const targetMidnight = new Date(targetVal + 'T00:00:00');
+            const diffDays = Math.round((targetMidnight - todayMidnight) / (1000 * 60 * 60 * 24));
+
+            const labelEl = document.getElementById('resCountLabel');
+            const daysEl = document.getElementById('resCountDays');
+
+            if (diffDays > 0) {
+                labelEl.textContent = `距离【${name}】还有：`;
+                daysEl.textContent = `${diffDays} 天`;
+                daysEl.style.color = '#34d399';
+            } else if (diffDays === 0) {
+                labelEl.textContent = `【${name}】就是：`;
+                daysEl.textContent = `今天！`;
+                daysEl.style.color = '#fbbf24';
+            } else {
+                labelEl.textContent = `距离【${name}】已经过去了：`;
+                daysEl.textContent = `${Math.abs(diffDays)} 天`;
+                daysEl.style.color = '#818cf8';
+            }
+            document.getElementById('countResult').style.display = 'block';
+        }
+    </script>
+</body>
+</html>

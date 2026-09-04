@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMI 身体质量指数计算器 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="在线 BMI 计算器，精准计算身体质量指数与理想健康体重区间，包含中国卫健委与 WHO 国际标准评测。">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .container {
+            max-width: 720px;
+        }
+        .container h1 {
+            color: #e4e4e7;
+            margin-bottom: 8px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .container > p {
+            color: #a1a1aa;
+            font-size: 15px;
+            margin-bottom: 24px;
+        }
+        .calc-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .input-group label {
+            display: block;
+            font-size: 13px;
+            color: #a1a1aa;
+            margin-bottom: 6px;
+        }
+        .input-styled {
+            width: 100%;
+            padding: 10px 14px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 15px;
+            outline: none;
+            font-family: monospace, sans-serif;
+        }
+        .input-styled:focus {
+            border-color: rgba(129, 140, 248, 0.5);
+        }
+        .gender-options {
+            display: flex;
+            gap: 12px;
+            margin-top: 4px;
+        }
+        .gender-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            color: #e4e4e7;
+            cursor: pointer;
+        }
+        .action-btn {
+            padding: 10px 24px;
+            background: #818cf8;
+            border: none;
+            color: white;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .action-btn:hover {
+            background: #6366f1;
+        }
+        .result-panel {
+            display: none;
+            background: rgba(129, 140, 248, 0.08);
+            border: 1px solid rgba(129, 140, 248, 0.2);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+        .bmi-val-huge {
+            font-size: 48px;
+            font-weight: 800;
+            color: #34d399;
+            font-family: monospace;
+            margin: 10px 0;
+        }
+        .bmi-tag {
+            display: inline-block;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        .bmi-desc {
+            color: #a1a1aa;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        /* BMI 进度条指示 */
+        .bar-container {
+            position: relative;
+            margin: 24px 0 12px;
+            height: 12px;
+            border-radius: 6px;
+            background: linear-gradient(to right, #60a5fa 0%, #34d399 25%, #fbbf24 60%, #f87171 100%);
+        }
+        .bar-pointer {
+            position: absolute;
+            top: -6px;
+            width: 4px;
+            height: 24px;
+            background: #ffffff;
+            border-radius: 2px;
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+            transform: translateX(-50%);
+            transition: left 0.4s ease;
+        }
+        .range-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+        .range-table th, .range-table td {
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 8px 10px;
+            text-align: left;
+        }
+        .range-table th {
+            background: rgba(255, 255, 255, 0.04);
+            color: #a1a1aa;
+        }
+        .range-table td {
+            color: #d4d4d8;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+    <a href="../index.html" class="back-link">← 返回首页</a>
+
+    <div class="container">
+        <h1>BMI 指数计算器</h1>
+        <p>通过身高与体重评测体型偏瘦、正常、偏胖或肥胖程度，测算健康理想体重范围。</p>
+
+        <div class="calc-card">
+            <div class="form-grid">
+                <div class="input-group">
+                    <label>性别</label>
+                    <div class="gender-options">
+                        <label class="gender-label"><input type="radio" name="gender" value="male" checked> 男士</label>
+                        <label class="gender-label"><input type="radio" name="gender" value="female"> 女士</label>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>年龄 (岁)</label>
+                    <input type="number" class="input-styled" id="userAge" value="25" min="1" max="120">
+                </div>
+                <div class="input-group">
+                    <label>身高 (cm)</label>
+                    <input type="number" class="input-styled" id="userHeight" placeholder="例如：175" value="175">
+                </div>
+                <div class="input-group">
+                    <label>体重 (kg)</label>
+                    <input type="number" class="input-styled" id="userWeight" placeholder="例如：65" value="65" step="0.1">
+                </div>
+            </div>
+            <button class="action-btn" onclick="calcBMI()">开始计算 BMI</button>
+        </div>
+
+        <div class="result-panel" id="resultPanel">
+            <div style="font-size: 14px; color: #a1a1aa;">您的身体质量指数 (BMI) 为：</div>
+            <div class="bmi-val-huge" id="resBmi">21.2</div>
+            <span class="bmi-tag" id="resTag">体重正常</span>
+
+            <div class="bar-container">
+                <div class="bar-pointer" id="barPointer" style="left: 45%;"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 11px; color: #71717a; margin-bottom: 16px;">
+                <span>偏瘦 (&lt;18.5)</span>
+                <span>正常 (18.5~23.9)</span>
+                <span>偏胖 (24~27.9)</span>
+                <span>肥胖 (&ge;28)</span>
+            </div>
+
+            <p class="bmi-desc" id="resDesc">
+                您当前的健康理想体重区间为：<strong id="resIdealRange" style="color: #34d399;">56.7 ~ 73.2 kg</strong>
+            </p>
+        </div>
+
+        <div class="calc-card">
+            <div style="font-size: 15px; font-weight: 600; color: #e4e4e7; margin-bottom: 8px;">中国成人标准 BMI 参考范围：</div>
+            <table class="range-table">
+                <thead>
+                    <tr>
+                        <th>分类</th>
+                        <th>BMI 指数区间</th>
+                        <th>身体状况评测</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>偏瘦</td>
+                        <td>&lt; 18.5</td>
+                        <td>体脂率过低，建议适当增加营养与力量训练</td>
+                    </tr>
+                    <tr>
+                        <td style="color: #34d399; font-weight: 600;">正常</td>
+                        <td>18.5 ~ 23.9</td>
+                        <td>体态标准健康，请继续保持良好作息与饮食</td>
+                    </tr>
+                    <tr>
+                        <td style="color: #fbbf24; font-weight: 600;">过重 / 偏胖</td>
+                        <td>24.0 ~ 27.9</td>
+                        <td>超重状态，心血管负荷增加，建议适量减脂</td>
+                    </tr>
+                    <tr>
+                        <td style="color: #f87171; font-weight: 600;">肥胖</td>
+                        <td>&ge; 28.0</td>
+                        <td>健康风险较高，建议科学饮食并进行有氧锻炼</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        function calcBMI() {
+            const heightCm = parseFloat(document.getElementById('userHeight').value);
+            const weightKg = parseFloat(document.getElementById('userWeight').value);
+
+            if (!heightCm || !weightKg || heightCm <= 0 || weightKg <= 0) {
+                showToast('请输入有效的身高和体重');
+                return;
+            }
+
+            const heightM = heightCm / 100;
+            const bmi = weightKg / (heightM * heightM);
+            const bmiFormatted = bmi.toFixed(1);
+
+            const resBmi = document.getElementById('resBmi');
+            const resTag = document.getElementById('resTag');
+            const barPointer = document.getElementById('barPointer');
+            const resIdealRange = document.getElementById('resIdealRange');
+
+            resBmi.textContent = bmiFormatted;
+
+            // 理想体重区间 (18.5 ~ 23.9)
+            const minIdeal = (18.5 * heightM * heightM).toFixed(1);
+            const maxIdeal = (23.9 * heightM * heightM).toFixed(1);
+            resIdealRange.textContent = `${minIdeal} ~ ${maxIdeal} kg`;
+
+            let tagText = '';
+            let tagColor = '';
+            let tagBg = '';
+            let percent = 0;
+
+            if (bmi < 18.5) {
+                tagText = '偏瘦 (Underweight)';
+                tagColor = '#60a5fa';
+                tagBg = 'rgba(96, 165, 250, 0.2)';
+                percent = Math.max(5, (bmi / 18.5) * 25);
+            } else if (bmi < 24) {
+                tagText = '正常 (Normal)';
+                tagColor = '#34d399';
+                tagBg = 'rgba(52, 211, 153, 0.2)';
+                percent = 25 + ((bmi - 18.5) / (24 - 18.5)) * 35;
+            } else if (bmi < 28) {
+                tagText = '过重 (Overweight)';
+                tagColor = '#fbbf24';
+                tagBg = 'rgba(251, 191, 36, 0.2)';
+                percent = 60 + ((bmi - 24) / (28 - 24)) * 25;
+            } else {
+                tagText = '肥胖 (Obesity)';
+                tagColor = '#f87171';
+                tagBg = 'rgba(248, 113, 113, 0.2)';
+                percent = Math.min(96, 85 + ((bmi - 28) / 10) * 15);
+            }
+
+            resTag.textContent = tagText;
+            resTag.style.color = tagColor;
+            resTag.style.background = tagBg;
+            resBmi.style.color = tagColor;
+            barPointer.style.left = `${percent}%`;
+
+            document.getElementById('resultPanel').style.display = 'block';
+        }
+
+        calcBMI();
+    </script>
+</body>
+</html>

@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>语音转文字 ASR</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="免费在线语音转文字 (ASR) 工具，支持麦克风实时语音听写与识别、音频文件本地播放识别、一键复制与导出文本。">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="语音转文字 ASR | PC-TOOL">
+    <meta property="og:description" content="免费在线工具集合——语音转文字、文字转语音、音频变速变调……每一个功能都为效率而生，完全免费，为人民服务！">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/speech-to-text.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="zh_CN">
+    <style>
+        .container {
+            max-width: 720px;
+        }
+
+        .tab-nav {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 18px;
+            justify-content: center;
+        }
+
+        .tab-item {
+            padding: 8px 18px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.04);
+            color: #a1a1aa;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab-item.active {
+            background: rgba(129, 140, 248, 0.2);
+            border-color: rgba(129, 140, 248, 0.6);
+            color: #c4b5fd;
+            font-weight: bold;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .mic-box {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 24px 20px;
+            text-align: center;
+            margin-bottom: 18px;
+        }
+
+        .mic-btn {
+            width: 76px;
+            height: 76px;
+            border-radius: 50%;
+            border: none;
+            background: #4f46e5;
+            color: #fff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4);
+            margin-bottom: 12px;
+        }
+
+        .mic-btn:hover {
+            transform: scale(1.06);
+            background: #4338ca;
+        }
+
+        .mic-btn.recording {
+            background: #ef4444;
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            animation: pulse-ring 1.5s infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 16px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        .mic-tip {
+            font-size: 13px;
+            color: #a1a1aa;
+        }
+
+        .lang-select-box {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin: 12px 0 16px;
+            color: #a1a1aa;
+            font-size: 14px;
+        }
+
+        .lang-select-box select {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #e4e4e7;
+            padding: 6px 12px;
+            border-radius: 6px;
+            outline: none;
+        }
+
+        #audioInput { display: none; }
+
+        .asr-result-area {
+            width: 100%;
+            height: 180px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            padding: 12px 14px;
+            color: #e4e4e7;
+            font-size: 15px;
+            line-height: 1.6;
+            resize: vertical;
+            outline: none;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+
+        .asr-result-area:focus {
+            border-color: rgba(129, 140, 248, 0.5);
+        }
+
+        .action-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .stat-text {
+            font-size: 12px;
+            color: #71717a;
+        }
+
+        .tool-btns {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.06);
+            color: #e4e4e7;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-sm:hover {
+            background: rgba(255, 255, 255, 0.14);
+            color: #fff;
+        }
+
+        .interim-span {
+            color: #a1a1aa;
+            font-style: italic;
+        }
+
+        .browser-alert {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 13px;
+            color: #fcd34d;
+            margin-bottom: 15px;
+            display: none;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+<canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <a href="../index.html" class="back-link">← 返回工具首页</a>
+
+    <div class="container">
+        <h1>语音转文字 ASR</h1>
+        <p>麦克风实时语音听写转文字、本地音频播放转写，精准快速零隐私泄露</p>
+
+        <div class="browser-alert" id="browserAlert">
+            ⚠️ 提示：语音识别依赖浏览器内置 Web Speech 引擎（推荐使用 Chrome / Edge / Safari 等现代浏览器访问以获得最佳识别体验）。
+        </div>
+
+        <div class="tab-nav">
+            <button class="tab-item active" data-tab="micTab">🎙️ 麦克风实时识别</button>
+            <button class="tab-item" data-tab="fileTab">📁 音频文件识别</button>
+        </div>
+
+        <div class="lang-select-box">
+            <label for="langSelect">识别语言:</label>
+            <select id="langSelect">
+                <option value="zh-CN" selected>普通话 (中国大陆)</option>
+                <option value="zh-TW">国语 / 繁体中文 (台湾)</option>
+                <option value="zh-HK">粤语 (香港)</option>
+                <option value="en-US">英语 (English - US)</option>
+                <option value="en-GB">英语 (English - UK)</option>
+                <option value="ja-JP">日语 (日本語)</option>
+                <option value="ko-KR">韩语 (한국어)</option>
+            </select>
+        </div>
+
+        <!-- 麦克风模式 -->
+        <div class="tab-content active" id="micTab">
+            <div class="mic-box">
+                <button class="mic-btn" id="micBtn" title="点击开始/停止听写">
+                    <svg id="micIcon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>
+                </button>
+                <div class="mic-tip" id="micTip">点击麦克风开始录音识别</div>
+            </div>
+        </div>
+
+        <!-- 文件模式 -->
+        <div class="tab-content" id="fileTab">
+            <div class="upload-area" id="uploadArea">
+                <p>点击或拖拽上传音频文件 (支持边播边识别)</p>
+                <input type="file" id="audioInput" accept="audio/*">
+            </div>
+            <div id="fileInfoBox" style="display:none; margin: 12px 0; text-align: center;">
+                <p id="fileDesc" style="color: #e4e4e7; font-size: 14px; margin-bottom: 6px;"></p>
+                <audio id="fileAudio" controls style="width: 100%;"></audio>
+                <div style="font-size: 12px; color: #71717a; margin-top: 6px;">
+                    提示：播放音频时开启识别麦克风听筒，即可将播放内容实时转写为文字
+                </div>
+            </div>
+        </div>
+
+        <!-- 识别结果输出区 -->
+        <textarea id="resultTextarea" class="asr-result-area" placeholder="识别出的文字内容将实时显示在这里..."></textarea>
+
+        <div class="action-row">
+            <span class="stat-text">字符数：<span id="charCount" style="color:#e4e4e7;">0</span> | 词数：<span id="wordCount" style="color:#e4e4e7;">0</span></span>
+            <div class="tool-btns">
+                <button class="btn-sm" id="copyBtn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    一键复制
+                </button>
+                <button class="btn-sm" id="downloadTxtBtn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    导出TXT
+                </button>
+                <button class="btn-sm" id="clearBtn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    清空
+                </button>
+            </div>
+        </div>
+
+        <div class="contact-tip">面向大众，有任何想要的功能或者意见，请联系QQ：<strong>1003294905</strong></div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        const tabItems = document.querySelectorAll('.tab-item');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const langSelect = document.getElementById('langSelect');
+        const micBtn = document.getElementById('micBtn');
+        const micTip = document.getElementById('micTip');
+        const resultTextarea = document.getElementById('resultTextarea');
+        const charCount = document.getElementById('charCount');
+        const wordCount = document.getElementById('wordCount');
+        const copyBtn = document.getElementById('copyBtn');
+        const downloadTxtBtn = document.getElementById('downloadTxtBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const uploadArea = document.getElementById('uploadArea');
+        const audioInput = document.getElementById('audioInput');
+        const fileInfoBox = document.getElementById('fileInfoBox');
+        const fileDesc = document.getElementById('fileDesc');
+        const fileAudio = document.getElementById('fileAudio');
+        const browserAlert = document.getElementById('browserAlert');
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition = null;
+        let isRecording = false;
+        let manualStop = false;
+        let finalTranscript = '';
+
+        if (!SpeechRecognition) {
+            browserAlert.style.display = 'block';
+            browserAlert.textContent = '⚠️ 当前浏览器暂不支持原生 Web Speech Recognition 语音识别接口。推荐使用 Chrome 或 Edge 浏览器使用本工具。';
+            micBtn.disabled = true;
+            micBtn.style.opacity = '0.5';
+            micTip.textContent = '当前浏览器不支持语音识别API';
+        }
+
+        // 选项卡切换
+        tabItems.forEach(tab => {
+            tab.onclick = () => {
+                tabItems.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab).classList.add('active');
+            };
+        });
+
+        // 识别器初始化
+        function initRecognition() {
+            if (!SpeechRecognition) return;
+
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = langSelect.value;
+
+            recognition.onstart = () => {
+                isRecording = true;
+                micBtn.classList.add('recording');
+                micTip.textContent = '正在倾听语音输入中，请讲话... (点击停止)';
+            };
+
+            recognition.onresult = (event) => {
+                let interimTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript;
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+                resultTextarea.value = finalTranscript + (interimTranscript ? ` [${interimTranscript}]` : '');
+                updateStats();
+            };
+
+            recognition.onerror = (event) => {
+                console.warn('ASR error:', event.error);
+                if (event.error === 'not-allowed') {
+                    showToast('麦克风权限被拒绝，请在浏览器地址栏允许麦克风权限');
+                    stopListening();
+                } else if (event.error === 'no-speech') {
+                    // 暂时静音无需中断
+                } else {
+                    micTip.textContent = `识别提示：${event.error}`;
+                }
+            };
+
+            recognition.onend = () => {
+                if (isRecording && !manualStop) {
+                    // 自动持续重连保持倾听
+                    try {
+                        recognition.start();
+                    } catch (e) {
+                        stopListening();
+                    }
+                } else {
+                    stopListening();
+                }
+            };
+        }
+
+        function startListening() {
+            if (!SpeechRecognition) {
+                showToast('当前浏览器不支持 SpeechRecognition API');
+                return;
+            }
+            manualStop = false;
+            finalTranscript = resultTextarea.value.replace(/\s*\[.*?\]$/, ''); // 清除临时未决词
+            initRecognition();
+            try {
+                recognition.start();
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function stopListening() {
+            isRecording = false;
+            manualStop = true;
+            micBtn.classList.remove('recording');
+            micTip.textContent = '识别已停止。点击麦克风可继续识别';
+            if (recognition) {
+                try { recognition.stop(); } catch (e) {}
+            }
+            // 清理未决词标记
+            resultTextarea.value = resultTextarea.value.replace(/\s*\[.*?\]$/, '');
+            updateStats();
+        }
+
+        micBtn.onclick = () => {
+            if (isRecording) {
+                stopListening();
+            } else {
+                startListening();
+            }
+        };
+
+        langSelect.onchange = () => {
+            if (isRecording) {
+                stopListening();
+                startListening();
+            }
+        };
+
+        // 统计更新
+        function updateStats() {
+            const txt = resultTextarea.value.trim();
+            charCount.textContent = txt.length;
+            const words = txt ? txt.split(/\s+/).filter(Boolean) : [];
+            wordCount.textContent = words.length;
+        }
+
+        resultTextarea.addEventListener('input', () => {
+            finalTranscript = resultTextarea.value;
+            updateStats();
+        });
+
+        // 复制
+        copyBtn.onclick = async () => {
+            const val = resultTextarea.value.trim();
+            if (!val) {
+                showToast('暂无识别结果可复制');
+                return;
+            }
+            try {
+                await navigator.clipboard.writeText(val);
+                showToast('已复制到剪贴板！');
+            } catch (e) {
+                resultTextarea.select();
+                document.execCommand('copy');
+                showToast('已复制到剪贴板！');
+            }
+        };
+
+        // 导出TXT
+        downloadTxtBtn.onclick = () => {
+            const val = resultTextarea.value.trim();
+            if (!val) {
+                showToast('暂无内容可导出');
+                return;
+            }
+            const blob = new Blob([val], { type: 'text/plain;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `语音识别文本-${Date.now()}.txt`;
+            a.click();
+            URL.revokeObjectURL(a.href);
+        };
+
+        // 清空
+        clearBtn.onclick = () => {
+            resultTextarea.value = '';
+            finalTranscript = '';
+            updateStats();
+        };
+
+        // 音频文件选择
+        uploadArea.onclick = () => audioInput.click();
+        setupDragDrop(uploadArea, (files) => {
+            if (files[0]) handleAudioFile(files[0]);
+        });
+        audioInput.onchange = (e) => {
+            if (e.target.files[0]) handleAudioFile(e.target.files[0]);
+        };
+
+        function handleAudioFile(file) {
+            fileDesc.textContent = `文件：${file.name} (${formatSize(file.size)})`;
+            if (fileAudio.src) URL.revokeObjectURL(fileAudio.src);
+            fileAudio.src = URL.createObjectURL(file);
+            fileInfoBox.style.display = 'block';
+            showToast('音频已就绪，播放时启动麦克风听写即可同步转写');
+        }
+    </script>
+</body>
+</html>
