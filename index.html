@@ -49,7 +49,32 @@
             top: 0;
             left: 0;
             width: 100%;
+            height: 750px;
             z-index: -1;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .bg-video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: top center;
+            opacity: 0.95;
+            mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%);
+            -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 50%, rgba(0,0,0,0) 100%);
+            pointer-events: none;
+        }
+
+        #bg-interactive-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             pointer-events: none;
         }
 
@@ -628,7 +653,10 @@
     </style>
 </head>
 <body>
-    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+    <div class="bg-canvas">
+        <video class="bg-video" autoplay loop muted playsinline src="bg-wave.webm"></video>
+        <canvas id="bg-interactive-canvas"></canvas>
+    </div>
 
     <header class="header">
         <div class="header-inner">
@@ -819,23 +847,21 @@
     </footer>
 
     <script>
-        const canvas = document.getElementById('bg-canvas');
+        const canvas = document.getElementById('bg-interactive-canvas');
         const ctx = canvas.getContext('2d');
         const heroTitle = document.getElementById('heroTitle');
         const heroTitleGold = document.getElementById('heroTitleGold');
-        let width, height;
+        let width = 0, height = 750;
 
-        // 像 TRAE 官网一样的网格像素参数
-        const GRID_SIZE = 9;   // 稍小网格间距，颗粒度更细腻
-        const PIXEL_SIZE = 5;  // 方块像素大小
-
-        let cols = 0, rows = 0;
+        const GRID_SIZE = 9;
+        const PIXEL_SIZE = 5;
         let mouseX = -9999, mouseY = -9999;
-        let time = 0;
+        let isMouseActive = false;
 
         window.addEventListener('mousemove', (e) => {
             mouseX = e.clientX;
             mouseY = e.clientY + window.scrollY;
+            isMouseActive = (mouseY < 750);
 
             // 大字“免费工具，高效生活”探照灯暗金色光晕跟随
             if (heroTitle && heroTitleGold) {
@@ -843,7 +869,6 @@
                 const relX = e.clientX - rect.left;
                 const relY = e.clientY - rect.top;
 
-                // 距离大字矩形区域的范围判断（超出一定圆形感应距离平滑隐藏）
                 const triggerDistance = 180;
                 const dx = Math.max(rect.left - e.clientX, 0, e.clientX - rect.right);
                 const dy = Math.max(rect.top - e.clientY, 0, e.clientY - rect.bottom);
@@ -861,166 +886,55 @@
         window.addEventListener('mouseleave', () => {
             mouseX = -9999;
             mouseY = -9999;
+            isMouseActive = false;
             if (heroTitleGold) heroTitleGold.style.opacity = '0';
         });
 
-        // 快速哈希与多频噪声
-        function hash(x, y) {
-            let n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453123;
-            return n - Math.floor(n);
-        }
-
-        function noise2D(x, y) {
-            let i = Math.floor(x), j = Math.floor(y);
-            let fx = x - i, fy = y - j;
-            let u = fx * fx * (3.0 - 2.0 * fx);
-            let v = fy * fy * (3.0 - 2.0 * fy);
-            return (
-                hash(i, j) * (1 - u) * (1 - v) +
-                hash(i + 1, j) * u * (1 - v) +
-                hash(i, j + 1) * (1 - u) * v +
-                hash(i + 1, j + 1) * u * v
-            );
-        }
-
-        // 分形布朗运动 FBM：模拟复杂波浪与风暴
-        function fbm(x, y, octaves = 4) {
-            let v = 0.0, a = 0.53;
-            let shiftX = 100.0, shiftY = 100.0;
-            for (let i = 0; i < octaves; i++) {
-                v += a * noise2D(x, y);
-                x = x * 2.1 + shiftX;
-                y = y * 2.1 + shiftY;
-                a *= 0.48;
-            }
-            return v;
-        }
-
-        // Domain Warping 区域扭曲算法（模拟汹涌大海、漩涡与混乱撕裂感）
-        function oceanStormWarp(x, y, t) {
-            // 第一层大浪扰动
-            const qx = fbm(x + t * 0.4, y + t * 0.25, 3);
-            const qy = fbm(x + 5.2 - t * 0.3, y + 1.3 + t * 0.35, 3);
-
-            // 第二层漩涡与撕裂湍流
-            const rx = fbm(x + 4.0 * qx + 1.7 - t * 0.2, y + 4.0 * qy + 9.2 + t * 0.3, 3);
-            const ry = fbm(x + 4.0 * qx + 8.3 + t * 0.25, y + 4.0 * qy + 2.8 - t * 0.15, 3);
-
-            // 尖锐的浪峰（波涛汹涌的锯齿浪）
-            const storm = fbm(x + 3.5 * rx, y + 3.5 * ry, 4);
-            const sharpWave = Math.abs(storm * 2.0 - 1.0); // 锐化波谷波峰
-            return 1.0 - sharpWave;
-        }
-
         function resize() {
             width = window.innerWidth;
-            height = Math.max(document.documentElement.scrollHeight, window.innerHeight);
+            height = 750;
             canvas.width = width;
             canvas.height = height;
-            cols = Math.ceil(width / GRID_SIZE);
-            rows = Math.ceil(height / GRID_SIZE);
         }
         window.addEventListener('resize', resize);
-        const ro = new ResizeObserver(() => resize());
-        ro.observe(document.body);
         resize();
 
-        function animate() {
-            time += 0.009; // 增强流动演化速度
+        // 鼠标跟随轻量粒子交互（仅在光标半径200px局部计算少量粒子，CPU负载低于0.1%）
+        let interactTime = 0;
+        function animateInteractive() {
+            interactTime += 0.05;
             ctx.clearRect(0, 0, width, height);
 
-            const scrollY = window.scrollY;
-            const viewTop = scrollY;
-            const viewBottom = scrollY + window.innerHeight;
+            if (isMouseActive && mouseX >= 0 && mouseY >= 0 && mouseY <= 750) {
+                const radius = 180;
+                const minC = Math.max(0, Math.floor((mouseX - radius) / GRID_SIZE));
+                const maxC = Math.min(Math.ceil(width / GRID_SIZE), Math.ceil((mouseX + radius) / GRID_SIZE));
+                const minR = Math.max(0, Math.floor((mouseY - radius) / GRID_SIZE));
+                const maxR = Math.min(Math.ceil(750 / GRID_SIZE), Math.ceil((mouseY + radius) / GRID_SIZE));
 
-            // 限制噪点只在页面上方区域展示（高度约在顶部 700px 内），向下渐隐淡出，不干扰下方的卡片按钮文字
-            const maxEffectY = 750;
-            const fadeStartY = 350;
-
-            const startRow = Math.max(0, Math.floor((viewTop - 80) / GRID_SIZE));
-            const endRow = Math.min(rows, Math.ceil((Math.min(viewBottom + 80, maxEffectY)) / GRID_SIZE));
-
-            for (let r = startRow; r < endRow; r++) {
-                const py = r * GRID_SIZE;
-                if (py > maxEffectY) continue;
-
-                // 垂直渐变衰减：顶部清晰展现，越往卡片区域越淡，直到完全消失
-                let verticalFade = 1.0;
-                if (py > fadeStartY) {
-                    verticalFade = 1.0 - (py - fadeStartY) / (maxEffectY - fadeStartY);
-                    verticalFade = Math.max(0, Math.min(1, verticalFade));
-                }
-
-                const ny = r * 0.022;
-
-                for (let c = 0; c < cols; c++) {
-                    const px = c * GRID_SIZE;
-                    const nx = c * 0.022;
-
-                    // 1. 区域扭曲汹涌波浪
-                    const waveVal = oceanStormWarp(nx, ny, time);
-
-                    // 2. 局部剧烈噪点破碎与随机泡沫 (Foam / Spray)
-                    const speckle = hash(c + Math.floor(time * 8.0), r + Math.floor(time * 5.0));
-                    const chaoticDensity = noise2D(nx * 3.5 + time * 0.6, ny * 3.5 - time * 0.4);
-
-                    // 动态撕裂阈值：使浪潮边缘极其参差不齐、形状不规则
-                    const threshold = 0.44 + chaoticDensity * 0.22;
-                    if (waveVal < threshold) {
-                        // 浪花外围飞溅的零星独立噪点
-                        if (speckle > 0.982 && waveVal > threshold - 0.12) {
-                            const spAlpha = (0.15 + speckle * 0.25) * verticalFade;
-                            if (spAlpha > 0.02) {
-                                ctx.fillStyle = `rgba(160, 170, 185, ${spAlpha})`;
-                                ctx.fillRect(px, py, PIXEL_SIZE - 1, PIXEL_SIZE - 1);
+                for (let r = minR; r < maxR; r++) {
+                    const py = r * GRID_SIZE;
+                    const dy = py - mouseY;
+                    for (let c = minC; c < maxC; c++) {
+                        const px = c * GRID_SIZE;
+                        const dx = px - mouseX;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < radius) {
+                            const norm = 1 - dist / radius;
+                            const sparkle = (Math.sin(c * 17.1 + r * 31.7 + interactTime) + 1) * 0.5;
+                            if (sparkle > 0.65) {
+                                const alpha = norm * 0.65 * (sparkle - 0.65) * 2.8;
+                                ctx.fillStyle = `rgba(52, 211, 153, ${alpha})`;
+                                ctx.fillRect(px, py, PIXEL_SIZE, PIXEL_SIZE);
                             }
                         }
-                        continue;
                     }
-
-                    // 基础亮度
-                    let intensity = (waveVal - threshold) / (1.0 - threshold);
-                    intensity = Math.pow(intensity, 1.4);
-
-                    // 鼠标交互：激起狂暴的浪花与漩涡
-                    const mdx = px - mouseX;
-                    const mdy = py - mouseY;
-                    const mdist = Math.sqrt(mdx * mdx + mdy * mdy);
-                    let mouseBonus = 0;
-                    if (mdist < 220) {
-                        const mNorm = 1 - mdist / 220;
-                        mouseBonus = (mNorm * 0.75 + speckle * mNorm * 0.3) * verticalFade;
-                    }
-
-                    let alpha = (intensity * 0.75 + mouseBonus) * verticalFade;
-                    if (alpha > 0.9) alpha = 0.9;
-                    if (alpha < 0.03) continue;
-
-                    // 动态像素破碎感
-                    if (speckle < 0.12 && intensity < 0.7 && mouseBonus === 0) continue;
-
-                    // 颜色分级
-                    const isCrest = waveVal > (threshold + 0.22) || (mouseBonus > 0.3);
-                    const isSpray = speckle > 0.88;
-
-                    if (isCrest && (isSpray || speckle > 0.45)) {
-                        ctx.fillStyle = `rgba(52, 211, 153, ${Math.min(0.9, alpha * 1.25)})`;
-                    } else if (isCrest && speckle > 0.25) {
-                        ctx.fillStyle = `rgba(225, 235, 245, ${alpha * 0.8})`;
-                    } else if (waveVal > threshold + 0.1) {
-                        ctx.fillStyle = `rgba(90, 145, 135, ${alpha * 0.5})`;
-                    } else {
-                        ctx.fillStyle = `rgba(110, 115, 130, ${alpha * 0.35})`;
-                    }
-
-                    const pSize = (speckle > 0.85 && isCrest) ? PIXEL_SIZE + 1 : PIXEL_SIZE;
-                    ctx.fillRect(px, py, pSize, pSize);
                 }
             }
 
-            requestAnimationFrame(animate);
+            requestAnimationFrame(animateInteractive);
         }
-        animate();
+        animateInteractive();
 
         document.querySelectorAll('.card').forEach(card => {
             const inner = card.querySelector('.card-inner');

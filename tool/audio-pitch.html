@@ -381,7 +381,7 @@
             const pitchFactor = Math.pow(2, currentSemitones / 12);
 
             if (!keepDurationCheck.checked) {
-                // 直接通过调频率播放变调
+                // 不勾选保持时长：自然变速变调（像唱片机加速升调）
                 previewSourceNode = previewAudioCtx.createBufferSource();
                 previewSourceNode.buffer = originalBuffer;
                 previewSourceNode.playbackRate.value = pitchFactor;
@@ -389,7 +389,7 @@
                 previewSourceNode.onended = () => stopPreview();
                 previewSourceNode.start();
             } else {
-                // 变调保时长预览（快速预览前 15 秒或完整音频）
+                // 勾选保持时长：纯变调，语速严格保持 100% 原样
                 playPreviewBtn.textContent = '试听准备中...';
                 const previewBuffer = sliceAudioBuffer(originalBuffer, 0, Math.min(15, originalBuffer.duration));
                 const stretchedBuffer = await pitchShiftBuffer(previewBuffer, currentSemitones, () => {});
@@ -444,11 +444,11 @@
                 if (Math.abs(semitones) < 0.01) {
                     finalBuffer = originalBuffer;
                 } else if (!keepDuration) {
-                    // 仅改变重采样率
+                    // 用户选择不保持原时长：直接重采样（自然升调变快，降调变慢）
                     const pitchFactor = Math.pow(2, semitones / 12);
                     finalBuffer = resamplePitch(originalBuffer, pitchFactor);
                 } else {
-                    // 音调移位同时保持原始时长 (Pitch Shift with constant duration)
+                    // 默认勾选保持原时长：纯变调不改变播放速度
                     statusText.textContent = '正在进行音高转换处理...';
                     finalBuffer = await pitchShiftBuffer(originalBuffer, semitones, (p) => {
                         progressFill.style.width = `${15 + p * 65}%`;
@@ -515,12 +515,20 @@
             return outBuffer;
         }
 
-        // 音调移位核心算法：变调同时保持原时长 (通过 SOLA 时间拉伸配合重采样插值)
+        // 音调移位核心算法：变调同时保持原时长 (恒定原速)
+        // 关键原理：
+        // 1. 若升高音调 (pitchFactor > 1)：
+        //    直接重采样 resamplePitch(buffer, pitchFactor) 会使音调升高但时长变短（即速度变快，时长除以 pitchFactor）。
+        //    因此第一步必须先用 SOLA 算法将音频时间【放慢/拉长】到原时长的 pitchFactor 倍（即 sola 变速因子为 1 / pitchFactor）。
+        //    第二步再做 pitchFactor 重采样，变短刚好抵消拉长，时长精确恢复到 100% 原始时长，实现【纯变调、速度不变】！
+        // 2. 若降低音调 (pitchFactor < 1)：同理，先将音频时间快放（1/pitchFactor），再通过低频插值恢复原长并降调。
         async function pitchShiftBuffer(buffer, semitones, onProgress) {
             const pitchFactor = Math.pow(2, semitones / 12);
-            // 1. 先进行时间拉伸 (拉伸因子为 pitchFactor，此时变长或变短)
-            const stretchedBuffer = await solaTimeStretch(buffer, pitchFactor, onProgress);
-            // 2. 然后以 1/pitchFactor 重新采样，使速度变回原样，而音调提升/降低 pitchFactor
+            if (Math.abs(semitones) < 0.01) return buffer;
+
+            // 修正：SOLA 变速参数应为 1 / pitchFactor，以抵消后续重采样的时长变化
+            const timeStretchSpeed = 1 / pitchFactor;
+            const stretchedBuffer = await solaTimeStretch(buffer, timeStretchSpeed, onProgress);
             return resamplePitch(stretchedBuffer, pitchFactor);
         }
 

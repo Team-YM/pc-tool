@@ -94,6 +94,8 @@
 
         .param-row select {
             flex: 1;
+            min-width: 0;
+            max-width: 100%;
             background: rgba(255, 255, 255, 0.06);
             border: 1px solid rgba(255, 255, 255, 0.15);
             color: #e4e4e7;
@@ -101,6 +103,10 @@
             border-radius: 6px;
             outline: none;
             font-size: 14px;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow: hidden;
+            box-sizing: border-box;
         }
 
         .param-row select option {
