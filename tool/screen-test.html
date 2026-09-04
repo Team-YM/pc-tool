@@ -126,6 +126,28 @@
             -webkit-backdrop-filter: blur(8px);
             border: 1px solid rgba(255, 255, 255, 0.15);
             transition: opacity 0.8s ease;
+            white-space: nowrap;
+            text-align: center;
+        }
+
+        /* 移动端长按进度指示环动画 */
+        .touch-progress-circle {
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 3px solid rgba(255, 255, 255, 0.25);
+            border-top-color: #34d399;
+            pointer-events: none;
+            display: none;
+            transform: translate(-50%, -50%);
+            animation: spin 0.8s linear infinite;
+            z-index: 1000000;
+        }
+
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
         }
     </style>
 </head>
@@ -141,7 +163,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
                 开始测试
             </button>
-            <div class="notice-esc">
+            <div class="notice-esc" id="usageNotice">
                 <span>测试中单击鼠标切换颜色，按</span>
                 <span class="esc-badge">ESC</span>
                 <span>键或点击右键退出全屏</span>
@@ -164,6 +186,7 @@
     <!-- 全屏测试容器 -->
     <div id="fullscreenTester">
         <div class="tester-tip" id="testerTip">点击屏幕切换颜色 · 按 ESC 退出</div>
+        <div class="touch-progress-circle" id="touchCircle"></div>
     </div>
 
     <script src="common.js"></script>
@@ -184,7 +207,18 @@
         const startBtn = document.getElementById('startBtn');
         const tester = document.getElementById('fullscreenTester');
         const testerTip = document.getElementById('testerTip');
+        const usageNotice = document.getElementById('usageNotice');
+        const touchCircle = document.getElementById('touchCircle');
         let tipTimeout = null;
+
+        // 识别是否为移动端触屏设备
+        const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window && window.innerWidth <= 1024);
+
+        // 初始化界面提示文案差异化
+        if (isMobileDevice) {
+            usageNotice.innerHTML = '<span>轻触屏幕切换颜色 · </span><span class="esc-badge" style="background:rgba(239,68,68,0.2); border-color:rgba(239,68,68,0.4); color:#fca5a5;">长按 3 秒</span><span> 退出检测</span>';
+            testerTip.textContent = '轻触换色 · 长按 3 秒退出检测';
+        }
 
         function updateColor() {
             tester.style.backgroundColor = colors[currentIndex];
@@ -196,11 +230,11 @@
             tester.style.display = 'block';
             testerTip.style.opacity = '1';
 
-            // 渐隐顶部提示
+            // 渐隐顶部提示（移动端保留 3.5 秒让用户看清）
             clearTimeout(tipTimeout);
             tipTimeout = setTimeout(() => {
                 testerTip.style.opacity = '0';
-            }, 2500);
+            }, isMobileDevice ? 3500 : 2500);
 
             // 触发全屏
             const el = document.documentElement;
@@ -215,6 +249,7 @@
 
         function exitTest() {
             tester.style.display = 'none';
+            if (touchCircle) touchCircle.style.display = 'none';
             if (document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement) {
                 if (document.exitFullscreen) {
                     document.exitFullscreen().catch(() => {});
@@ -228,21 +263,86 @@
 
         startBtn.addEventListener('click', enterTest);
 
-        // 点击屏幕切换下一个颜色
+        // 移动端长按 3 秒退出与轻触换色处理
+        let touchStartTime = 0;
+        let touchStartPos = { x: 0, y: 0 };
+        let longPressTimer = null;
+        let isLongPressTriggered = false;
+
+        tester.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 0) {
+                const touch = e.touches[0];
+                touchStartTime = Date.now();
+                touchStartPos = { x: touch.clientX, y: touch.clientY };
+                isLongPressTriggered = false;
+
+                // 在触碰位置显示呼吸圈
+                if (touchCircle) {
+                    touchCircle.style.left = `${touch.clientX}px`;
+                    touchCircle.style.top = `${touch.clientY}px`;
+                    touchCircle.style.display = 'block';
+                }
+
+                // 启动 3 秒定时器
+                clearTimeout(longPressTimer);
+                longPressTimer = setTimeout(() => {
+                    isLongPressTriggered = true;
+                    if (touchCircle) touchCircle.style.display = 'none';
+                    if (navigator.vibrate) navigator.vibrate(50); // 震动反馈
+                    exitTest();
+                }, 3000);
+            }
+        }, { passive: false });
+
+        tester.addEventListener('touchmove', (e) => {
+            if (e.touches.length > 0) {
+                const touch = e.touches[0];
+                const dx = Math.abs(touch.clientX - touchStartPos.x);
+                const dy = Math.abs(touch.clientY - touchStartPos.y);
+                // 滑动超过 15px 取消长按避免手抖误触
+                if (dx > 15 || dy > 15) {
+                    clearTimeout(longPressTimer);
+                    if (touchCircle) touchCircle.style.display = 'none';
+                }
+            }
+        }, { passive: true });
+
+        tester.addEventListener('touchend', (e) => {
+            clearTimeout(longPressTimer);
+            if (touchCircle) touchCircle.style.display = 'none';
+
+            // 若长按已触发则不触发点击切色
+            if (isLongPressTriggered) {
+                e.preventDefault();
+                return;
+            }
+
+            const touchDuration = Date.now() - touchStartTime;
+            // 短按（小于 400ms）视为点击切换颜色
+            if (touchDuration < 400) {
+                currentIndex = (currentIndex + 1) % colors.length;
+                updateColor();
+            }
+        });
+
+        // PC 鼠标点击切换下一个颜色（移动端触摸已有专门处理）
         tester.addEventListener('click', (e) => {
+            if (isMobileDevice) return;
             currentIndex = (currentIndex + 1) % colors.length;
             updateColor();
         });
 
-        // 监听全屏变化，ESC退出时自动关闭测试层
+        // 监听全屏变化，退出时自动关闭测试层
         document.addEventListener('fullscreenchange', () => {
             if (!document.fullscreenElement) {
                 tester.style.display = 'none';
+                if (touchCircle) touchCircle.style.display = 'none';
             }
         });
         document.addEventListener('webkitfullscreenchange', () => {
             if (!document.webkitFullscreenElement) {
                 tester.style.display = 'none';
+                if (touchCircle) touchCircle.style.display = 'none';
             }
         });
 
@@ -263,7 +363,7 @@
             }
         });
 
-        // 移动端若长按或多指也可方便退出
+        // 桌面端右键菜单直接退出
         tester.addEventListener('contextmenu', (e) => {
             e.preventDefault();
             exitTest();
