@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>键盘按键自助检测 | PC-TOOL</title>
     <link rel="icon" type="image/png" href="../favicon.png">
-    <meta name="description" content="在线114键标准键盘按键自助检测工具，支持实时键入高亮、测试记录染色、快捷键屏蔽拦截，测试键盘连击与全键状态。">
+    <meta name="description" content="在线标准键盘按键自助检测工具，支持实时键入高亮、测试记录染色、快捷键屏蔽拦截，测试键盘连击与全键状态。">
     <link rel="stylesheet" href="common.css">
     <style>
         /* 页面整体大容器扩展，键盘需要足够的宽度 */
@@ -391,13 +391,13 @@
             <div class="title-box">
                 <h1>
                     <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="6" y1="8" x2="6.01" y2="8"/><line x1="10" y1="8" x2="10.01" y2="8"/><line x1="14" y1="8" x2="14.01" y2="8"/><line x1="18" y1="8" x2="18.01" y2="8"/><line x1="6" y1="12" x2="6.01" y2="12"/><line x1="10" y1="12" x2="10.01" y2="12"/><line x1="14" y1="12" x2="14.01" y2="12"/><line x1="18" y1="12" x2="18.01" y2="12"/><line x1="7" y1="16" x2="17" y2="16"/></svg>
-                    键盘按键自助检测 (114键标准布局)
+                    键盘按键自助检测
                 </h1>
                 <p>实时键入检测、防冲突测试。按下键位实时高亮，测试完毕后颜色自动加深标记，快捷键均已作拦截屏蔽。</p>
             </div>
 
             <div class="status-panel">
-                <div class="info-pill">已测试键数: <strong id="testedCount">0</strong> / <span id="totalCount">114</span></div>
+                <div class="info-pill">已测试键数: <strong id="testedCount">0</strong> / <span id="totalCount">104</span></div>
                 <div class="info-pill">当前按下键数: <strong id="pressedCount">0</strong></div>
                 <button class="btn-reset" id="resetBtn" title="清空测试记录">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
@@ -415,17 +415,8 @@
             </div>
 
             <div class="keyboard-frame">
-                <!-- 1. 主打字键区 (含顶部多媒体、功能键) -->
+                <!-- 1. 主打字键区 -->
                 <div class="section-main">
-                    <!-- R0: 114键特有顶部快捷扩展多媒体键 (4键) -->
-                    <div class="kb-row">
-                        <div class="key" data-code="AudioVolumeMute"><span class="main">静音</span></div>
-                        <div class="key" data-code="AudioVolumeDown"><span class="main">音量-</span></div>
-                        <div class="key" data-code="AudioVolumeUp"><span class="main">音量+</span></div>
-                        <div class="key" data-code="MediaPlayPause"><span class="main">播放/暂停</span></div>
-                        <div class="empty-gap" style="flex: 11;"></div>
-                    </div>
-
                     <!-- R1: ESC + F1~F12 -->
                     <div class="kb-row">
                         <div class="key" data-code="Escape"><span class="main">Esc</span></div>
@@ -527,15 +518,8 @@
                     </div>
                 </div>
 
-                <!-- 2. 中间导航控制区 (含顶部多媒体、编辑控制键、方向键) -->
+                <!-- 2. 中间导航控制区 (编辑控制键、方向键) -->
                 <div class="section-nav">
-                    <!-- R0: 114键特有多媒体按键 (计算器/我的电脑/邮件等) -->
-                    <div class="kb-row">
-                        <div class="key" data-code="LaunchMail"><span class="main">邮件</span></div>
-                        <div class="key" data-code="LaunchApp2"><span class="main">计算器</span></div>
-                        <div class="key" data-code="LaunchApp1"><span class="main">我的电脑</span></div>
-                    </div>
-
                     <!-- R1: 功能控制键 PrintScreen / ScrollLock / Pause -->
                     <div class="kb-row">
                         <div class="key" data-code="PrintScreen"><span class="main">PrtSc</span></div>
@@ -575,14 +559,8 @@
                     </div>
                 </div>
 
-                <!-- 3. 右侧数字小键盘区 (114键顶部多媒体/电源 + Numpad) -->
+                <!-- 3. 右侧数字小键盘区 -->
                 <div class="section-numpad">
-                    <!-- R0: 114键特有多媒体/电源 (3键) -->
-                    <div class="kb-row">
-                        <div class="key" data-code="BrowserHome"><span class="main">主页</span></div>
-                        <div class="key" data-code="Power"><span class="main">电源</span></div>
-                    </div>
-
                     <!-- 小键盘 Grid 布局 (17键标准全尺寸布局) -->
                     <div class="numpad-grid">
                         <div class="key" data-code="NumLock"><span class="main">Num</span></div>
