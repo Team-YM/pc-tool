@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>键盘按键自助检测 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="在线114键标准键盘按键自助检测工具，支持实时键入高亮、测试记录染色、快捷键屏蔽拦截，测试键盘连击与全键状态。">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        /* 页面整体大容器扩展，键盘需要足够的宽度 */
+        .container {
+            max-width: 1280px;
+            width: 96%;
+            padding: 30px;
+            margin: 40px auto;
+        }
+
+        .header-section {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .title-box h1 {
+            color: #e4e4e7;
+            font-size: 26px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 6px;
+        }
+
+        .title-box p {
+            color: #a1a1aa;
+            font-size: 14px;
+        }
+
+        .status-panel {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .info-pill {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 7px 16px;
+            border-radius: 999px;
+            font-size: 13px;
+            color: #d4d4d8;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .info-pill strong {
+            color: #10b981;
+            font-family: monospace;
+            font-size: 14px;
+        }
+
+        .btn-reset, .btn-audio {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #e4e4e7;
+            padding: 7px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            outline: none;
+        }
+
+        .btn-reset:hover, .btn-audio:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+            color: #ffffff;
+        }
+
+        /* 键盘总外框 */
+        .keyboard-wrapper {
+            background: #141417;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 18px;
+            padding: 22px;
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            overflow-x: auto;
+            position: relative;
+            outline: none;
+        }
+
+        .keyboard-frame {
+            display: flex;
+            gap: 18px;
+            min-width: 1160px;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* 三个主分区 */
+        .section-main {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            flex: 15;
+        }
+
+        .section-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            flex: 3;
+        }
+
+        .section-numpad {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            flex: 4;
+        }
+
+        .kb-row {
+            display: flex;
+            gap: 6px;
+        }
+
+        /* 单个键位通用规格 (基于标准1U = 52px) */
+        .key {
+            height: 48px;
+            min-width: 48px;
+            flex: 1;
+            background: #202025;
+            color: #d4d4d8;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 3px 0 #101013, 0 4px 6px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 500;
+            padding: 3px 6px;
+            position: relative;
+            transition: transform 0.05s ease, background 0.15s ease, box-shadow 0.05s ease, border-color 0.15s ease;
+            box-sizing: border-box;
+            cursor: default;
+        }
+
+        .key .sub {
+            font-size: 10px;
+            color: #71717a;
+            line-height: 1;
+            margin-bottom: 2px;
+        }
+
+        .key .main {
+            line-height: 1.1;
+        }
+
+        /* 状态 1: 当前正在按下 (高亮青绿，下沉按压动效) */
+        .key.active {
+            background: #10b981 !important;
+            color: #ffffff !important;
+            border-color: #34d399 !important;
+            box-shadow: 0 1px 0 #047857, 0 0 14px rgba(16, 185, 129, 0.8) !important;
+            transform: translateY(2px);
+        }
+        .key.active .sub {
+            color: rgba(255, 255, 255, 0.8) !important;
+        }
+
+        /* 状态 2: 已经测试过 (颜色明显加深，呈现暗青灰/墨绿质感表示已通过) */
+        .key.tested {
+            background: #0d3829;
+            color: #6ee7b7;
+            border-color: #059669;
+            box-shadow: 0 3px 0 #06241b, 0 3px 8px rgba(5, 150, 105, 0.18);
+        }
+        .key.tested .sub {
+            color: #34d399;
+        }
+
+        /* 快捷键键宽标准比例 */
+        .key-w-125 { flex: 1.25; min-width: 60px; }
+        .key-w-15  { flex: 1.5;  min-width: 72px; }
+        .key-w-175 { flex: 1.75; min-width: 84px; }
+        .key-w-2   { flex: 2;    min-width: 96px; }
+        .key-w-225 { flex: 2.25; min-width: 108px; }
+        .key-w-275 { flex: 2.75; min-width: 132px; }
+        .key-w-625 { flex: 6.25; min-width: 300px; } /* 空格键 */
+
+        /* 小键盘跨行大键 */
+        .numpad-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+        }
+        .key-h-2 {
+            grid-row: span 2;
+            height: 102px; /* 48 * 2 + 6 gap */
+        }
+        .key-w-col2 {
+            grid-column: span 2;
+        }
+
+        /* 键盘指示灯区 (114键顶部多媒体/指示灯) */
+        .indicators-bar {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 24px;
+            margin-bottom: 12px;
+            padding-right: 10px;
+        }
+
+        .ind-item {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 11px;
+            color: #71717a;
+            font-weight: 600;
+        }
+
+        .ind-light {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #27272a;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.2s ease;
+        }
+
+        .ind-light.on {
+            background: #34d399;
+            box-shadow: 0 0 10px #10b981, 0 0 4px #34d399;
+            border-color: #6ee7b7;
+        }
+
+        /* 当前按键信息日志条 */
+        .log-bar {
+            margin-top: 18px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 13px;
+            color: #a1a1aa;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .log-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .code-tag {
+            background: rgba(255, 255, 255, 0.1);
+            color: #f4f4f5;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        /* 移动端专属全屏拦截弹窗 */
+        #mobileModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(9, 9, 11, 0.96);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 999999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        .modal-card {
+            background: #18181b;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 20px;
+            padding: 36px 24px;
+            max-width: 420px;
+            width: 100%;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+            animation: modalFadeIn 0.3s ease;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.92); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .modal-icon {
+            width: 68px;
+            height: 68px;
+            border-radius: 50%;
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            color: #ef4444;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #f4f4f5;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+
+        .modal-desc {
+            font-size: 14px;
+            color: #a1a1aa;
+            line-height: 1.6;
+            margin-bottom: 28px;
+        }
+
+        .modal-btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .modal-btn {
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: block;
+        }
+
+        .modal-btn-primary {
+            background: #3b82f6;
+            color: #ffffff;
+        }
+
+        .modal-btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: #d4d4d8;
+        }
+
+        .empty-gap {
+            flex: 1;
+            min-width: 48px;
+            visibility: hidden;
+        }
+
+        .empty-gap-half {
+            flex: 0.5;
+            min-width: 24px;
+            visibility: hidden;
+        }
+    </style>
+</head>
+<body>
+    <a href="../index.html" class="back-link">← 返回</a>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <div class="container">
+        <div class="header-section">
+            <div class="title-box">
+                <h1>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="6" y1="8" x2="6.01" y2="8"/><line x1="10" y1="8" x2="10.01" y2="8"/><line x1="14" y1="8" x2="14.01" y2="8"/><line x1="18" y1="8" x2="18.01" y2="8"/><line x1="6" y1="12" x2="6.01" y2="12"/><line x1="10" y1="12" x2="10.01" y2="12"/><line x1="14" y1="12" x2="14.01" y2="12"/><line x1="18" y1="12" x2="18.01" y2="12"/><line x1="7" y1="16" x2="17" y2="16"/></svg>
+                    键盘按键自助检测 (114键标准布局)
+                </h1>
+                <p>实时键入检测、防冲突测试。按下键位实时高亮，测试完毕后颜色自动加深标记，快捷键均已作拦截屏蔽。</p>
+            </div>
+
+            <div class="status-panel">
+                <div class="info-pill">已测试键数: <strong id="testedCount">0</strong> / <span id="totalCount">114</span></div>
+                <div class="info-pill">当前按下键数: <strong id="pressedCount">0</strong></div>
+                <button class="btn-reset" id="resetBtn" title="清空测试记录">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                    清空重测
+                </button>
+            </div>
+        </div>
+
+        <div class="keyboard-wrapper" id="keyboardWrapper" tabindex="0">
+            <!-- 键盘状态指示灯 -->
+            <div class="indicators-bar">
+                <div class="ind-item"><span class="ind-light" id="indNum"></span>NUM LOCK</div>
+                <div class="ind-item"><span class="ind-light" id="indCaps"></span>CAPS LOCK</div>
+                <div class="ind-item"><span class="ind-light" id="indScroll"></span>SCROLL LOCK</div>
+            </div>
+
+            <div class="keyboard-frame">
+                <!-- 1. 主打字键区 (含顶部多媒体、功能键) -->
+                <div class="section-main">
+                    <!-- R0: 114键特有顶部快捷扩展多媒体键 (4键) -->
+                    <div class="kb-row">
+                        <div class="key" data-code="AudioVolumeMute"><span class="main">静音</span></div>
+                        <div class="key" data-code="AudioVolumeDown"><span class="main">音量-</span></div>
+                        <div class="key" data-code="AudioVolumeUp"><span class="main">音量+</span></div>
+                        <div class="key" data-code="MediaPlayPause"><span class="main">播放/暂停</span></div>
+                        <div class="empty-gap" style="flex: 11;"></div>
+                    </div>
+
+                    <!-- R1: ESC + F1~F12 -->
+                    <div class="kb-row">
+                        <div class="key" data-code="Escape"><span class="main">Esc</span></div>
+                        <div class="empty-gap-half"></div>
+                        <div class="key" data-code="F1"><span class="main">F1</span></div>
+                        <div class="key" data-code="F2"><span class="main">F2</span></div>
+                        <div class="key" data-code="F3"><span class="main">F3</span></div>
+                        <div class="key" data-code="F4"><span class="main">F4</span></div>
+                        <div class="empty-gap-half"></div>
+                        <div class="key" data-code="F5"><span class="main">F5</span></div>
+                        <div class="key" data-code="F6"><span class="main">F6</span></div>
+                        <div class="key" data-code="F7"><span class="main">F7</span></div>
+                        <div class="key" data-code="F8"><span class="main">F8</span></div>
+                        <div class="empty-gap-half"></div>
+                        <div class="key" data-code="F9"><span class="main">F9</span></div>
+                        <div class="key" data-code="F10"><span class="main">F10</span></div>
+                        <div class="key" data-code="F11"><span class="main">F11</span></div>
+                        <div class="key" data-code="F12"><span class="main">F12</span></div>
+                    </div>
+
+                    <!-- R2: 数字与标点键 -->
+                    <div class="kb-row">
+                        <div class="key" data-code="Backquote"><span class="sub">~</span><span class="main">`</span></div>
+                        <div class="key" data-code="Digit1"><span class="sub">!</span><span class="main">1</span></div>
+                        <div class="key" data-code="Digit2"><span class="sub">@</span><span class="main">2</span></div>
+                        <div class="key" data-code="Digit3"><span class="sub">#</span><span class="main">3</span></div>
+                        <div class="key" data-code="Digit4"><span class="sub">$</span><span class="main">4</span></div>
+                        <div class="key" data-code="Digit5"><span class="sub">%</span><span class="main">5</span></div>
+                        <div class="key" data-code="Digit6"><span class="sub">^</span><span class="main">6</span></div>
+                        <div class="key" data-code="Digit7"><span class="sub">&amp;</span><span class="main">7</span></div>
+                        <div class="key" data-code="Digit8"><span class="sub">*</span><span class="main">8</span></div>
+                        <div class="key" data-code="Digit9"><span class="sub">(</span><span class="main">9</span></div>
+                        <div class="key" data-code="Digit0"><span class="sub">)</span><span class="main">0</span></div>
+                        <div class="key" data-code="Minus"><span class="sub">_</span><span class="main">-</span></div>
+                        <div class="key" data-code="Equal"><span class="sub">+</span><span class="main">=</span></div>
+                        <div class="key key-w-2" data-code="Backspace"><span class="main">Backspace</span></div>
+                    </div>
+
+                    <!-- R3: Tab + QWERTYUIOP -->
+                    <div class="kb-row">
+                        <div class="key key-w-15" data-code="Tab"><span class="main">Tab</span></div>
+                        <div class="key" data-code="KeyQ"><span class="main">Q</span></div>
+                        <div class="key" data-code="KeyW"><span class="main">W</span></div>
+                        <div class="key" data-code="KeyE"><span class="main">E</span></div>
+                        <div class="key" data-code="KeyR"><span class="main">R</span></div>
+                        <div class="key" data-code="KeyT"><span class="main">T</span></div>
+                        <div class="key" data-code="KeyY"><span class="main">Y</span></div>
+                        <div class="key" data-code="KeyU"><span class="main">U</span></div>
+                        <div class="key" data-code="KeyI"><span class="main">I</span></div>
+                        <div class="key" data-code="KeyO"><span class="main">O</span></div>
+                        <div class="key" data-code="KeyP"><span class="main">P</span></div>
+                        <div class="key" data-code="BracketLeft"><span class="sub">{</span><span class="main">[</span></div>
+                        <div class="key" data-code="BracketRight"><span class="sub">}</span><span class="main">]</span></div>
+                        <div class="key key-w-15" data-code="Backslash"><span class="sub">|</span><span class="main">\</span></div>
+                    </div>
+
+                    <!-- R4: CapsLock + ASDFGHJKL -->
+                    <div class="kb-row">
+                        <div class="key key-w-175" data-code="CapsLock"><span class="main">Caps Lock</span></div>
+                        <div class="key" data-code="KeyA"><span class="main">A</span></div>
+                        <div class="key" data-code="KeyS"><span class="main">S</span></div>
+                        <div class="key" data-code="KeyD"><span class="main">D</span></div>
+                        <div class="key" data-code="KeyF"><span class="main">F</span></div>
+                        <div class="key" data-code="KeyG"><span class="main">G</span></div>
+                        <div class="key" data-code="KeyH"><span class="main">H</span></div>
+                        <div class="key" data-code="KeyJ"><span class="main">J</span></div>
+                        <div class="key" data-code="KeyK"><span class="main">K</span></div>
+                        <div class="key" data-code="KeyL"><span class="main">L</span></div>
+                        <div class="key" data-code="Semicolon"><span class="sub">:</span><span class="main">;</span></div>
+                        <div class="key" data-code="Quote"><span class="sub">"</span><span class="main">'</span></div>
+                        <div class="key key-w-225" data-code="Enter"><span class="main">Enter</span></div>
+                    </div>
+
+                    <!-- R5: Left Shift + ZXCVBNM -->
+                    <div class="kb-row">
+                        <div class="key key-w-225" data-code="ShiftLeft"><span class="main">Shift</span></div>
+                        <div class="key" data-code="KeyZ"><span class="main">Z</span></div>
+                        <div class="key" data-code="KeyX"><span class="main">X</span></div>
+                        <div class="key" data-code="KeyC"><span class="main">C</span></div>
+                        <div class="key" data-code="KeyV"><span class="main">V</span></div>
+                        <div class="key" data-code="KeyB"><span class="main">B</span></div>
+                        <div class="key" data-code="KeyN"><span class="main">N</span></div>
+                        <div class="key" data-code="KeyM"><span class="main">M</span></div>
+                        <div class="key" data-code="Comma"><span class="sub">&lt;</span><span class="main">,</span></div>
+                        <div class="key" data-code="Period"><span class="sub">&gt;</span><span class="main">.</span></div>
+                        <div class="key" data-code="Slash"><span class="sub">?</span><span class="main">/</span></div>
+                        <div class="key key-w-275" data-code="ShiftRight"><span class="main">Shift</span></div>
+                    </div>
+
+                    <!-- R6: Ctrl / Win / Alt / Space / Alt / Win / Menu / Ctrl -->
+                    <div class="kb-row">
+                        <div class="key key-w-125" data-code="ControlLeft"><span class="main">Ctrl</span></div>
+                        <div class="key key-w-125" data-code="MetaLeft"><span class="main">Win</span></div>
+                        <div class="key key-w-125" data-code="AltLeft"><span class="main">Alt</span></div>
+                        <div class="key key-w-625" data-code="Space"><span class="main">Space</span></div>
+                        <div class="key key-w-125" data-code="AltRight"><span class="main">Alt</span></div>
+                        <div class="key key-w-125" data-code="ContextMenu"><span class="main">Menu</span></div>
+                        <div class="key key-w-125" data-code="ControlRight"><span class="main">Ctrl</span></div>
+                    </div>
+                </div>
+
+                <!-- 2. 中间导航控制区 (含顶部多媒体、编辑控制键、方向键) -->
+                <div class="section-nav">
+                    <!-- R0: 114键特有多媒体按键 (计算器/我的电脑/邮件等) -->
+                    <div class="kb-row">
+                        <div class="key" data-code="LaunchMail"><span class="main">邮件</span></div>
+                        <div class="key" data-code="LaunchApp2"><span class="main">计算器</span></div>
+                        <div class="key" data-code="LaunchApp1"><span class="main">我的电脑</span></div>
+                    </div>
+
+                    <!-- R1: 功能控制键 PrintScreen / ScrollLock / Pause -->
+                    <div class="kb-row">
+                        <div class="key" data-code="PrintScreen"><span class="main">PrtSc</span></div>
+                        <div class="key" data-code="ScrollLock"><span class="main">Scroll</span></div>
+                        <div class="key" data-code="Pause"><span class="main">Pause</span></div>
+                    </div>
+
+                    <!-- R2: Insert / Home / PageUp -->
+                    <div class="kb-row">
+                        <div class="key" data-code="Insert"><span class="main">Insert</span></div>
+                        <div class="key" data-code="Home"><span class="main">Home</span></div>
+                        <div class="key" data-code="PageUp"><span class="main">PgUp</span></div>
+                    </div>
+
+                    <!-- R3: Delete / End / PageDown -->
+                    <div class="kb-row">
+                        <div class="key" data-code="Delete"><span class="main">Delete</span></div>
+                        <div class="key" data-code="End"><span class="main">End</span></div>
+                        <div class="key" data-code="PageDown"><span class="main">PgDn</span></div>
+                    </div>
+
+                    <!-- R4: 占位留白 (保证方向键居底) -->
+                    <div class="kb-row" style="height: 48px;"></div>
+
+                    <!-- R5: 上方向键 -->
+                    <div class="kb-row">
+                        <div class="empty-gap"></div>
+                        <div class="key" data-code="ArrowUp"><span class="main">▲</span></div>
+                        <div class="empty-gap"></div>
+                    </div>
+
+                    <!-- R6: 左 / 下 / 右 方向键 -->
+                    <div class="kb-row">
+                        <div class="key" data-code="ArrowLeft"><span class="main">◀</span></div>
+                        <div class="key" data-code="ArrowDown"><span class="main">▼</span></div>
+                        <div class="key" data-code="ArrowRight"><span class="main">▶</span></div>
+                    </div>
+                </div>
+
+                <!-- 3. 右侧数字小键盘区 (114键顶部多媒体/电源 + Numpad) -->
+                <div class="section-numpad">
+                    <!-- R0: 114键特有多媒体/电源 (3键) -->
+                    <div class="kb-row">
+                        <div class="key" data-code="BrowserHome"><span class="main">主页</span></div>
+                        <div class="key" data-code="Power"><span class="main">电源</span></div>
+                    </div>
+
+                    <!-- 小键盘 Grid 布局 (17键标准全尺寸布局) -->
+                    <div class="numpad-grid">
+                        <div class="key" data-code="NumLock"><span class="main">Num</span></div>
+                        <div class="key" data-code="NumpadDivide"><span class="main">/</span></div>
+                        <div class="key" data-code="NumpadMultiply"><span class="main">*</span></div>
+                        <div class="key" data-code="NumpadSubtract"><span class="main">-</span></div>
+
+                        <div class="key" data-code="Numpad7"><span class="main">7</span></div>
+                        <div class="key" data-code="Numpad8"><span class="main">8</span></div>
+                        <div class="key" data-code="Numpad9"><span class="main">9</span></div>
+                        <div class="key key-h-2" data-code="NumpadAdd"><span class="main">+</span></div>
+
+                        <div class="key" data-code="Numpad4"><span class="main">4</span></div>
+                        <div class="key" data-code="Numpad5"><span class="main">5</span></div>
+                        <div class="key" data-code="Numpad6"><span class="main">6</span></div>
+
+                        <div class="key" data-code="Numpad1"><span class="main">1</span></div>
+                        <div class="key" data-code="Numpad2"><span class="main">2</span></div>
+                        <div class="key" data-code="Numpad3"><span class="main">3</span></div>
+                        <div class="key key-h-2" data-code="NumpadEnter"><span class="main">Enter</span></div>
+
+                        <div class="key key-w-col2" data-code="Numpad0"><span class="main">0</span></div>
+                        <div class="key" data-code="NumpadDecimal"><span class="main">.</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 底部当前键位实时信息日志 -->
+            <div class="log-bar">
+                <div class="log-left">
+                    <span>当前按键：<span class="code-tag" id="currentKeyName">无</span></span>
+                    <span>code：<span class="code-tag" id="currentKeyCode">--</span></span>
+                    <span>keyCode：<span class="code-tag" id="currentKeyNumber">--</span></span>
+                </div>
+                <div style="font-size: 12px; color: #71717a;">
+                    提示：已拦截 F1、F3、F5、F7、Tab、Alt、Ctrl 组合等浏览器快捷键，防止测试被意外打断
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 移动端设备拦截大屏弹窗 -->
+    <div id="mobileModal">
+        <div class="modal-card">
+            <div class="modal-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+            </div>
+            <div class="modal-title">非常抱歉，此功能不适配移动设备🙏🙏🙏</div>
+            <div class="modal-desc">
+                本工具为 114 键标准物理键盘硬件测试程序，需要完整的物理键盘输入与全键位硬件信号。检测到您当前处于移动端且未连接物理键盘。
+            </div>
+            <div class="modal-btn-group">
+                <a href="../mobile.html" class="modal-btn modal-btn-primary">返回工具箱首页</a>
+                <button class="modal-btn modal-btn-secondary" id="forceEnterBtn">我已外接物理键盘，强行进入</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        (function() {
+            // ================= 1. 移动端与物理键盘检测 =================
+            var ua = navigator.userAgent || navigator.vendor || window.opera;
+            var isMobileUA = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|webOS/i.test(ua);
+            var isTouchScreen = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0);
+            var isNarrowScreen = window.innerWidth <= 1024;
+
+            var mobileModal = document.getElementById('mobileModal');
+            var forceEnterBtn = document.getElementById('forceEnterBtn');
+            var hasPhysicalKeyboard = false;
+
+            // 如果是移动端 UA 或者移动触屏设备且未检测到物理键盘，弹大屏提示
+            if (isMobileUA || (isTouchScreen && isNarrowScreen)) {
+                mobileModal.style.display = 'flex';
+            }
+
+            // 如果用户外接了物理键盘并按下按键，自动解除拦截大屏
+            window.addEventListener('keydown', function onFirstKey() {
+                hasPhysicalKeyboard = true;
+                if (mobileModal.style.display === 'flex') {
+                    mobileModal.style.display = 'none';
+                }
+                window.removeEventListener('keydown', onFirstKey);
+            }, { passive: false });
+
+            forceEnterBtn.addEventListener('click', function() {
+                mobileModal.style.display = 'none';
+                document.getElementById('keyboardWrapper').focus();
+            });
+
+            // ================= 2. 键盘状态管理 =================
+            var keyElements = {};
+            var allKeys = document.querySelectorAll('.key[data-code]');
+            allKeys.forEach(function(el) {
+                var code = el.getAttribute('data-code');
+                if (code) {
+                    keyElements[code] = el;
+                }
+            });
+
+            var totalCount = allKeys.length;
+            document.getElementById('totalCount').innerText = totalCount;
+
+            var testedKeys = new Set();
+            var currentlyPressedKeys = new Set();
+
+            var testedCountEl = document.getElementById('testedCount');
+            var pressedCountEl = document.getElementById('pressedCount');
+            var currentKeyNameEl = document.getElementById('currentKeyName');
+            var currentKeyCodeEl = document.getElementById('currentKeyCode');
+            var currentKeyNumberEl = document.getElementById('currentKeyNumber');
+            var resetBtn = document.getElementById('resetBtn');
+
+            // 指示灯元素
+            var indNum = document.getElementById('indNum');
+            var indCaps = document.getElementById('indCaps');
+            var indScroll = document.getElementById('indScroll');
+
+            function updateCapsIndicator(e) {
+                if (e.getModifierState) {
+                    if (e.getModifierState('CapsLock')) indCaps.classList.add('on');
+                    else indCaps.classList.remove('on');
+
+                    if (e.getModifierState('NumLock')) indNum.classList.add('on');
+                    else indNum.classList.remove('on');
+
+                    if (e.getModifierState('ScrollLock')) indScroll.classList.add('on');
+                    else indScroll.classList.remove('on');
+                }
+            }
+
+            // 更新计数显示
+            function updateCounts() {
+                testedCountEl.innerText = testedKeys.size;
+                pressedCountEl.innerText = currentlyPressedKeys.size;
+            }
+
+            // ================= 3. 键盘事件监听与快捷键拦截 =================
+            window.addEventListener('keydown', function(e) {
+                // 尽可能屏蔽浏览器原生快捷键，防止测试被意外唤出搜索、刷新、全屏或打印
+                // 允许保留 Ctrl+W、Ctrl+R 或关闭页面操作
+                var code = e.code;
+
+                // 阻止大部分浏览器内置默认行为
+                if (
+                    code === 'Tab' ||
+                    code === 'PrintScreen' ||
+                    code === 'F1' ||
+                    code === 'F3' ||
+                    code === 'F5' ||
+                    code === 'F6' ||
+                    code === 'F7' ||
+                    code === 'F10' ||
+                    code === 'F11' ||
+                    code === 'F12' ||
+                    code === 'AltLeft' ||
+                    code === 'AltRight' ||
+                    code === 'ContextMenu' ||
+                    (e.ctrlKey && (code === 'KeyF' || code === 'KeyG' || code === 'KeyP' || code === 'KeyS' || code === 'KeyU')) ||
+                    code === 'Slash' ||
+                    code === 'Quote' ||
+                    code === 'Backspace' ||
+                    code === 'Space'
+                ) {
+                    // 防止空格或者退格滚动页面，防止F1弹出帮助
+                    e.preventDefault();
+                }
+
+                updateCapsIndicator(e);
+
+                currentKeyNameEl.innerText = e.key === ' ' ? 'Space' : e.key;
+                currentKeyCodeEl.innerText = e.code;
+                currentKeyNumberEl.innerText = e.keyCode || e.which || '--';
+
+                currentlyPressedKeys.add(code);
+                testedKeys.add(code);
+
+                var el = keyElements[code];
+                if (el) {
+                    el.classList.add('active');
+                    el.classList.add('tested');
+                }
+
+                updateCounts();
+            }, { passive: false });
+
+            window.addEventListener('keyup', function(e) {
+                var code = e.code;
+                if (code === 'PrintScreen') {
+                    e.preventDefault();
+                }
+                currentlyPressedKeys.delete(code);
+
+                var el = keyElements[code];
+                if (el) {
+                    el.classList.remove('active');
+                }
+
+                updateCapsIndicator(e);
+                updateCounts();
+            }, { passive: false });
+
+            // 监听键盘按键在 window 和 document 级别捕获 PrintScreen 标记
+            document.addEventListener('keyup', function(e) {
+                if (e.code === 'PrintScreen' || e.key === 'PrintScreen') {
+                    var el = keyElements['PrintScreen'];
+                    if (el) {
+                        testedKeys.add('PrintScreen');
+                        el.classList.add('tested');
+                        el.classList.remove('active');
+                        updateCounts();
+                    }
+                }
+            });
+
+            // 窗口失去焦点时的处理：
+            // 如果刚按下了 PrintScreen 导致失去焦点，在短延时后自动拉回焦点，避免用户必须手动点击
+            var lastPrtScTime = 0;
+            window.addEventListener('keydown', function(e) {
+                if (e.code === 'PrintScreen' || e.key === 'PrintScreen') {
+                    lastPrtScTime = Date.now();
+                }
+            });
+
+            window.addEventListener('blur', function() {
+                currentlyPressedKeys.clear();
+                allKeys.forEach(function(el) {
+                    el.classList.remove('active');
+                });
+                updateCounts();
+
+                // 如果是按 PrtSc / 截图工具弹出引起的失焦，尝试自动帮页面重新聚焦
+                if (Date.now() - lastPrtScTime < 1500) {
+                    setTimeout(function() {
+                        window.focus();
+                        var wrapper = document.getElementById('keyboardWrapper');
+                        if (wrapper) wrapper.focus();
+                    }, 100);
+                    setTimeout(function() {
+                        window.focus();
+                        var wrapper = document.getElementById('keyboardWrapper');
+                        if (wrapper) wrapper.focus();
+                    }, 400);
+                }
+            });
+
+            // 鼠标重新移入或激活时自动聚焦键盘区域
+            window.addEventListener('mouseenter', function() {
+                var wrapper = document.getElementById('keyboardWrapper');
+                if (wrapper) wrapper.focus();
+            });
+            window.addEventListener('focus', function() {
+                var wrapper = document.getElementById('keyboardWrapper');
+                if (wrapper) wrapper.focus();
+            });
+
+            // 重置功能
+            resetBtn.addEventListener('click', function() {
+                testedKeys.clear();
+                currentlyPressedKeys.clear();
+                allKeys.forEach(function(el) {
+                    el.classList.remove('active');
+                    el.classList.remove('tested');
+                });
+                currentKeyNameEl.innerText = '无';
+                currentKeyCodeEl.innerText = '--';
+                currentKeyNumberEl.innerText = '--';
+                updateCounts();
+            });
+
+            // 自动聚焦让按键生效
+            window.addEventListener('load', function() {
+                document.getElementById('keyboardWrapper').focus();
+            });
+        })();
+    </script>
+</body>
+</html>
