@@ -596,7 +596,7 @@
                     <span>keyCode：<span class="code-tag" id="currentKeyNumber">--</span></span>
                 </div>
                 <div style="font-size: 12px; color: #71717a;">
-                    提示：已拦截 F1、F3、F5、F7、Tab、Alt、Ctrl 组合等浏览器快捷键，防止测试被意外打断
+                    提示：已拦截 F1~F12、Tab、Alt、Ctrl 组合等浏览器快捷键，防止测试被意外打断
                 </div>
             </div>
         </div>
@@ -710,9 +710,11 @@
                     code === 'PrintScreen' ||
                     code === 'F1' ||
                     code === 'F3' ||
+                    code === 'F4' ||
                     code === 'F5' ||
                     code === 'F6' ||
                     code === 'F7' ||
+                    code === 'F9' ||
                     code === 'F10' ||
                     code === 'F11' ||
                     code === 'F12' ||
@@ -725,7 +727,7 @@
                     code === 'Backspace' ||
                     code === 'Space'
                 ) {
-                    // 防止空格或者退格滚动页面，防止F1弹出帮助
+                    // 防止空格或者退格滚动页面，防止F1帮助、F4关闭/地址栏、F9快捷键等
                     e.preventDefault();
                 }
 
