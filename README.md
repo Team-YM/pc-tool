@@ -2,7 +2,8 @@
 
 > 免费在线工具集合 — 每一个功能都为效率而生，完全免费，为人民服务！
 
-[pc-tool.cn](https://www.pc-tool.cn)
+[www.pc-tool.cn](https://www.pc-tool.cn)
+[QQ交流群：1121812272](https://jq.qq.com/?from=1121812272)
 
 ---
 
@@ -115,7 +116,7 @@ pc-tool/
 ## 反馈与建议
 
 - 网站：[pc-tool.cn](https://www.pc-tool.cn)
-- QQ：1003294905
+- QQ交流群：1121812272
 - 如果您有需要的功能或意见，欢迎联系反馈！
 - 您的支持和反馈就是我们开发的最大动力！
 ---
