@@ -231,6 +231,8 @@
             display: flex;
             flex-direction: column;
             gap: 18px;
+            opacity: 0;
+            animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.25s forwards;
         }
 
         .category-group.group-hidden {
@@ -274,7 +276,7 @@
             border: 1px solid rgba(255, 255, 255, 0.06);
         }
 
-        /* 快捷分类定位锚点栏 (纯文字，无emoji) */
+        /* 快捷分类定位锚点栏 (仿造主页顶部卡片的入场动画规格) */
         .category-quick-nav {
             display: flex;
             align-items: center;
@@ -300,7 +302,20 @@
             text-decoration: none;
             transition: all 0.2s ease;
             user-select: none;
+            opacity: 0;
+            animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
+
+        .quick-nav-btn:nth-child(1)  { animation-delay: 0.20s; }
+        .quick-nav-btn:nth-child(2)  { animation-delay: 0.24s; }
+        .quick-nav-btn:nth-child(3)  { animation-delay: 0.28s; }
+        .quick-nav-btn:nth-child(4)  { animation-delay: 0.32s; }
+        .quick-nav-btn:nth-child(5)  { animation-delay: 0.36s; }
+        .quick-nav-btn:nth-child(6)  { animation-delay: 0.40s; }
+        .quick-nav-btn:nth-child(7)  { animation-delay: 0.44s; }
+        .quick-nav-btn:nth-child(8)  { animation-delay: 0.48s; }
+        .quick-nav-btn:nth-child(9)  { animation-delay: 0.52s; }
+        .quick-nav-btn:nth-child(10) { animation-delay: 0.56s; }
 
         .quick-nav-btn:hover {
             color: #f4f4f5;
