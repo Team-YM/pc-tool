@@ -274,7 +274,105 @@
 
         /* 隐藏不匹配的工具项 */
         .tool-item.search-hidden {
+            display: none !important;
+        }
+
+        /* 分类分组区域与标题 (移动端，纯文字，无emoji) */
+        .category-sections {
+            display: flex;
+            flex-direction: column;
+            gap: 28px;
+        }
+
+        .category-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .category-group.group-hidden {
+            display: none !important;
+        }
+
+        .category-group-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 2px 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .category-title {
+            font-size: 1.0625rem;
+            font-weight: 600;
+            color: #f4f4f5;
+            letter-spacing: -0.01em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .category-title::before {
+            content: '';
+            display: inline-block;
+            width: 3px;
+            height: 15px;
+            background: linear-gradient(180deg, #6366f1, #38bdf8);
+            border-radius: 2px;
+        }
+
+        .category-count {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #71717a;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1px 7px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        /* 移动端横向滑动快捷锚点栏 (无emoji) */
+        .category-quick-nav {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 4px 0 16px;
+            margin-bottom: 8px;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+
+        .category-quick-nav::-webkit-scrollbar {
             display: none;
+        }
+
+        .quick-nav-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 13px;
+            border-radius: 9999px;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            color: #a1a1aa;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            white-space: nowrap;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+            cursor: pointer;
+        }
+
+        .quick-nav-btn:active {
+            transform: scale(0.95);
+        }
+
+        .quick-nav-btn.active {
+            color: #ffffff;
+            background: rgba(99, 102, 241, 0.25);
+            border-color: rgba(129, 140, 248, 0.5);
         }
 
         /* ==================== 主容器 ==================== */
@@ -721,7 +819,26 @@
             </div>
         </div>
 
-        <div class="tool-list" id="toolList">
+        <!-- 移动端横向滑动快捷锚点栏 (纯文字，无emoji) -->
+        <nav class="category-quick-nav" id="categoryQuickNav" aria-label="工具分类导航">
+            <button class="quick-nav-btn active" data-target="all">全部</button>
+            <button class="quick-nav-btn" data-target="m-cat-image">图像处理</button>
+            <button class="quick-nav-btn" data-target="m-cat-audio">音频处理</button>
+            <button class="quick-nav-btn" data-target="m-cat-video">视频处理</button>
+            <button class="quick-nav-btn" data-target="m-cat-doc">文档/PDF</button>
+            <button class="quick-nav-btn" data-target="m-cat-dev">开发工具</button>
+            <button class="quick-nav-btn" data-target="m-cat-net">网络工具</button>
+            <button class="quick-nav-btn" data-target="m-cat-calc">计算换算</button>
+            <button class="quick-nav-btn" data-target="m-cat-life">生活效率</button>
+            <button class="quick-nav-btn" data-target="m-cat-hardware">硬件测试</button>
+        </nav>
+
+        <!-- 分类排列结构：类别1 -> 列表项 / 类别2 -> 列表项 ... -->
+        <div class="category-sections" id="categorySections">
+            <div class="search-empty" id="searchEmpty">没有找到匹配的工具...</div>
+        </div>
+
+        <div class="tool-list" id="toolList" style="display: none;">
             <a href="./tool/qrcode.html" target="_blank" class="tool-item">
                 <div class="tool-icon icon-cyan"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><path d="M7 7h.01"/><path d="M17 7h.01"/><path d="M7 17h.01"/><path d="M17 17h.01"/><path d="M12 12h.01"/></svg></div>
                 <div class="tool-info">
@@ -817,6 +934,15 @@
                 <div class="tool-info">
                     <div class="tool-name">Word与PDF互转</div>
                     <div class="tool-desc">Word转PDF / PDF转Word</div>
+                </div>
+                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+            </a>
+
+            <a href="./tool/csv-excel-convert.html" target="_blank" class="tool-item">
+                <div class="tool-icon icon-cyan"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/></svg></div>
+                <div class="tool-info">
+                    <div class="tool-name">CSV与Excel互转</div>
+                    <div class="tool-desc">CSV转Excel / Excel转CSV带预览</div>
                 </div>
                 <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
             </a>
@@ -1588,17 +1714,209 @@
             });
         });
 
-        // ==================== 搜索功能 ====================
+        // ==================== 分类与搜索功能 ====================
         (function() {
             var searchToggle = document.getElementById('searchToggle');
             var searchInput = document.getElementById('searchInput');
             var searchClear = document.getElementById('searchClear');
             var searchEmpty = document.getElementById('searchEmpty');
-            var toolItems = document.querySelectorAll('#toolList .tool-item');
+            var categoryQuickNav = document.getElementById('categoryQuickNav');
+            var quickNavButtons = categoryQuickNav ? categoryQuickNav.querySelectorAll('.quick-nav-btn') : [];
+            var categorySections = document.getElementById('categorySections');
+            var toolList = document.getElementById('toolList');
+            var toolItems = toolList ? toolList.querySelectorAll('.tool-item') : [];
 
-            function doSearch() {
+            // 分类定义元数据（纯文字，无emoji）
+            var categoryList = [
+                { id: 'm-cat-image', key: 'image', name: '图像处理' },
+                { id: 'm-cat-audio', key: 'audio', name: '音频处理' },
+                { id: 'm-cat-video', key: 'video', name: '视频处理' },
+                { id: 'm-cat-doc', key: 'doc', name: '文档与PDF' },
+                { id: 'm-cat-dev', key: 'dev', name: '开发工具' },
+                { id: 'm-cat-net', key: 'net', name: '网络工具' },
+                { id: 'm-cat-calc', key: 'calc', name: '计算换算' },
+                { id: 'm-cat-life', key: 'life', name: '生活效率' },
+                { id: 'm-cat-hardware', key: 'hardware', name: '硬件测试' }
+            ];
+
+            // 依据工具链接特征自动识别分类字典映射
+            var toolCategoryMap = {
+                // 图像处理
+                'qrcode': 'dev',
+                'qrcode-decode': 'dev',
+                'image-convert': 'image',
+                'image-crop': 'image',
+                'image-stitch': 'image',
+                'image-gif': 'image',
+                'image-watermark': 'image',
+                'image-rotate': 'image',
+                'image-filter': 'image',
+                'photo-dpi': 'image',
+                'image-compress': 'image',
+                'image-base64': 'image',
+                'image-base64-decode': 'image',
+                'cut-image': 'image',
+                'image-color-picker': 'image',
+                'image-invert': 'image',
+                'gif-compress': 'image',
+                'image-watermark-remove': 'image',
+                'image-to-svg': 'image',
+                'image-grid-split': 'image',
+                'image-mosaic': 'image',
+                'photo-to-sketch': 'image',
+
+                // 音频处理
+                'audio-ogg': 'audio',
+                'audio-convert': 'audio',
+                'audio-compress': 'audio',
+                'audio-clip': 'audio',
+                'audio-merge': 'audio',
+                'audio-reverse': 'audio',
+                'audio-speed': 'audio',
+                'audio-pitch': 'audio',
+                'text-to-speech': 'audio',
+                'speech-to-text': 'audio',
+                'metronome': 'audio',
+                'music.hi.cn': 'audio',
+
+                // 视频处理
+                'video-to-audio': 'video',
+                'video-convert': 'video',
+                'video-comp': 'video',
+                'video-to-gif': 'video',
+                'video-clip': 'video',
+                'video-reverse': 'video',
+                'video-screenshot': 'video',
+                'video-merge': 'video',
+                'video-watermark': 'video',
+                'video-speed': 'video',
+                'video-delogo': 'video',
+                'video-cover': 'video',
+                'vrc-url': 'net',
+                'snapany': 'video',
+
+                // 文档与PDF
+                'word-pdf-convert': 'doc',
+                'csv-excel-convert': 'doc',
+                'pdf-merge': 'doc',
+                'pdf-split': 'doc',
+                'pdf-compress': 'doc',
+                'pdf-to-img': 'doc',
+                'img-to-pdf': 'doc',
+                'pdf-crypto': 'doc',
+                'pdf-extract-text': 'doc',
+
+                // 开发者工具
+                'base64-text': 'dev',
+                'json-format': 'dev',
+                'url-codec': 'dev',
+                'timestamp': 'dev',
+                'regex-tester': 'dev',
+                'password-uuid': 'dev',
+                'radix-convert': 'dev',
+                'hash-crypto': 'dev',
+                'unicode-convert': 'dev',
+                'html-entity': 'dev',
+                'file-hash': 'dev',
+                'barcode-gen': 'dev',
+
+                // 网络工具
+                'vrc-url': 'net',
+                'short-url': 'net',
+                'ua-parser': 'net',
+                'http-status': 'net',
+                'site-ping': 'net',
+                'ssl-checker': 'net',
+                'port-scan': 'net',
+                'domain-ip': 'net',
+
+                // 计算换算
+                'color-convert': 'calc',
+                'date-calc': 'calc',
+                'unit-convert': 'calc',
+                'bmi-calc': 'calc',
+                'loan-calc': 'calc',
+                'currency-calc': 'calc',
+
+                // 生活效率
+                'lunar-weather': 'life',
+                'lucky-wheel': 'life',
+                'pomodoro-timer': 'life',
+                'morse-code': 'life',
+                'countdown-timer': 'life',
+                'random-number': 'life',
+
+                // 硬件测试
+                'screen-test': 'hardware',
+                'keyboard-test': 'hardware'
+            };
+
+            // 创建移动端各分类容器与列表
+            var groupElements = {};
+            categoryList.forEach(function(cat) {
+                var groupSection = document.createElement('section');
+                groupSection.className = 'category-group';
+                groupSection.id = cat.id;
+
+                var header = document.createElement('div');
+                header.className = 'category-group-header';
+
+                var title = document.createElement('h2');
+                title.className = 'category-title';
+                title.textContent = cat.name;
+
+                var countBadge = document.createElement('span');
+                countBadge.className = 'category-count';
+                countBadge.textContent = '0 项';
+
+                header.appendChild(title);
+                header.appendChild(countBadge);
+
+                var list = document.createElement('div');
+                list.className = 'tool-list';
+
+                groupSection.appendChild(header);
+                groupSection.appendChild(list);
+                categorySections.insertBefore(groupSection, searchEmpty);
+
+                groupElements[cat.key] = {
+                    section: groupSection,
+                    list: list,
+                    badge: countBadge,
+                    count: 0
+                };
+            });
+
+            // 分发每个移动端工具项到对应的分类组中
+            toolItems.forEach(function(item) {
+                var href = item.getAttribute('href') || '';
+                var assignedCat = 'dev';
+                for (var key in toolCategoryMap) {
+                    if (href.indexOf(key) !== -1) {
+                        assignedCat = toolCategoryMap[key];
+                        break;
+                    }
+                }
+                if (!href) return;
+
+                item.dataset.category = assignedCat;
+                if (groupElements[assignedCat]) {
+                    groupElements[assignedCat].list.appendChild(item);
+                    groupElements[assignedCat].count++;
+                }
+            });
+
+            // 更新分类数量
+            categoryList.forEach(function(cat) {
+                if (groupElements[cat.key]) {
+                    groupElements[cat.key].badge.textContent = groupElements[cat.key].count + ' 项';
+                }
+            });
+
+            // 搜索过滤
+            function filterTools() {
                 var query = searchInput.value.trim().toLowerCase();
-                var hasResults = false;
+                var anyVisibleTotal = false;
 
                 if (query) {
                     searchClear.style.display = 'flex';
@@ -1606,25 +1924,62 @@
                     searchClear.style.display = 'none';
                 }
 
-                toolItems.forEach(function(item) {
-                    var name = item.querySelector('.tool-name');
-                    var desc = item.querySelector('.tool-desc');
-                    var nameText = name ? name.textContent.toLowerCase() : '';
-                    var descText = desc ? desc.textContent.toLowerCase() : '';
-                    if (query && !nameText.includes(query) && !descText.includes(query)) {
-                        item.classList.add('search-hidden');
+                categoryList.forEach(function(cat) {
+                    var group = groupElements[cat.key];
+                    if (!group) return;
+
+                    var items = group.list.querySelectorAll('.tool-item');
+                    var visibleInGroup = 0;
+
+                    items.forEach(function(item) {
+                        var name = item.querySelector('.tool-name');
+                        var desc = item.querySelector('.tool-desc');
+                        var nameText = name ? name.textContent.toLowerCase() : '';
+                        var descText = desc ? desc.textContent.toLowerCase() : '';
+                        var matches = !query || nameText.includes(query) || descText.includes(query);
+
+                        if (matches) {
+                            item.classList.remove('search-hidden');
+                            visibleInGroup++;
+                        } else {
+                            item.classList.add('search-hidden');
+                        }
+                    });
+
+                    if (visibleInGroup === 0) {
+                        group.section.classList.add('group-hidden');
                     } else {
-                        item.classList.remove('search-hidden');
-                        hasResults = true;
+                        group.section.classList.remove('group-hidden');
+                        anyVisibleTotal = true;
                     }
                 });
 
-                if (query && !hasResults) {
+                if (!anyVisibleTotal) {
                     searchEmpty.classList.add('show');
                 } else {
                     searchEmpty.classList.remove('show');
                 }
             }
+
+            // 快捷定位锚点点击平滑滚动
+            quickNavButtons.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    quickNavButtons.forEach(function(b) { b.classList.remove('active'); });
+                    btn.classList.add('active');
+
+                    var targetId = btn.dataset.target;
+                    if (targetId === 'all') {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    } else {
+                        var el = document.getElementById(targetId);
+                        if (el) {
+                            var yOffset = -70;
+                            var y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                            window.scrollTo({ top: y, behavior: 'smooth' });
+                        }
+                    }
+                });
+            });
 
             searchToggle.addEventListener('click', function() {
                 searchInput.focus();
@@ -1635,10 +1990,10 @@
                 searchInput.value = '';
                 searchClear.style.display = 'none';
                 searchInput.focus();
-                doSearch();
+                filterTools();
             });
 
-            searchInput.addEventListener('input', doSearch);
+            searchInput.addEventListener('input', filterTools);
         })();
     </script>
 </body>

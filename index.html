@@ -220,9 +220,104 @@
             display: block;
         }
 
+        /* 分类分组区域与标题 */
+        .category-sections {
+            display: flex;
+            flex-direction: column;
+            gap: 48px;
+        }
+
+        .category-group {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .category-group.group-hidden {
+            display: none !important;
+        }
+
+        .category-group-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .category-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #f4f4f5;
+            letter-spacing: -0.01em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .category-title::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 18px;
+            background: linear-gradient(180deg, #6366f1, #38bdf8);
+            border-radius: 2px;
+        }
+
+        .category-count {
+            font-size: 0.8125rem;
+            font-weight: 500;
+            color: #71717a;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 2px 8px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        /* 快捷分类定位锚点栏 (纯文字，无emoji) */
+        .category-quick-nav {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            padding: 4px 0 20px;
+            margin-bottom: 16px;
+        }
+
+        .quick-nav-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 16px;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #a1a1aa;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            cursor: pointer;
+            white-space: nowrap;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .quick-nav-btn:hover {
+            color: #f4f4f5;
+            background: rgba(255, 255, 255, 0.09);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .quick-nav-btn.active {
+            color: #ffffff;
+            background: rgba(99, 102, 241, 0.25);
+            border-color: rgba(129, 140, 248, 0.5);
+        }
+
         /* 搜索时隐藏不匹配的卡片 */
         .card.search-hidden {
-            display: none;
+            display: none !important;
         }
 
         .main-container {
@@ -704,7 +799,26 @@
             </div>
         </div>
 
-        <section class="grid">
+        <!-- 快捷分类导航栏 (无emoji，按类别快速定位) -->
+        <nav class="category-quick-nav" id="categoryQuickNav" aria-label="工具分类导航">
+            <button class="quick-nav-btn active" data-target="all">全部</button>
+            <button class="quick-nav-btn" data-target="cat-image">图像处理</button>
+            <button class="quick-nav-btn" data-target="cat-audio">音频处理</button>
+            <button class="quick-nav-btn" data-target="cat-video">视频处理</button>
+            <button class="quick-nav-btn" data-target="cat-doc">文档/PDF</button>
+            <button class="quick-nav-btn" data-target="cat-dev">开发工具</button>
+            <button class="quick-nav-btn" data-target="cat-net">网络工具</button>
+            <button class="quick-nav-btn" data-target="cat-calc">计算换算</button>
+            <button class="quick-nav-btn" data-target="cat-life">生活效率</button>
+            <button class="quick-nav-btn" data-target="cat-hardware">硬件测试</button>
+        </nav>
+
+        <!-- 分类排列结构：类别1 -> 按钮组 / 类别2 -> 按钮组 ... -->
+        <div class="category-sections" id="categorySections">
+            <div class="search-empty" id="searchEmpty">没有找到匹配的工具...</div>
+        </div>
+
+        <section class="grid" id="originalGrid" style="display: none;">
             <a href="./tool/qrcode.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><path d="M7 7h.01"/><path d="M17 7h.01"/><path d="M7 17h.01"/><path d="M17 17h.01"/><path d="M12 12h.01"/></svg></div><div class="card-title">二维码生成器</div><div class="card-line"></div></div></a>
             <a href="./tool/qrcode-decode.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><path d="M7 7h.01"/><path d="M17 7h.01"/><path d="M17 17h.01"/><path d="M7 17h.01"/><circle cx="12" cy="12" r="3"/></svg></div><div class="card-title">二维码解析</div><div class="card-line"></div></div></a>
             <a href="./tool/image-convert.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><div class="card-title">图片批量转格式</div><div class="card-line"></div></div></a>
@@ -716,6 +830,7 @@
             <a href="./tool/image-filter.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div><div class="card-title">图片调色/滤镜</div><div class="card-line"></div></div></a>
             <a href="./tool/photo-dpi.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><div class="card-title">图片DPI转换</div><div class="card-line"></div></div></a>
             <a href="./tool/word-pdf-convert.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div><div class="card-title">Word与PDF互转</div><div class="card-line"></div></div></a>
+            <a href="./tool/csv-excel-convert.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/></svg></div><div class="card-title">CSV与Excel互转</div><div class="card-line"></div></div></a>
             <a href="./tool/audio-ogg.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div><div class="card-title">音频转ogg格式</div><div class="card-line"></div></div></a>
             <a href="./tool/audio-convert.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg></div><div class="card-title">音频转格式</div><div class="card-line"></div></div></a>
             <a href="./tool/audio-compress.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg></div><div class="card-title">音频压缩</div><div class="card-line"></div></div></a>
@@ -1044,17 +1159,213 @@
             });
         });
 
-        // ==================== 搜索功能 ====================
+        // ==================== 分类与搜索功能 ====================
         (function() {
             var searchToggle = document.getElementById('searchToggle');
             var searchInput = document.getElementById('searchInput');
             var searchClear = document.getElementById('searchClear');
             var searchEmpty = document.getElementById('searchEmpty');
-            var cards = document.querySelectorAll('.grid .card');
+            var categoryQuickNav = document.getElementById('categoryQuickNav');
+            var quickNavButtons = categoryQuickNav ? categoryQuickNav.querySelectorAll('.quick-nav-btn') : [];
+            var categorySections = document.getElementById('categorySections');
+            var originalGrid = document.getElementById('originalGrid');
+            var cards = originalGrid ? originalGrid.querySelectorAll('.card') : [];
 
-            function doSearch() {
+            // 分类定义元数据（纯文字，无emoji）
+            var categoryList = [
+                { id: 'cat-image', key: 'image', name: '图像处理' },
+                { id: 'cat-audio', key: 'audio', name: '音频处理' },
+                { id: 'cat-video', key: 'video', name: '视频处理' },
+                { id: 'cat-doc', key: 'doc', name: '文档与PDF' },
+                { id: 'cat-dev', key: 'dev', name: '开发工具' },
+                { id: 'cat-net', key: 'net', name: '网络工具' },
+                { id: 'cat-calc', key: 'calc', name: '计算换算' },
+                { id: 'cat-life', key: 'life', name: '生活效率' },
+                { id: 'cat-hardware', key: 'hardware', name: '硬件测试' }
+            ];
+
+            // 依据工具链接特征自动识别分类字典映射
+            var toolCategoryMap = {
+                // 图像处理
+                'qrcode': 'dev',
+                'qrcode-decode': 'dev',
+                'image-convert': 'image',
+                'image-crop': 'image',
+                'image-stitch': 'image',
+                'image-gif': 'image',
+                'image-watermark': 'image',
+                'image-rotate': 'image',
+                'image-filter': 'image',
+                'photo-dpi': 'image',
+                'image-compress': 'image',
+                'image-base64': 'image',
+                'image-base64-decode': 'image',
+                'cut-image': 'image',
+                'image-color-picker': 'image',
+                'image-invert': 'image',
+                'gif-compress': 'image',
+                'image-watermark-remove': 'image',
+                'image-to-svg': 'image',
+                'image-grid-split': 'image',
+                'image-mosaic': 'image',
+                'photo-to-sketch': 'image',
+
+                // 音频处理
+                'audio-ogg': 'audio',
+                'audio-convert': 'audio',
+                'audio-compress': 'audio',
+                'audio-clip': 'audio',
+                'audio-merge': 'audio',
+                'audio-reverse': 'audio',
+                'audio-speed': 'audio',
+                'audio-pitch': 'audio',
+                'text-to-speech': 'audio',
+                'speech-to-text': 'audio',
+                'metronome': 'audio',
+                'music.hi.cn': 'audio',
+
+                // 视频处理
+                'video-to-audio': 'video',
+                'video-convert': 'video',
+                'video-comp': 'video',
+                'video-to-gif': 'video',
+                'video-clip': 'video',
+                'video-reverse': 'video',
+                'video-screenshot': 'video',
+                'video-merge': 'video',
+                'video-watermark': 'video',
+                'video-speed': 'video',
+                'video-delogo': 'video',
+                'video-cover': 'video',
+                'vrc-url': 'net',
+                'snapany': 'video',
+
+                // 文档与PDF
+                'word-pdf-convert': 'doc',
+                'csv-excel-convert': 'doc',
+                'pdf-merge': 'doc',
+                'pdf-split': 'doc',
+                'pdf-compress': 'doc',
+                'pdf-to-img': 'doc',
+                'img-to-pdf': 'doc',
+                'pdf-crypto': 'doc',
+                'pdf-extract-text': 'doc',
+
+                // 开发者工具
+                'base64-text': 'dev',
+                'json-format': 'dev',
+                'url-codec': 'dev',
+                'timestamp': 'dev',
+                'regex-tester': 'dev',
+                'password-uuid': 'dev',
+                'radix-convert': 'dev',
+                'hash-crypto': 'dev',
+                'unicode-convert': 'dev',
+                'html-entity': 'dev',
+                'file-hash': 'dev',
+                'barcode-gen': 'dev',
+
+                // 网络工具
+                'vrc-url': 'net',
+                'short-url': 'net',
+                'ua-parser': 'net',
+                'http-status': 'net',
+                'site-ping': 'net',
+                'ssl-checker': 'net',
+                'port-scan': 'net',
+                'domain-ip': 'net',
+
+                // 计算换算
+                'color-convert': 'calc',
+                'date-calc': 'calc',
+                'unit-convert': 'calc',
+                'bmi-calc': 'calc',
+                'loan-calc': 'calc',
+                'currency-calc': 'calc',
+
+                // 生活效率
+                'lunar-weather': 'life',
+                'lucky-wheel': 'life',
+                'pomodoro-timer': 'life',
+                'morse-code': 'life',
+                'countdown-timer': 'life',
+                'random-number': 'life',
+
+                // 硬件测试
+                'screen-test': 'hardware',
+                'keyboard-test': 'hardware'
+            };
+
+            // 创建各分类的容器与网格
+            var groupElements = {};
+            categoryList.forEach(function(cat) {
+                var groupSection = document.createElement('section');
+                groupSection.className = 'category-group';
+                groupSection.id = cat.id;
+
+                var header = document.createElement('div');
+                header.className = 'category-group-header';
+
+                var title = document.createElement('h2');
+                title.className = 'category-title';
+                title.textContent = cat.name;
+
+                var countBadge = document.createElement('span');
+                countBadge.className = 'category-count';
+                countBadge.textContent = '0 项';
+
+                header.appendChild(title);
+                header.appendChild(countBadge);
+
+                var grid = document.createElement('div');
+                grid.className = 'grid';
+
+                groupSection.appendChild(header);
+                groupSection.appendChild(grid);
+                categorySections.insertBefore(groupSection, searchEmpty);
+
+                groupElements[cat.key] = {
+                    section: groupSection,
+                    grid: grid,
+                    badge: countBadge,
+                    count: 0
+                };
+            });
+
+            // 将卡片分发到对应的分类容器中，形成：
+            // 类别1
+            // 按钮1 按钮2 按钮3...
+            // 类别2
+            // 按钮1 按钮2 按钮3...
+            cards.forEach(function(card) {
+                var href = card.getAttribute('href') || '';
+                var assignedCat = 'dev';
+                for (var key in toolCategoryMap) {
+                    if (href.indexOf(key) !== -1) {
+                        assignedCat = toolCategoryMap[key];
+                        break;
+                    }
+                }
+                if (!href) return; // 占位卡片不排入常规类别
+
+                card.dataset.category = assignedCat;
+                if (groupElements[assignedCat]) {
+                    groupElements[assignedCat].grid.appendChild(card);
+                    groupElements[assignedCat].count++;
+                }
+            });
+
+            // 更新每个分类标题旁的工具数量
+            categoryList.forEach(function(cat) {
+                if (groupElements[cat.key]) {
+                    groupElements[cat.key].badge.textContent = groupElements[cat.key].count + ' 项';
+                }
+            });
+
+            // 搜索过滤与分类显隐控制
+            function filterTools() {
                 var query = searchInput.value.trim().toLowerCase();
-                var hasResults = false;
+                var anyVisibleTotal = false;
 
                 if (query) {
                     searchClear.style.display = 'flex';
@@ -1062,23 +1373,61 @@
                     searchClear.style.display = 'none';
                 }
 
-                cards.forEach(function(card) {
-                    var title = card.querySelector('.card-title');
-                    var titleText = title ? title.textContent.toLowerCase() : '';
-                    if (query && !titleText.includes(query)) {
-                        card.classList.add('search-hidden');
+                categoryList.forEach(function(cat) {
+                    var group = groupElements[cat.key];
+                    if (!group) return;
+
+                    var groupCards = group.grid.querySelectorAll('.card');
+                    var visibleInGroup = 0;
+
+                    groupCards.forEach(function(card) {
+                        var title = card.querySelector('.card-title');
+                        var titleText = title ? title.textContent.toLowerCase() : '';
+                        var matches = !query || titleText.includes(query);
+
+                        if (matches) {
+                            card.classList.remove('search-hidden');
+                            visibleInGroup++;
+                        } else {
+                            card.classList.add('search-hidden');
+                        }
+                    });
+
+                    // 若该分类下无匹配项，则收起整组（包含类别标题和网格）
+                    if (visibleInGroup === 0) {
+                        group.section.classList.add('group-hidden');
                     } else {
-                        card.classList.remove('search-hidden');
-                        if (query) hasResults = true;
+                        group.section.classList.remove('group-hidden');
+                        anyVisibleTotal = true;
                     }
                 });
 
-                if (query && !hasResults) {
+                if (!anyVisibleTotal) {
                     searchEmpty.classList.add('show');
                 } else {
                     searchEmpty.classList.remove('show');
                 }
             }
+
+            // 快捷定位锚点点击平滑滚动
+            quickNavButtons.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    quickNavButtons.forEach(function(b) { b.classList.remove('active'); });
+                    btn.classList.add('active');
+
+                    var targetId = btn.dataset.target;
+                    if (targetId === 'all') {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    } else {
+                        var el = document.getElementById(targetId);
+                        if (el) {
+                            var yOffset = -90; // 留出顶部间距
+                            var y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                            window.scrollTo({ top: y, behavior: 'smooth' });
+                        }
+                    }
+                });
+            });
 
             searchToggle.addEventListener('click', function() {
                 searchInput.focus();
@@ -1089,10 +1438,10 @@
                 searchInput.value = '';
                 searchClear.style.display = 'none';
                 searchInput.focus();
-                doSearch();
+                filterTools();
             });
 
-            searchInput.addEventListener('input', doSearch);
+            searchInput.addEventListener('input', filterTools);
 
             // Ctrl+K 快捷键定位搜索
             document.addEventListener('keydown', function(e) {
