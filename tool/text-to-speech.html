@@ -275,6 +275,11 @@
             </button>
         </div>
 
+        <!-- 录制提示条 -->
+        <div id="recordTip" style="display:none; margin: 10px 0; padding: 12px 16px; background: rgba(99, 102, 241, 0.12); border: 1px solid rgba(129, 140, 248, 0.3); border-radius: 8px; font-size: 13px; color: #c7d2fe; line-height: 1.6;">
+            💡 <strong>导出提示</strong>：浏览器出于安全隐私限制，系统合成语音不直接对网页暴露音频二进制流。点击录制后弹出的共享窗口中，请选择 <strong>“当前标签页 (This Tab)”</strong> 并务必勾选 <strong>“同时共享标签页音频 (Share tab audio)”</strong>，朗读完毕即可自动导出清晰有声的音频文件！
+        </div>
+
         <div class="progress-bar" id="progressBar">
             <div class="fill" id="progressFill"></div>
         </div>
@@ -311,6 +316,7 @@
         const stopBtn = document.getElementById('stopBtn');
         const recordDownloadBtn = document.getElementById('recordDownloadBtn');
         const recDot = document.getElementById('recDot');
+        const recordTip = document.getElementById('recordTip');
         const progressBar = document.getElementById('progressBar');
         const progressFill = document.getElementById('progressFill');
         const statusText = document.getElementById('statusText');
@@ -511,22 +517,87 @@
             }
         };
 
-        // 将文本合成并录制成音频 Blob (纯本地浏览器方案)
+        // 将文本合成并录制成真实可听的音频 Blob
         async function synthesizeSpeechToBlob(text) {
-            return new Promise((resolve, reject) => {
-                // 如果支持 captureStream 或 Web Audio 录制
-                const actx = new (window.AudioContext || window.webkitAudioContext)();
-                const dest = actx.createMediaStreamDestination();
-                let mediaRecorder;
-                const chunks = [];
+            // 检查是否支持音频捕获 API
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+                throw new Error('当前浏览器不支持屏幕/标签页音频捕获，建议使用 Chrome 或 Edge 浏览器');
+            }
 
-                try {
-                    mediaRecorder = new MediaRecorder(dest.stream);
-                } catch (e) {
-                    // 若 MediaRecorder 不可用则退化
+            recordTip.style.display = 'block';
+
+            let stream;
+            try {
+                // 请求捕获当前标签页音频 (包含系统/标签页合成的语音)
+                stream = await navigator.mediaDevices.getDisplayMedia({
+                    video: true, // 现代浏览器规范中 getDisplayMedia 必须包含 video 请求
+                    audio: {
+                        echoCancellation: false,
+                        noiseSuppression: false,
+                        autoGainControl: false,
+                        suppressLocalAudioPlayback: false
+                    },
+                    preferCurrentTab: true,
+                    selfBrowserSurface: "include",
+                    systemAudio: "include"
+                });
+            } catch (err) {
+                recordTip.style.display = 'none';
+                if (err.name === 'NotAllowedError') {
+                    throw new Error('已取消共享，需允许并勾选“共享音频”方可录制声音');
+                }
+                throw err;
+            }
+
+            // 检查是否有捕获到音频轨
+            const audioTracks = stream.getAudioTracks();
+            if (!audioTracks || audioTracks.length === 0) {
+                // 停止视频轨道释放资源
+                stream.getTracks().forEach(t => t.stop());
+                recordTip.style.display = 'none';
+                throw new Error('未检测到音频轨道！请在分享弹窗中务必勾选【共享标签页音频】或【系统音频】');
+            }
+
+            // 仅提取纯音频轨道构建流
+            const audioStream = new MediaStream(audioTracks);
+
+            return new Promise((resolve, reject) => {
+                let chunksData = [];
+                let mimeType = 'audio/webm;codecs=opus';
+                if (!MediaRecorder.isTypeSupported(mimeType)) {
+                    mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '';
                 }
 
-                // 创建朗读
+                const rec = mimeType ? new MediaRecorder(audioStream, { mimeType }) : new MediaRecorder(audioStream);
+
+                rec.ondataavailable = (e) => {
+                    if (e.data && e.data.size > 0) chunksData.push(e.data);
+                };
+
+                rec.onstop = async () => {
+                    // 停止所有捕获轨道，释放浏览器共享指示图标
+                    stream.getTracks().forEach(t => t.stop());
+                    audioStream.getTracks().forEach(t => t.stop());
+                    recordTip.style.display = 'none';
+
+                    if (chunksData.length > 0) {
+                        const webmBlob = new Blob(chunksData, { type: rec.mimeType || 'audio/webm' });
+                        try {
+                            // 将录制的音频流解码为标准 PCM AudioBuffer，再编码生成标准的 WAV 文件（确保各端播放器秒开且必有声音）
+                            const wavBlob = await convertWebmToWavBlob(webmBlob);
+                            resolve(wavBlob);
+                        } catch (err) {
+                            console.warn('WAV转码失败，直接返回WebM:', err);
+                            resolve(webmBlob);
+                        }
+                    } else {
+                        reject(new Error('未能采集到有效音频数据'));
+                    }
+                };
+
+                rec.start(100);
+
+                // 创建朗读实例
                 const utter = new SpeechSynthesisUtterance(text);
                 const selectedVoiceName = voiceSelect.value;
                 const selectedVoice = voices.find(v => v.name === selectedVoiceName);
@@ -536,60 +607,43 @@
                 utter.pitch = parseFloat(pitchSlider.value);
                 utter.volume = parseFloat(volumeSlider.value);
 
-                // 使用离线/在线振荡加合成或直接录制 Speech
-                // 由于标准 SpeechSynthesisUtterance 属于系统直接输出，现代浏览器标准最佳实践：
-                // 启动 MediaRecorder 监听并生成音频 Blob
-                let chunksData = [];
-                let rec;
-                try {
-                    rec = new MediaRecorder(dest.stream, { mimeType: 'audio/webm' });
-                } catch (e) {
-                    rec = new MediaRecorder(dest.stream);
-                }
-
-                rec.ondataavailable = (e) => {
-                    if (e.data.size > 0) chunksData.push(e.data);
-                };
-
-                rec.onstop = () => {
-                    actx.close();
-                    if (chunksData.length > 0) {
-                        const blob = new Blob(chunksData, { type: rec.mimeType || 'audio/webm' });
-                        resolve(blob);
-                    } else {
-                        // 备用：生成基于文本时长的标准高保真音频通知文件
-                        resolve(createFallbackAudioBlob(text.length));
-                    }
-                };
-
-                rec.start(100);
-
                 utter.onend = () => {
+                    // 朗读结束稍作延迟留出尾音后停止录制
                     setTimeout(() => {
                         try {
                             if (rec.state !== 'inactive') rec.stop();
                         } catch (e) {
-                            resolve(createFallbackAudioBlob(text.length));
+                            console.error(e);
                         }
-                    }, 500);
+                    }, 600);
                 };
 
                 utter.onerror = (e) => {
                     try { if (rec.state !== 'inactive') rec.stop(); } catch (err) {}
-                    // 容错保障
-                    resolve(createFallbackAudioBlob(text.length));
+                    reject(new Error('语音朗读异常：' + (e.error || '未知')));
                 };
 
                 synth.speak(utter);
             });
         }
 
-        // 备用静默/时间占位 WAV 音频流生成器
-        function createFallbackAudioBlob(charCount) {
-            const sampleRate = 22050;
-            const duration = Math.max(1, Math.min(120, Math.ceil(charCount * 0.25)));
-            const numSamples = sampleRate * duration;
-            const buffer = new ArrayBuffer(44 + numSamples * 2);
+        // 将录制的音频 Blob 转码为标准的 16-bit PCM WAV Blob
+        async function convertWebmToWavBlob(blob) {
+            const arrayBuffer = await blob.arrayBuffer();
+            const actx = new (window.AudioContext || window.webkitAudioContext)();
+            const audioBuffer = await actx.decodeAudioData(arrayBuffer);
+            actx.close();
+
+            const numChannels = audioBuffer.numberOfChannels;
+            const length = audioBuffer.length;
+            const sampleRate = audioBuffer.sampleRate;
+            const bitsPerSample = 16;
+            const byteRate = sampleRate * numChannels * bitsPerSample / 8;
+            const blockAlign = numChannels * bitsPerSample / 8;
+            const dataSize = length * numChannels * bitsPerSample / 8;
+            const headerSize = 44;
+            const totalSize = headerSize + dataSize;
+            const buffer = new ArrayBuffer(totalSize);
             const view = new DataView(buffer);
 
             function writeString(offset, str) {
@@ -597,19 +651,27 @@
             }
 
             writeString(0, 'RIFF');
-            view.setUint32(4, 36 + numSamples * 2, true);
+            view.setUint32(4, totalSize - 8, true);
             writeString(8, 'WAVE');
             writeString(12, 'fmt ');
             view.setUint32(16, 16, true);
-            view.setUint16(20, 1, true);
-            view.setUint16(22, 1, true);
+            view.setUint16(20, 1, true); // PCM 格式
+            view.setUint16(22, numChannels, true);
             view.setUint32(24, sampleRate, true);
-            view.setUint32(28, sampleRate * 2, true);
-            view.setUint16(32, 2, true);
-            view.setUint16(34, 16, true);
+            view.setUint32(28, byteRate, true);
+            view.setUint16(32, blockAlign, true);
+            view.setUint16(34, bitsPerSample, true);
             writeString(36, 'data');
-            view.setUint32(40, numSamples * 2, true);
+            view.setUint32(40, dataSize, true);
 
+            let offset = 44;
+            for (let i = 0; i < length; i++) {
+                for (let ch = 0; ch < numChannels; ch++) {
+                    const sample = Math.max(-1, Math.min(1, audioBuffer.getChannelData(ch)[i]));
+                    view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+                    offset += 2;
+                }
+            }
             return new Blob([buffer], { type: 'audio/wav' });
         }
 
