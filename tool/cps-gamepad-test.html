@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鼠标点击与手柄测试 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="专业的鼠标连点速度测试 (CPS Test) 与游戏手柄按键测试 (Gamepad Tester)，提供实时动态曲线图、当前值、最大值和平均值统计，图形化展示手柄摇杆与按键状态。">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="鼠标点击与手柄测试 | PC-TOOL">
+    <meta property="og:description" content="实时图形化 CPS 测速与 Gamepad 手柄多维度按键与摇杆检测。">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/cps-gamepad-test.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="zh_CN">
+    <style>
+        .container {
+            max-width: 860px;
+            width: 100%;
+        }
+
+        /* 标签栏切换 */
+        .tab-nav {
+            display: flex;
+            background: rgba(255, 255, 255, 0.04);
+            padding: 4px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            margin: 20px 0;
+            gap: 6px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #a1a1aa;
+            padding: 10px 16px;
+            font-size: 15px;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .tab-btn.active {
+            background: rgba(99, 102, 241, 0.25);
+            color: #ffffff;
+            border: 1px solid rgba(129, 140, 248, 0.4);
+        }
+
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        /* 统计卡片网格 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+        }
+
+        .stat-card.cur::after { background: #6366f1; }
+        .stat-card.max::after { background: #ec4899; }
+        .stat-card.avg::after { background: #10b981; }
+
+        .stat-title {
+            font-size: 13px;
+            color: #a1a1aa;
+            margin-bottom: 4px;
+        }
+
+        .stat-val {
+            font-size: 32px;
+            font-weight: 700;
+            color: #f4f4f5;
+            font-family: ui-monospace, SFMono-Regular, monospace;
+        }
+
+        .stat-unit {
+            font-size: 13px;
+            color: #71717a;
+            margin-left: 4px;
+            font-weight: normal;
+        }
+
+        /* CPS 点击交互区 */
+        .click-area {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.06));
+            border: 2px dashed rgba(129, 140, 248, 0.35);
+            border-radius: 16px;
+            padding: 35px 20px;
+            text-align: center;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.1s;
+            margin-bottom: 20px;
+            outline: none;
+        }
+
+        .click-area:active {
+            transform: scale(0.985);
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.22), rgba(168, 85, 247, 0.15));
+            border-color: #818cf8;
+        }
+
+        .click-area-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #e4e4e7;
+            margin-bottom: 6px;
+        }
+
+        .click-area-subtitle {
+            font-size: 13px;
+            color: #a1a1aa;
+        }
+
+        /* 实时波形曲线 Canvas */
+        .chart-wrapper {
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 13px;
+            color: #a1a1aa;
+        }
+
+        #chartCanvas {
+            width: 100%;
+            height: 160px;
+            display: block;
+        }
+
+        /* 控制选项 */
+        .mode-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .cps-modes {
+            display: flex;
+            gap: 8px;
+        }
+
+        .mode-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #d4d4d8;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mode-btn.active {
+            background: #6366f1;
+            color: #fff;
+            border-color: #6366f1;
+        }
+
+        .btn-reset {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-reset:hover {
+            background: rgba(239, 68, 68, 0.25);
+        }
+
+        /* 手柄测试面板 */
+        .gamepad-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .gamepad-status-bar {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 14px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+            background: #ef4444;
+        }
+
+        .status-dot.connected {
+            background: #10b981;
+            box-shadow: 0 0 10px #10b981;
+        }
+
+        /* 手柄可视化摇杆与按键 */
+        .sticks-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        @media (max-width: 600px) {
+            .sticks-grid { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: 1fr; }
+        }
+
+        .stick-box {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .stick-display {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            background: rgba(0, 0, 0, 0.3);
+            margin: 12px auto;
+            position: relative;
+        }
+
+        .stick-display::before, .stick-display::after {
+            content: '';
+            position: absolute;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .stick-display::before {
+            top: 50%; left: 0; right: 0; height: 1px;
+        }
+
+        .stick-display::after {
+            left: 50%; top: 0; bottom: 0; width: 1px;
+        }
+
+        .stick-pointer {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #6366f1;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.8);
+            transition: 0.05s ease-out;
+        }
+
+        .buttons-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .btn-cell {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 10px 6px;
+            text-align: center;
+            font-size: 12px;
+            color: #a1a1aa;
+            transition: all 0.1s;
+        }
+
+        .btn-cell.active {
+            background: rgba(16, 185, 129, 0.2);
+            border-color: #10b981;
+            color: #34d399;
+            transform: scale(1.05);
+        }
+
+        .vibrate-test-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #e4e4e7;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.2s;
+        }
+
+        .vibrate-test-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+    <a href="../index.html" class="back-link">← 返回工具首页</a>
+
+    <div class="container">
+        <h1>鼠标点击与手柄测试</h1>
+        <p>支持鼠标 CPS 连点测速（含实时曲线与统计分析）及 HTML5 Gamepad 游戏手柄硬件检测。</p>
+
+        <!-- 选项卡导航 -->
+        <div class="tab-nav">
+            <button class="tab-btn active" id="tabCpsBtn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                鼠标 CPS 测速
+            </button>
+            <button class="tab-btn" id="tabGamepadBtn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="15" y1="13" x2="15.01" y2="13"/><line x1="18" y1="11" x2="18.01" y2="11"/><rect x="2" y="6" width="20" height="12" rx="2"/></svg>
+                游戏手柄测试
+            </button>
+        </div>
+
+        <!-- 鼠标 CPS 测速面板 -->
+        <div class="tab-panel active" id="panelCps">
+            <div class="mode-row">
+                <div class="cps-modes">
+                    <button class="mode-btn active" data-time="0">无限制/实时</button>
+                    <button class="mode-btn" data-time="5">5 秒倒计时</button>
+                    <button class="mode-btn" data-time="10">10 秒倒计时</button>
+                    <button class="mode-btn" data-time="15">15 秒倒计时</button>
+                </div>
+                <button class="btn-reset" id="resetCpsBtn">重置数据</button>
+            </div>
+
+            <!-- 统计指标卡片 -->
+            <div class="stats-grid">
+                <div class="stat-card cur">
+                    <div class="stat-title">当前实时 CPS</div>
+                    <div class="stat-val"><span id="valCurCps">0.0</span><span class="stat-unit">次/秒</span></div>
+                </div>
+                <div class="stat-card max">
+                    <div class="stat-title">峰值最高 CPS</div>
+                    <div class="stat-val"><span id="valMaxCps">0.0</span><span class="stat-unit">次/秒</span></div>
+                </div>
+                <div class="stat-card avg">
+                    <div class="stat-title">全程平均 CPS</div>
+                    <div class="stat-val"><span id="valAvgCps">0.0</span><span class="stat-unit">次/秒</span></div>
+                </div>
+            </div>
+
+            <!-- 点击交互区域 -->
+            <div class="click-area" id="clickArea" tabindex="0">
+                <div class="click-area-title" id="clickAreaTitle">在此区域快速点击鼠标</div>
+                <div class="click-area-subtitle" id="clickAreaSub">支持鼠标左键、中键、右键点击 · 累计点击: <strong id="totalClicksDisplay">0</strong> 次</div>
+            </div>
+
+            <!-- 实时波形图 -->
+            <div class="chart-wrapper">
+                <div class="chart-header">
+                    <span>CPS 实时速度变化曲线</span>
+                    <span id="chartStatusText">就绪</span>
+                </div>
+                <canvas id="chartCanvas"></canvas>
+            </div>
+        </div>
+
+        <!-- 游戏手柄测试面板 -->
+        <div class="tab-panel" id="panelGamepad">
+            <div class="gamepad-container">
+                <div class="gamepad-status-bar">
+                    <div>
+                        <span class="status-dot" id="gamepadDot"></span>
+                        <span id="gamepadStatusText">未检测到手柄，请插入手柄并按下任意键激活</span>
+                    </div>
+                    <button class="vibrate-test-btn" id="vibrateBtn" style="display: none;">测试手柄马达震动</button>
+                </div>
+
+                <!-- 摇杆与死区检测 -->
+                <div class="sticks-grid" id="sticksGrid" style="display: none;">
+                    <div class="stick-box">
+                        <div style="font-size:14px; font-weight:600; color:#e4e4e7;">左摇杆 (Left Stick)</div>
+                        <div class="stick-display">
+                            <div class="stick-pointer" id="leftStickPointer"></div>
+                        </div>
+                        <div style="font-size:12px; color:#71717a; font-family:monospace;" id="leftStickCoords">X: 0.00 | Y: 0.00</div>
+                    </div>
+                    <div class="stick-box">
+                        <div style="font-size:14px; font-weight:600; color:#e4e4e7;">右摇杆 (Right Stick)</div>
+                        <div class="stick-display">
+                            <div class="stick-pointer" id="rightStickPointer"></div>
+                        </div>
+                        <div style="font-size:12px; color:#71717a; font-family:monospace;" id="rightStickCoords">X: 0.00 | Y: 0.00</div>
+                    </div>
+                </div>
+
+                <!-- 按键状态矩阵 -->
+                <div id="buttonsSection" style="display: none;">
+                    <div style="font-size:14px; font-weight:600; color:#e4e4e7; margin-bottom: 8px;">按键触发状态矩阵</div>
+                    <div class="buttons-grid" id="buttonsGrid"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="contact-tip">面向大众，有任何想要的功能或者意见，请联系QQ交流群：<strong>1121812272</strong></div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        (function() {
+            // Tab 切换逻辑
+            const tabCpsBtn = document.getElementById('tabCpsBtn');
+            const tabGamepadBtn = document.getElementById('tabGamepadBtn');
+            const panelCps = document.getElementById('panelCps');
+            const panelGamepad = document.getElementById('panelGamepad');
+
+            tabCpsBtn.addEventListener('click', () => {
+                tabCpsBtn.classList.add('active');
+                tabGamepadBtn.classList.remove('active');
+                panelCps.classList.add('active');
+                panelGamepad.classList.remove('active');
+            });
+
+            tabGamepadBtn.addEventListener('click', () => {
+                tabGamepadBtn.classList.add('active');
+                tabCpsBtn.classList.remove('active');
+                panelGamepad.classList.add('active');
+                panelCps.classList.remove('active');
+            });
+
+            // ================= 鼠标 CPS 测速与曲线图 =================
+            const clickArea = document.getElementById('clickArea');
+            const clickAreaTitle = document.getElementById('clickAreaTitle');
+            const clickAreaSub = document.getElementById('clickAreaSub');
+            const totalClicksDisplay = document.getElementById('totalClicksDisplay');
+            const valCurCps = document.getElementById('valCurCps');
+            const valMaxCps = document.getElementById('valMaxCps');
+            const valAvgCps = document.getElementById('valAvgCps');
+            const chartStatusText = document.getElementById('chartStatusText');
+            const resetCpsBtn = document.getElementById('resetCpsBtn');
+            const modeBtns = document.querySelectorAll('.mode-btn');
+
+            let countdownLimit = 0; // 0 为无限制
+            let isRunning = false;
+            let isFinished = false;
+            let startTime = null;
+            let clickTimestamps = [];
+            let totalClicks = 0;
+            let maxCps = 0;
+            let historyCps = []; // 供曲线图使用
+            const maxHistoryPoints = 60;
+
+            const canvas = document.getElementById('chartCanvas');
+            const ctx = canvas.getContext('2d');
+
+            function resizeCanvas() {
+                canvas.width = canvas.parentElement.clientWidth - 32;
+                canvas.height = 160;
+                drawChart();
+            }
+            window.addEventListener('resize', resizeCanvas);
+            setTimeout(resizeCanvas, 50);
+
+            modeBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    modeBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    countdownLimit = parseInt(btn.dataset.time, 10);
+                    resetCpsState();
+                });
+            });
+
+            function resetCpsState() {
+                isRunning = false;
+                isFinished = false;
+                startTime = null;
+                clickTimestamps = [];
+                totalClicks = 0;
+                maxCps = 0;
+                historyCps = [];
+                totalClicksDisplay.textContent = '0';
+                valCurCps.textContent = '0.0';
+                valMaxCps.textContent = '0.0';
+                valAvgCps.textContent = '0.0';
+                clickAreaTitle.textContent = '在此区域快速点击鼠标';
+                clickAreaSub.innerHTML = '支持鼠标左键、中键、右键点击 · 累计点击: <strong id="totalClicksDisplay">0</strong> 次';
+                chartStatusText.textContent = countdownLimit > 0 ? `${countdownLimit} 秒模式待开始` : '无限制模式';
+                drawChart();
+            }
+
+            resetCpsBtn.addEventListener('click', resetCpsState);
+
+            // 禁用右键菜单，便于右键测试 CPS
+            clickArea.addEventListener('contextmenu', (e) => e.preventDefault());
+
+            clickArea.addEventListener('mousedown', (e) => {
+                if (isFinished) return;
+                const now = performance.now();
+
+                if (!isRunning) {
+                    isRunning = true;
+                    startTime = now;
+                    chartStatusText.textContent = '测速进行中...';
+                }
+
+                clickTimestamps.push(now);
+                totalClicks++;
+                document.getElementById('totalClicksDisplay').textContent = totalClicks;
+            });
+
+            // 实时更新循环
+            function updateCpsLoop() {
+                if (isRunning && !isFinished) {
+                    const now = performance.now();
+                    const elapsedSec = (now - startTime) / 1000;
+
+                    // 过滤 1 秒以内的点击
+                    clickTimestamps = clickTimestamps.filter(t => now - t <= 1000);
+                    const curCps = clickTimestamps.length;
+                    if (curCps > maxCps) maxCps = curCps;
+
+                    const avgCps = elapsedSec > 0 ? (totalClicks / elapsedSec) : 0;
+
+                    valCurCps.textContent = curCps.toFixed(1);
+                    valMaxCps.textContent = maxCps.toFixed(1);
+                    valAvgCps.textContent = avgCps.toFixed(1);
+
+                    // 记录历史供曲线渲染
+                    historyCps.push(curCps);
+                    if (historyCps.length > maxHistoryPoints) historyCps.shift();
+
+                    if (countdownLimit > 0) {
+                        const remaining = Math.max(0, countdownLimit - elapsedSec);
+                        clickAreaTitle.textContent = `剩余时间: ${remaining.toFixed(1)}s`;
+                        if (remaining <= 0) {
+                            isFinished = true;
+                            isRunning = false;
+                            clickAreaTitle.textContent = `测试完成！最终平均: ${avgCps.toFixed(1)} CPS`;
+                            chartStatusText.textContent = '已结束';
+                        }
+                    } else {
+                        clickAreaTitle.textContent = `持续点击中... (${elapsedSec.toFixed(1)}s)`;
+                    }
+
+                    drawChart();
+                }
+                requestAnimationFrame(updateCpsLoop);
+            }
+            requestAnimationFrame(updateCpsLoop);
+
+            function drawChart() {
+                const w = canvas.width;
+                const h = canvas.height;
+                ctx.clearRect(0, 0, w, h);
+
+                // 绘制背景网格
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+                ctx.lineWidth = 1;
+                for (let y = 0; y <= h; y += 40) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(w, y);
+                    ctx.stroke();
+                }
+
+                if (historyCps.length < 2) {
+                    ctx.fillStyle = '#71717a';
+                    ctx.font = '12px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('等待点击产生波形数据...', w / 2, h / 2);
+                    return;
+                }
+
+                const peak = Math.max(12, ...historyCps);
+                const step = w / (maxHistoryPoints - 1);
+
+                // 渐变填充
+                const gradient = ctx.createLinearGradient(0, 0, 0, h);
+                gradient.addColorStop(0, 'rgba(99, 102, 241, 0.35)');
+                gradient.addColorStop(1, 'rgba(99, 102, 241, 0.0)');
+
+                ctx.beginPath();
+                const startX = (maxHistoryPoints - historyCps.length) * step;
+                ctx.moveTo(startX, h);
+
+                historyCps.forEach((val, i) => {
+                    const x = startX + i * step;
+                    const y = h - (val / peak) * (h - 20) - 10;
+                    if (i === 0) ctx.lineTo(x, y);
+                    else ctx.lineTo(x, y);
+                });
+
+                ctx.lineTo(w, h);
+                ctx.closePath();
+                ctx.fillStyle = gradient;
+                ctx.fill();
+
+                // 曲线描边
+                ctx.beginPath();
+                historyCps.forEach((val, i) => {
+                    const x = startX + i * step;
+                    const y = h - (val / peak) * (h - 20) - 10;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                });
+                ctx.strokeStyle = '#818cf8';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+
+                // 最新点指示球
+                if (historyCps.length > 0) {
+                    const lastVal = historyCps[historyCps.length - 1];
+                    const lastX = w;
+                    const lastY = h - (lastVal / peak) * (h - 20) - 10;
+                    ctx.beginPath();
+                    ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
+                    ctx.fillStyle = '#34d399';
+                    ctx.fill();
+                }
+            }
+
+            // ================= Gamepad 游戏手柄检测 =================
+            const gamepadDot = document.getElementById('gamepadDot');
+            const gamepadStatusText = document.getElementById('gamepadStatusText');
+            const vibrateBtn = document.getElementById('vibrateBtn');
+            const sticksGrid = document.getElementById('sticksGrid');
+            const buttonsSection = document.getElementById('buttonsSection');
+            const buttonsGrid = document.getElementById('buttonsGrid');
+            const leftStickPointer = document.getElementById('leftStickPointer');
+            const rightStickPointer = document.getElementById('rightStickPointer');
+            const leftStickCoords = document.getElementById('leftStickCoords');
+            const rightStickCoords = document.getElementById('rightStickCoords');
+
+            const BUTTON_LABELS = [
+                'A / ✕', 'B / ○', 'X / □', 'Y / △',
+                'LB / L1', 'RB / R1', 'LT / L2', 'RT / R2',
+                'Select', 'Start', 'L3 压下', 'R3 压下',
+                '十字上', '十字下', '十字左', '十字右',
+                'Guide', '额外键'
+            ];
+
+            let activeGamepadIndex = null;
+
+            window.addEventListener("gamepadconnected", (e) => {
+                activeGamepadIndex = e.gamepad.index;
+                onGamepadConnected(e.gamepad);
+            });
+
+            window.addEventListener("gamepaddisconnected", (e) => {
+                if (activeGamepadIndex === e.gamepad.index) {
+                    activeGamepadIndex = null;
+                    onGamepadDisconnected();
+                }
+            });
+
+            function onGamepadConnected(gp) {
+                gamepadDot.classList.add('connected');
+                gamepadStatusText.textContent = `已连接: ${gp.id}`;
+                sticksGrid.style.display = 'grid';
+                buttonsSection.style.display = 'block';
+
+                if (gp.vibrationActuator) vibrateBtn.style.display = 'inline-block';
+
+                buttonsGrid.innerHTML = '';
+                const btnCount = Math.max(gp.buttons.length, 16);
+                for (let i = 0; i < btnCount; i++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'btn-cell';
+                    cell.id = `gp-btn-${i}`;
+                    const label = BUTTON_LABELS[i] || `B${i}`;
+                    cell.innerHTML = `<div>${label}</div><div style="font-size:10px; opacity:0.6; margin-top:2px;" id="gp-val-${i}">0.00</div>`;
+                    buttonsGrid.appendChild(cell);
+                }
+            }
+
+            function onGamepadDisconnected() {
+                gamepadDot.classList.remove('connected');
+                gamepadStatusText.textContent = '未检测到手柄，请插入手柄并按下任意键激活';
+                sticksGrid.style.display = 'none';
+                buttonsSection.style.display = 'none';
+                vibrateBtn.style.display = 'none';
+            }
+
+            vibrateBtn.addEventListener('click', () => {
+                if (activeGamepadIndex === null) return;
+                const gp = navigator.getGamepads()[activeGamepadIndex];
+                if (gp && gp.vibrationActuator) {
+                    gp.vibrationActuator.playEffect("dual-rumble", {
+                        startDelay: 0,
+                        duration: 600,
+                        weakMagnitude: 0.8,
+                        strongMagnitude: 1.0
+                    });
+                }
+            });
+
+            function pollGamepadLoop() {
+                const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+                let connectedPad = null;
+
+                for (let i = 0; i < gamepads.length; i++) {
+                    if (gamepads[i]) {
+                        connectedPad = gamepads[i];
+                        break;
+                    }
+                }
+
+                if (connectedPad) {
+                    if (activeGamepadIndex === null) {
+                        activeGamepadIndex = connectedPad.index;
+                        onGamepadConnected(connectedPad);
+                    }
+
+                    // 更新摇杆 (Axes: 0=LX, 1=LY, 2=RX, 3=RY)
+                    const lx = connectedPad.axes[0] || 0;
+                    const ly = connectedPad.axes[1] || 0;
+                    const rx = connectedPad.axes[2] || 0;
+                    const ry = connectedPad.axes[3] || 0;
+
+                    leftStickPointer.style.transform = `translate(calc(-50% + ${lx * 40}px), calc(-50% + ${ly * 40}px))`;
+                    rightStickPointer.style.transform = `translate(calc(-50% + ${rx * 40}px), calc(-50% + ${ry * 40}px))`;
+
+                    leftStickCoords.textContent = `X: ${lx.toFixed(2)} | Y: ${ly.toFixed(2)}`;
+                    rightStickCoords.textContent = `X: ${rx.toFixed(2)} | Y: ${ry.toFixed(2)}`;
+
+                    // 更新按键
+                    connectedPad.buttons.forEach((btn, idx) => {
+                        const cell = document.getElementById(`gp-btn-${idx}`);
+                        const valLabel = document.getElementById(`gp-val-${idx}`);
+                        if (cell) {
+                            if (btn.pressed || btn.value > 0.1) {
+                                cell.classList.add('active');
+                            } else {
+                                cell.classList.remove('active');
+                            }
+                        }
+                        if (valLabel) {
+                            valLabel.textContent = btn.value.toFixed(2);
+                        }
+                    });
+                } else if (activeGamepadIndex !== null) {
+                    activeGamepadIndex = null;
+                    onGamepadDisconnected();
+                }
+
+                requestAnimationFrame(pollGamepadLoop);
+            }
+            requestAnimationFrame(pollGamepadLoop);
+        })();
+    </script>
+</body>
+</html>
