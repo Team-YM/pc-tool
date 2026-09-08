@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>科学计算器 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="在线科学计算器，支持三角函数、反三角函数、对数、幂运算、阶乘、弧度/角度切换、历史记录与键盘输入。">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .container {
+            max-width: 680px;
+            width: 100%;
+        }
+        .calc-wrapper {
+            background: rgba(18, 18, 20, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+        }
+        .display-area {
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            text-align: right;
+            position: relative;
+        }
+        .history-expr {
+            font-size: 14px;
+            color: #a1a1aa;
+            min-height: 22px;
+            font-family: 'Consolas', monospace;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .current-input {
+            font-size: 32px;
+            color: #f4f4f5;
+            font-family: 'Consolas', monospace;
+            font-weight: 600;
+            overflow-x: auto;
+            white-space: nowrap;
+            letter-spacing: 1px;
+            padding: 4px 0;
+        }
+        .controls-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .angle-toggle {
+            display: inline-flex;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .angle-btn {
+            background: transparent;
+            border: none;
+            color: #a1a1aa;
+            padding: 6px 14px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .angle-btn.active {
+            background: rgba(129, 140, 248, 0.25);
+            color: #818cf8;
+            font-weight: 600;
+        }
+        .hist-toggle-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #a1a1aa;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .hist-toggle-btn:hover {
+            color: #f4f4f5;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        .keypad-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+        }
+        .calc-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            color: #e4e4e7;
+            font-size: 16px;
+            padding: 14px 8px;
+            border-radius: 10px;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.15s;
+            font-family: 'Consolas', -apple-system, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .calc-btn:hover {
+            background: rgba(255, 255, 255, 0.09);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-1px);
+        }
+        .calc-btn:active {
+            transform: translateY(1px);
+        }
+        .calc-btn.fn {
+            color: #818cf8;
+            background: rgba(129, 140, 248, 0.08);
+            border-color: rgba(129, 140, 248, 0.15);
+            font-size: 14px;
+        }
+        .calc-btn.fn:hover {
+            background: rgba(129, 140, 248, 0.16);
+            border-color: rgba(129, 140, 248, 0.3);
+        }
+        .calc-btn.op {
+            color: #38bdf8;
+            background: rgba(56, 189, 248, 0.08);
+            border-color: rgba(56, 189, 248, 0.15);
+            font-size: 18px;
+        }
+        .calc-btn.op:hover {
+            background: rgba(56, 189, 248, 0.16);
+        }
+        .calc-btn.danger {
+            color: #f87171;
+            background: rgba(248, 113, 113, 0.08);
+            border-color: rgba(248, 113, 113, 0.15);
+        }
+        .calc-btn.danger:hover {
+            background: rgba(248, 113, 113, 0.18);
+        }
+        .calc-btn.equal {
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            color: #fff;
+            font-weight: 600;
+            border: none;
+            box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
+        }
+        .calc-btn.equal:hover {
+            background: linear-gradient(135deg, #4f46e5, #4338ca);
+            box-shadow: 0 6px 18px rgba(79, 70, 229, 0.5);
+        }
+        .history-drawer {
+            margin-top: 18px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            padding: 12px 16px;
+            max-height: 180px;
+            overflow-y: auto;
+            display: none;
+        }
+        .history-drawer.show {
+            display: block;
+        }
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #a1a1aa;
+            margin-bottom: 8px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+        .history-clear {
+            color: #f87171;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-size: 12px;
+        }
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-family: 'Consolas', monospace;
+            font-size: 13px;
+            color: #d4d4d8;
+            cursor: pointer;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.03);
+        }
+        .history-item:hover {
+            color: #818cf8;
+        }
+        @media (max-width: 480px) {
+            .current-input {
+                font-size: 24px;
+            }
+            .calc-btn {
+                padding: 12px 4px;
+                font-size: 14px;
+            }
+            .calc-btn.fn {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+    <a href="../index.html" class="back-link">← 返回首页</a>
+
+    <div class="container">
+        <div class="calc-wrapper">
+            <h1 style="font-size: 22px; margin-bottom: 16px; color: #f4f4f5; font-weight: 600;">科学计算器</h1>
+            
+            <div class="display-area">
+                <div class="history-expr" id="histExpr"></div>
+                <div class="current-input" id="display">0</div>
+            </div>
+
+            <div class="controls-bar">
+                <div class="angle-toggle">
+                    <button class="angle-btn active" id="degBtn" onclick="setAngleMode('deg')">DEG</button>
+                    <button class="angle-btn" id="radBtn" onclick="setAngleMode('rad')">RAD</button>
+                </div>
+                <button class="hist-toggle-btn" onclick="toggleHistory()">历史记录</button>
+            </div>
+
+            <div class="keypad-grid">
+                <!-- 第一行：常用高级函数 -->
+                <button class="calc-btn fn" onclick="inputFunc('sin')">sin</button>
+                <button class="calc-btn fn" onclick="inputFunc('cos')">cos</button>
+                <button class="calc-btn fn" onclick="inputFunc('tan')">tan</button>
+                <button class="calc-btn fn" onclick="inputFunc('ln')">ln</button>
+                <button class="calc-btn fn" onclick="inputFunc('log')">log</button>
+
+                <!-- 第二行：反三角与对数/幂次 -->
+                <button class="calc-btn fn" onclick="inputFunc('asin')">asin</button>
+                <button class="calc-btn fn" onclick="inputFunc('acos')">acos</button>
+                <button class="calc-btn fn" onclick="inputFunc('atan')">atan</button>
+                <button class="calc-btn fn" onclick="inputFunc('sqrt')">√</button>
+                <button class="calc-btn fn" onclick="inputOperator('^')">x^y</button>
+
+                <!-- 第三行：常数与控制 -->
+                <button class="calc-btn fn" onclick="inputConst('π')">π</button>
+                <button class="calc-btn fn" onclick="inputConst('e')">e</button>
+                <button class="calc-btn fn" onclick="inputFunc('fact')">n!</button>
+                <button class="calc-btn danger" onclick="clearAll()">AC</button>
+                <button class="calc-btn danger" onclick="backspace()">DEL</button>
+
+                <!-- 第四行：括号与除乘 -->
+                <button class="calc-btn" onclick="inputChar('(')">(</button>
+                <button class="calc-btn" onclick="inputChar(')')">)</button>
+                <button class="calc-btn fn" onclick="inputFunc('abs')">|x|</button>
+                <button class="calc-btn op" onclick="inputOperator('%')">%</button>
+                <button class="calc-btn op" onclick="inputOperator('÷')">÷</button>
+
+                <!-- 第五行：7 8 9 乘 -->
+                <button class="calc-btn" onclick="inputChar('7')">7</button>
+                <button class="calc-btn" onclick="inputChar('8')">8</button>
+                <button class="calc-btn" onclick="inputChar('9')">9</button>
+                <button class="calc-btn op" onclick="inputOperator('×')">×</button>
+                <button class="calc-btn fn" onclick="inputFunc('sq')">x²</button>
+
+                <!-- 第六行：4 5 6 减 -->
+                <button class="calc-btn" onclick="inputChar('4')">4</button>
+                <button class="calc-btn" onclick="inputChar('5')">5</button>
+                <button class="calc-btn" onclick="inputChar('6')">6</button>
+                <button class="calc-btn op" onclick="inputOperator('-')">-</button>
+                <button class="calc-btn fn" onclick="inputFunc('inv')">1/x</button>
+
+                <!-- 第七行：1 2 3 加 -->
+                <button class="calc-btn" onclick="inputChar('1')">1</button>
+                <button class="calc-btn" onclick="inputChar('2')">2</button>
+                <button class="calc-btn" onclick="inputChar('3')">3</button>
+                <button class="calc-btn op" onclick="inputOperator('+')">+</button>
+                <button class="calc-btn fn" onclick="toggleSign()">±</button>
+
+                <!-- 第八行：0 . 等于 -->
+                <button class="calc-btn" style="grid-column: span 2;" onclick="inputChar('0')">0</button>
+                <button class="calc-btn" onclick="inputChar('.')">.</button>
+                <button class="calc-btn equal" style="grid-column: span 2;" onclick="calculate()">=</button>
+            </div>
+
+            <div class="history-drawer" id="historyDrawer">
+                <div class="history-header">
+                    <span>计算历史</span>
+                    <button class="history-clear" onclick="clearHistory()">清空</button>
+                </div>
+                <div id="historyList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        let currentExpr = '0';
+        let isEvaluated = false;
+        let angleMode = 'deg';
+        const historyData = [];
+
+        const displayEl = document.getElementById('display');
+        const histExprEl = document.getElementById('histExpr');
+        const degBtn = document.getElementById('degBtn');
+        const radBtn = document.getElementById('radBtn');
+        const historyDrawer = document.getElementById('historyDrawer');
+        const historyList = document.getElementById('historyList');
+
+        function updateDisplay() {
+            displayEl.textContent = currentExpr;
+        }
+
+        function setAngleMode(mode) {
+            angleMode = mode;
+            if (mode === 'deg') {
+                degBtn.classList.add('active');
+                radBtn.classList.remove('active');
+            } else {
+                radBtn.classList.add('active');
+                degBtn.classList.remove('active');
+            }
+        }
+
+        function toggleHistory() {
+            historyDrawer.classList.toggle('show');
+        }
+
+        function clearAll() {
+            currentExpr = '0';
+            histExprEl.textContent = '';
+            isEvaluated = false;
+            updateDisplay();
+        }
+
+        function backspace() {
+            if (isEvaluated) {
+                clearAll();
+                return;
+            }
+            if (currentExpr.length <= 1 || currentExpr === 'Error') {
+                currentExpr = '0';
+            } else {
+                currentExpr = currentExpr.slice(0, -1);
+            }
+            updateDisplay();
+        }
+
+        function inputChar(char) {
+            if (currentExpr === 'Error') currentExpr = '0';
+            if (isEvaluated) {
+                currentExpr = '0';
+                isEvaluated = false;
+            }
+            if (currentExpr === '0' && char !== '.') {
+                currentExpr = char;
+            } else {
+                currentExpr += char;
+            }
+            updateDisplay();
+        }
+
+        function inputOperator(op) {
+            if (currentExpr === 'Error') return;
+            isEvaluated = false;
+            const last = currentExpr.slice(-1);
+            if ('+-×÷^%'.includes(last)) {
+                currentExpr = currentExpr.slice(0, -1) + op;
+            } else {
+                currentExpr += op;
+            }
+            updateDisplay();
+        }
+
+        function inputConst(c) {
+            if (currentExpr === '0' || isEvaluated) {
+                currentExpr = c;
+                isEvaluated = false;
+            } else {
+                const last = currentExpr.slice(-1);
+                if ('0123456789)'.includes(last)) {
+                    currentExpr += '×' + c;
+                } else {
+                    currentExpr += c;
+                }
+            }
+            updateDisplay();
+        }
+
+        function inputFunc(fn) {
+            if (currentExpr === 'Error') currentExpr = '0';
+            if (fn === 'sq') {
+                inputOperator('^');
+                currentExpr += '2';
+                updateDisplay();
+                return;
+            }
+            if (fn === 'inv') {
+                if (currentExpr === '0' || isEvaluated) {
+                    currentExpr = '1÷(';
+                } else {
+                    currentExpr = '1÷(' + currentExpr + ')';
+                }
+                isEvaluated = false;
+                updateDisplay();
+                return;
+            }
+            if (fn === 'fact') {
+                currentExpr += '!';
+                updateDisplay();
+                return;
+            }
+
+            const prefix = fn + '(';
+            if (currentExpr === '0' || isEvaluated) {
+                currentExpr = prefix;
+                isEvaluated = false;
+            } else {
+                const last = currentExpr.slice(-1);
+                if ('0123456789)'.includes(last)) {
+                    currentExpr += '×' + prefix;
+                } else {
+                    currentExpr += prefix;
+                }
+            }
+            updateDisplay();
+        }
+
+        function toggleSign() {
+            if (currentExpr === '0' || currentExpr === 'Error') return;
+            if (currentExpr.startsWith('-(') && currentExpr.endsWith(')')) {
+                currentExpr = currentExpr.slice(2, -1);
+            } else {
+                currentExpr = '-(' + currentExpr + ')';
+            }
+            updateDisplay();
+        }
+
+        function factorial(n) {
+            if (n < 0 || n !== Math.floor(n)) return NaN;
+            if (n > 170) return Infinity;
+            let res = 1;
+            for (let i = 2; i <= n; i++) res *= i;
+            return res;
+        }
+
+        function calculate() {
+            if (currentExpr === 'Error') return;
+            const originalExpr = currentExpr;
+            try {
+                let parseStr = currentExpr;
+
+                // 替换显示符号为计算符号
+                parseStr = parseStr.replace(/×/g, '*').replace(/÷/g, '/');
+                parseStr = parseStr.replace(/π/g, '(' + Math.PI + ')').replace(/e/g, '(' + Math.E + ')');
+
+                // 阶乘处理: 捕获 数字! 或 (表达式)!
+                parseStr = parseStr.replace(/(\d+(?:\.\d+)?|\([^()]+\))!/g, function(match, p1) {
+                    return `__fact(${p1})`;
+                });
+
+                // 幂运算符 x^y -> Math.pow(x, y)
+                while (parseStr.includes('^')) {
+                    parseStr = parseStr.replace(/([0-9.]+|\([^()]+\))\^([0-9.]+|\([^()]+\))/g, 'Math.pow($1,$2)');
+                }
+
+                // 三角与数学函数替换
+                const toRad = (angleMode === 'deg') ? `* (Math.PI / 180)` : '';
+                const fromRad = (angleMode === 'deg') ? `* (180 / Math.PI)` : '';
+
+                // sin, cos, tan
+                parseStr = parseStr.replace(/asin\(/g, `(__asin(`);
+                parseStr = parseStr.replace(/acos\(/g, `(__acos(`);
+                parseStr = parseStr.replace(/atan\(/g, `(__atan(`);
+                parseStr = parseStr.replace(/sin\(/g, `Math.sin(${toRad ? '(' : ''}`);
+                parseStr = parseStr.replace(/cos\(/g, `Math.cos(${toRad ? '(' : ''}`);
+                parseStr = parseStr.replace(/tan\(/g, `Math.tan(${toRad ? '(' : ''}`);
+
+                if (toRad) {
+                    // 补充闭合括号处理
+                    parseStr = parseStr.replace(/Math\.(sin|cos|tan)\(([^)]+)\)/g, 'Math.$1(($2)' + toRad + ')');
+                }
+
+                parseStr = parseStr.replace(/ln\(/g, 'Math.log(');
+                parseStr = parseStr.replace(/log\(/g, 'Math.log10(');
+                parseStr = parseStr.replace(/sqrt\(/g, 'Math.sqrt(');
+                parseStr = parseStr.replace(/abs\(/g, 'Math.abs(');
+
+                // 定义辅助函数作用域
+                const scope = {
+                    __fact: factorial,
+                    __asin: (x) => angleMode === 'deg' ? Math.asin(x) * (180 / Math.PI) : Math.asin(x),
+                    __acos: (x) => angleMode === 'deg' ? Math.acos(x) * (180 / Math.PI) : Math.acos(x),
+                    __atan: (x) => angleMode === 'deg' ? Math.atan(x) * (180 / Math.PI) : Math.atan(x)
+                };
+
+                const evalFn = new Function('__fact', '__asin', '__acos', '__atan', `"use strict"; return (${parseStr});`);
+                let result = evalFn(scope.__fact, scope.__asin, scope.__acos, scope.__atan);
+
+                if (typeof result === 'number') {
+                    if (isNaN(result) || !isFinite(result)) {
+                        currentExpr = 'Error';
+                    } else {
+                        // 修正浮点数精度
+                        result = parseFloat(result.toPrecision(12)).toString();
+                        currentExpr = result;
+                        histExprEl.textContent = originalExpr + ' =';
+                        addHistory(originalExpr, result);
+                    }
+                } else {
+                    currentExpr = 'Error';
+                }
+            } catch (err) {
+                currentExpr = 'Error';
+            }
+            isEvaluated = true;
+            updateDisplay();
+        }
+
+        function addHistory(expr, result) {
+            historyData.unshift({ expr, result });
+            if (historyData.length > 20) historyData.pop();
+            renderHistory();
+        }
+
+        function renderHistory() {
+            historyList.innerHTML = '';
+            if (historyData.length === 0) {
+                historyList.innerHTML = '<div style="color:#71717a;font-size:12px;text-align:center;padding:10px;">暂无记录</div>';
+                return;
+            }
+            historyData.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                div.innerHTML = `<span>${item.expr}</span><span>= ${item.result}</span>`;
+                div.onclick = () => {
+                    currentExpr = item.result;
+                    histExprEl.textContent = item.expr + ' =';
+                    isEvaluated = false;
+                    updateDisplay();
+                };
+                historyList.appendChild(div);
+            });
+        }
+
+        function clearHistory() {
+            historyData.length = 0;
+            renderHistory();
+        }
+
+        // 键盘按键绑定支持
+        window.addEventListener('keydown', (e) => {
+            if (e.key >= '0' && e.key <= '9') inputChar(e.key);
+            else if (e.key === '.') inputChar('.');
+            else if (e.key === '+') inputOperator('+');
+            else if (e.key === '-') inputOperator('-');
+            else if (e.key === '*') inputOperator('×');
+            else if (e.key === '/') { e.preventDefault(); inputOperator('÷'); }
+            else if (e.key === '%') inputOperator('%');
+            else if (e.key === '^') inputOperator('^');
+            else if (e.key === '(' || e.key === ')') inputChar(e.key);
+            else if (e.key === 'Enter' || e.key === '=') { e.preventDefault(); calculate(); }
+            else if (e.key === 'Backspace') backspace();
+            else if (e.key === 'Escape') clearAll();
+        });
+
+        renderHistory();
+    </script>
+</body>
+</html>
