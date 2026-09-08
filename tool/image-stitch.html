@@ -21,9 +21,6 @@
             width: 100%;
             max-width: 700px;
             z-index: 1;
-        }
-
-        .page {
             background: rgba(24, 24, 27, 0.3);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
@@ -33,14 +30,14 @@
             animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
-        .page h1 {
+        .container h1 {
             color: #e4e4e7;
             margin-bottom: 25px;
             font-size: 28px;
             font-weight: 700;
         }
 
-        .page > p {
+        .container > p {
             color: #a1a1aa;
             font-size: 16px;
             line-height: 1.6;
@@ -227,52 +224,51 @@
 
     <script src="common.js"></script>
 
+    <a href="../index.html" class="back-link">← 返回转换工具首页</a>
+
     <div class="container">
-        <a href="../index.html" class="back-link">← 返回转换工具首页</a>
-        <div class="page">
-            <h1>图片拼接</h1>
-            <p>支持多张图片多种布局拼接，可自定义输出分辨率 拉伸/裁剪</p>
+        <h1>图片拼接</h1>
+        <p>支持多张图片多种布局拼接，可自定义输出分辨率 拉伸/裁剪</p>
 
-            <div class="resolution-inputs">
-                <input type="number" class="res-input" id="outWidth" placeholder="宽度" min="0">
-                <span>×</span>
-                <input type="number" class="res-input" id="outHeight" placeholder="高度" min="0">
-            </div>
-
-            <div class="fit-mode-group" id="fitModeGroup">
-                <button class="fit-mode-btn" data-mode="stretch">拉伸</button>
-                <button class="fit-mode-btn" data-mode="cover">裁剪</button>
-            </div>
-
-            <div class="layout-selector" id="layoutSelector">
-                请先上传图片
-            </div>
-
-            <div class="upload-area" id="stitchUploadArea">
-                <p>点击或拖拽上传多张图片</p>
-                <input type="file" id="stitchFileInput" accept="image/*" multiple>
-            </div>
-            <div class="stitch-preview-list" id="stitchPreviewList">
-                <p style="color: #71717a; width: 100%; text-align: center;">暂无上传的图片</p>
-            </div>
-            <div style="text-align:center; margin:20px 0;">
-                <select class="format-select" id="stitchOutputFormat">
-                    <option value="jpg">JPG</option>
-                    <option value="png">PNG</option>
-                    <option value="webp">WebP</option>
-                    <option value="gif">GIF</option>
-                    <option value="bmp">BMP</option>
-                    <option value="pdf">PDF</option>
-                </select>
-                <button class="stitch-btn" id="stitchBtn">开始拼接</button>
-                <button class="download-btn" id="stitchDownloadBtn">下载拼接后的图片</button>
-            </div>
-            <div class="result-box" id="stitchResultBox">
-                <h3>拼接完成</h3>
-                <img id="stitchedImage" class="stitch-result-img">
-            </div>
-            <div class="contact-tip">面向大众，有任何想要的功能或者意见，请联系QQ交流群：<strong>1121812272</strong></div>
+        <div class="resolution-inputs">
+            <input type="number" class="res-input" id="outWidth" placeholder="宽度" min="0">
+            <span>×</span>
+            <input type="number" class="res-input" id="outHeight" placeholder="高度" min="0">
         </div>
+
+        <div class="fit-mode-group" id="fitModeGroup">
+            <button class="fit-mode-btn" data-mode="stretch">拉伸</button>
+            <button class="fit-mode-btn" data-mode="cover">裁剪</button>
+        </div>
+
+        <div class="layout-selector" id="layoutSelector">
+            请先上传图片
+        </div>
+
+        <div class="upload-area" id="stitchUploadArea">
+            <p>点击或拖拽上传多张图片</p>
+            <input type="file" id="stitchFileInput" accept="image/*" multiple>
+        </div>
+        <div class="stitch-preview-list" id="stitchPreviewList">
+            <p style="color: #71717a; width: 100%; text-align: center;">暂无上传的图片</p>
+        </div>
+        <div style="text-align:center; margin:20px 0;">
+            <select class="format-select" id="stitchOutputFormat">
+                <option value="jpg">JPG</option>
+                <option value="png">PNG</option>
+                <option value="webp">WebP</option>
+                <option value="gif">GIF</option>
+                <option value="bmp">BMP</option>
+                <option value="pdf">PDF</option>
+            </select>
+            <button class="stitch-btn" id="stitchBtn">开始拼接</button>
+            <button class="download-btn" id="stitchDownloadBtn">下载拼接后的图片</button>
+        </div>
+        <div class="result-box" id="stitchResultBox">
+            <h3>拼接完成</h3>
+            <img id="stitchedImage" class="stitch-result-img">
+        </div>
+        <div class="contact-tip">面向大众，有任何想要的功能或者意见，请联系QQ交流群：<strong>1121812272</strong></div>
     </div>
 
     <script>

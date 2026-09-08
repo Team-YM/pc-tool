@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -20,9 +20,6 @@
             width: 100%;
             max-width: 700px;
             z-index: 1;
-        }
-
-        .page {
             background: rgba(24, 24, 27, 0.3);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
@@ -32,14 +29,14 @@
             animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
-        .page h1 {
+        .container h1 {
             color: #e4e4e7;
             margin-bottom: 25px;
             font-size: 28px;
             font-weight: 700;
         }
 
-        .page > p {
+        .container > p {
             color: #a1a1aa;
             font-size: 16px;
             line-height: 1.6;
@@ -319,61 +316,60 @@
     <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
     <script src="common.js"></script>
 
+    <a href="../index.html" class="back-link">← 返回转换工具首页</a>
+
     <div class="container">
-        <a href="../index.html" class="back-link">← 返回转换工具首页</a>
-        <div class="page">
-            <h1>多图合成GIF</h1>
-            <p>选择多张图片，调整帧率和尺寸，一键合成动画GIF</p>
+        <h1>多图合成GIF</h1>
+        <p>选择多张图片，调整帧率和尺寸，一键合成动画GIF</p>
 
-            <div class="upload-area" id="gifUploadArea">
-                <p>点击或拖拽上传多张图片</p>
-                <input type="file" id="gifFileInput" accept="image/*" multiple>
-            </div>
-
-            <div class="preview-list-wrapper" id="previewWrapper" style="display:none;">
-                <div class="preview-list" id="previewList">
-                    <p style="color: #71717a; width: 100%; text-align: center;">暂无上传的图片</p>
-                </div>
-                <div class="reorder-btns" id="reorderBtns">
-                    <button class="reorder-btn" id="moveLeftBtn" title="左移选中图片">◀</button>
-                    <button class="reorder-btn" id="moveRightBtn" title="右移选中图片">▶</button>
-                </div>
-            </div>
-
-            <div class="settings-row">
-                <div class="setting-group">
-                    <label>帧率(FPS):</label>
-                    <input type="range" class="fps-slider" id="fpsSlider" min="1" max="30" value="10" step="1">
-                    <input type="number" class="fps-input" id="fpsInput" value="10" min="1" max="30">
-                </div>
-                <div class="setting-group">
-                    <label>最大宽度:</label>
-                    <input type="number" class="size-input" id="maxWidthInput" placeholder="原图" min="50" max="1920">
-                </div>
-                <div class="setting-group">
-                    <label>最大高度:</label>
-                    <input type="number" class="size-input" id="maxHeightInput" placeholder="原图" min="50" max="1920">
-                </div>
-            </div>
-
-            <div class="progress-text" id="progressText">正在生成GIF...</div>
-            <div class="progress-bar-wrap" id="progressBarWrap">
-                <div class="progress-bar-fill" id="progressBarFill"></div>
-            </div>
-
-            <div style="text-align:center; margin:20px 0;">
-                <button class="upload-btn" id="addMoreBtn" style="display:none;">添加更多图片</button>
-                <button class="generate-btn" id="generateBtn" disabled>合成GIF</button>
-                <button class="download-btn" id="downloadBtn">下载GIF</button>
-            </div>
-
-            <div class="result-box" id="resultBox">
-                <h3>GIF生成完成</h3>
-                <img id="resultGif" class="result-gif-img">
-                <p class="gif-info" id="gifInfo"></p>
-            </div>
-            <div class="contact-tip">面向大众，有任何想要的功能或者意见，请联系QQ交流群：<strong>1121812272</strong></div>
+        <div class="upload-area" id="gifUploadArea">
+            <p>点击或拖拽上传多张图片</p>
+            <input type="file" id="gifFileInput" accept="image/*" multiple>
         </div>
+
+        <div class="preview-list-wrapper" id="previewWrapper" style="display:none;">
+            <div class="preview-list" id="previewList">
+                <p style="color: #71717a; width: 100%; text-align: center;">暂无上传的图片</p>
+            </div>
+            <div class="reorder-btns" id="reorderBtns">
+                <button class="reorder-btn" id="moveLeftBtn" title="左移选中图片">◀</button>
+                <button class="reorder-btn" id="moveRightBtn" title="右移选中图片">▶</button>
+            </div>
+        </div>
+
+        <div class="settings-row">
+            <div class="setting-group">
+                <label>帧率(FPS):</label>
+                <input type="range" class="fps-slider" id="fpsSlider" min="1" max="30" value="10" step="1">
+                <input type="number" class="fps-input" id="fpsInput" value="10" min="1" max="30">
+            </div>
+            <div class="setting-group">
+                <label>最大宽度:</label>
+                <input type="number" class="size-input" id="maxWidthInput" placeholder="原图" min="50" max="1920">
+            </div>
+            <div class="setting-group">
+                <label>最大高度:</label>
+                <input type="number" class="size-input" id="maxHeightInput" placeholder="原图" min="50" max="1920">
+            </div>
+        </div>
+
+        <div class="progress-text" id="progressText">正在生成GIF...</div>
+        <div class="progress-bar-wrap" id="progressBarWrap">
+            <div class="progress-bar-fill" id="progressBarFill"></div>
+        </div>
+
+        <div style="text-align:center; margin:20px 0;">
+            <button class="upload-btn" id="addMoreBtn" style="display:none;">添加更多图片</button>
+            <button class="generate-btn" id="generateBtn" disabled>合成GIF</button>
+            <button class="download-btn" id="downloadBtn">下载GIF</button>
+        </div>
+
+        <div class="result-box" id="resultBox">
+            <h3>GIF生成完成</h3>
+            <img id="resultGif" class="result-gif-img">
+            <p class="gif-info" id="gifInfo"></p>
+        </div>
+        <div class="contact-tip">面向大众，有任何想要的功能或者意见，请联系QQ交流群：<strong>1121812272</strong></div>
     </div>
 
     <script>
