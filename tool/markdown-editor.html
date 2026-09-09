@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown编辑器 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="免费在线Markdown编辑器，支持实时预览、工具栏快捷排版、导出HTML与Markdown文件，内容自动保存，纯前端本地运行。">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="Markdown编辑器 | PC-TOOL">
+    <meta property="og:description" content="免费在线Markdown编辑器，实时预览、一键排版，支持导出HTML与Markdown文件。">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/markdown-editor.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="zh_CN">
+    <style>
+        .container { max-width: 1120px; }
+
+        /* 加载失败提示条 */
+        .lib-warning {
+            display: none;
+            margin-top: 16px;
+            padding: 12px 16px;
+            background: rgba(234, 179, 8, 0.12);
+            border: 1px solid rgba(234, 179, 8, 0.35);
+            color: #fde047;
+            border-radius: 10px;
+            font-size: 0.875rem;
+        }
+
+        /* 工具栏 */
+        .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+        .toolbar.secondary { margin-top: 10px; }
+        .md-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #e4e4e7;
+            padding: 7px 12px;
+            border-radius: 8px;
+            font-size: 0.8125rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .md-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(129, 140, 248, 0.5);
+        }
+        .md-btn:active { transform: scale(0.96); }
+        .md-btn.primary {
+            background: rgba(99, 102, 241, 0.25);
+            border-color: rgba(129, 140, 248, 0.4);
+            color: #c7d2fe;
+        }
+        .md-btn.primary:hover { background: rgba(99, 102, 241, 0.45); }
+        .md-btn.danger { color: #fca5a5; }
+        .md-btn.danger:hover { border-color: rgba(248, 113, 113, 0.5); }
+
+        /* 左右分栏 */
+        .editor-wrap {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 16px;
+        }
+        .pane-title {
+            font-size: 0.8125rem;
+            color: #71717a;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+        }
+
+        #editor {
+            width: 100%;
+            min-height: 480px;
+            resize: vertical;
+            background: rgba(15, 15, 18, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            color: #e4e4e7;
+            padding: 16px;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        #editor:focus { outline: none; border-color: rgba(129, 140, 248, 0.5); }
+
+        .preview-pane {
+            min-height: 480px;
+            max-height: 600px;
+            overflow-y: auto;
+            background: rgba(15, 15, 18, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 20px;
+            font-size: 0.95rem;
+            color: #d4d4d8;
+        }
+
+        /* 预览区 Markdown 排版 */
+        .preview-pane h1, .preview-pane h2, .preview-pane h3, .preview-pane h4 { color: #f4f4f5; margin: 18px 0 10px; }
+        .preview-pane h1 { font-size: 1.8rem; border-bottom: 1px solid rgba(255, 255, 255, 0.12); padding-bottom: 8px; }
+        .preview-pane h2 { font-size: 1.4rem; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 6px; }
+        .preview-pane h3 { font-size: 1.15rem; }
+        .preview-pane p { margin: 10px 0; }
+        .preview-pane ul, .preview-pane ol { padding-left: 24px; margin: 10px 0; }
+        .preview-pane li { margin: 4px 0; }
+        .preview-pane a { color: #818cf8; text-decoration: underline; }
+        .preview-pane img { max-width: 100%; border-radius: 8px; }
+        .preview-pane hr { border: none; border-top: 1px solid rgba(255, 255, 255, 0.1); margin: 16px 0; }
+        .preview-pane code {
+            font-family: "SFMono-Regular", Consolas, Menlo, monospace;
+            background: rgba(255, 255, 255, 0.08);
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #c7d2fe;
+            font-size: 0.875em;
+        }
+        .preview-pane pre {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 14px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 12px 0;
+        }
+        .preview-pane pre code { background: transparent; padding: 0; color: #e4e4e7; }
+        .preview-pane blockquote {
+            border-left: 3px solid #818cf8;
+            padding-left: 14px;
+            color: #a1a1aa;
+            margin: 12px 0;
+        }
+        .preview-pane table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+        .preview-pane th, .preview-pane td { border: 1px solid rgba(255, 255, 255, 0.15); padding: 8px 12px; text-align: left; }
+        .preview-pane th { background: rgba(255, 255, 255, 0.05); color: #e4e4e7; }
+        .render-fallback { color: #a1a1aa; }
+
+        /* 底部状态栏 */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 12px;
+            color: #71717a;
+            font-size: 0.8125rem;
+        }
+
+        @media (max-width: 900px) {
+            .editor-wrap { grid-template-columns: 1fr; }
+            .preview-pane { max-height: none; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <!-- 统一位置返回首页按钮 -->
+    <a href="../index.html" class="back-link">← 返回转换工具首页</a>
+
+    <div class="container">
+        <h1>Markdown编辑器</h1>
+        <p>左侧输入 Markdown，右侧实时预览，支持快捷排版、导出与本地自动保存</p>
+
+        <div id="libWarning" class="lib-warning">渲染库加载失败，请检查网络连接后刷新页面。编辑与导出功能不受影响。</div>
+
+        <!-- 排版工具栏 -->
+        <div class="toolbar" id="formatBar">
+            <button class="md-btn" data-action="bold">加粗</button>
+            <button class="md-btn" data-action="italic">斜体</button>
+            <button class="md-btn" data-action="heading">标题</button>
+            <button class="md-btn" data-action="link">链接</button>
+            <button class="md-btn" data-action="image">图片</button>
+            <button class="md-btn" data-action="inlineCode">行内代码</button>
+            <button class="md-btn" data-action="codeBlock">代码块</button>
+            <button class="md-btn" data-action="quote">引用</button>
+            <button class="md-btn" data-action="ol">有序列表</button>
+            <button class="md-btn" data-action="ul">无序列表</button>
+            <button class="md-btn" data-action="table">表格</button>
+        </div>
+
+        <!-- 导入导出工具栏 -->
+        <div class="toolbar secondary">
+            <button class="md-btn primary" id="exportMdBtn">下载 .md</button>
+            <button class="md-btn primary" id="exportHtmlBtn">下载 .html</button>
+            <button class="md-btn" id="copyHtmlBtn">复制 HTML 源码</button>
+            <button class="md-btn" id="importBtn">导入 .md</button>
+            <button class="md-btn danger" id="clearBtn">清空</button>
+            <input type="file" id="fileInput" accept=".md,.markdown,text/markdown,text/plain" hidden>
+        </div>
+
+        <div class="editor-wrap">
+            <div class="pane">
+                <div class="pane-title">编辑</div>
+                <textarea id="editor" spellcheck="false" placeholder="在此输入 Markdown 内容..."></textarea>
+            </div>
+            <div class="pane">
+                <div class="pane-title">预览</div>
+                <div class="preview-pane" id="preview"></div>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <span id="statusInfo">字数 0 · 行 1</span>
+            <span id="saveState">已自动保存</span>
+        </div>
+    </div>
+    <script type="text/plain" id="sampleDoc"># Markdown 编辑器
+欢迎使用 **PC-TOOL Markdown 编辑器**，左侧输入，右侧实时预览。
+## 功能一览
+- 支持 **加粗**、*斜体*、`行内代码`
+- 支持代码块、引用、表格
+- 支持导出 Markdown 与 HTML 文件
+### 代码示例
+
+```js
+function greet(name) { return '你好, ' + name; }
+```
+
+> 这是一段引用文字，用于演示引用样式。
+| 功能 | 说明 |
+| --- | --- |
+| 实时预览 | 输入即渲染 |
+| 自动保存 | 刷新不丢失 |
+[访问 PC-TOOL](https://www.pc-tool.cn)</script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+    <script src="common.js"></script>
+    <script>
+        (function () {
+            const STORAGE_KEY = 'pc-tool-markdown-editor';
+
+            // DOM 元素
+            const editor = document.getElementById('editor');
+            const preview = document.getElementById('preview');
+            const statusInfo = document.getElementById('statusInfo');
+            const saveState = document.getElementById('saveState');
+            const libWarning = document.getElementById('libWarning');
+            const formatBar = document.getElementById('formatBar');
+            const fileInput = document.getElementById('fileInput');
+
+            const exportMdBtn = document.getElementById('exportMdBtn');
+            const exportHtmlBtn = document.getElementById('exportHtmlBtn');
+            const copyHtmlBtn = document.getElementById('copyHtmlBtn');
+            const importBtn = document.getElementById('importBtn');
+            const clearBtn = document.getElementById('clearBtn');
+
+            let lastHtml = '';
+            let renderTimer = null;
+            let saveTimer = null;
+
+            // 提示消息
+            function toast(msg) {
+                const el = document.createElement('div');
+                el.textContent = msg;
+                el.style.cssText = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);padding:10px 22px;background:rgba(0,0,0,0.85);color:#fff;border-radius:8px;font-size:14px;z-index:9999;border:1px solid rgba(255,255,255,0.12);opacity:0;transition:opacity .3s;';
+                document.body.appendChild(el);
+                requestAnimationFrame(() => el.style.opacity = '1');
+                setTimeout(() => {
+                    el.style.opacity = '0';
+                    setTimeout(() => el.remove(), 300);
+                }, 1800);
+            }
+
+            // 更新字数与行数
+            function updateStatus() {
+                const text = editor.value;
+                const chars = text.replace(/\s/g, '').length;
+                const lines = text.length === 0 ? 1 : text.split('\n').length;
+                statusInfo.textContent = '字数 ' + chars + ' · 行 ' + lines;
+            }
+
+            // 渲染预览（marked 解析 + DOMPurify 过滤 XSS）
+            function render() {
+                const text = editor.value;
+                if (!window.marked || !window.DOMPurify) {
+                    libWarning.style.display = 'block';
+                    preview.innerHTML = '';
+                    const p = document.createElement('p');
+                    p.className = 'render-fallback';
+                    p.textContent = '预览不可用：渲染库未加载。';
+                    preview.appendChild(p);
+                    return;
+                }
+                libWarning.style.display = 'none';
+                try {
+                    const raw = window.marked.parse(text);
+                    if (raw && typeof raw.then === 'function') {
+                        raw.then(html => { lastHtml = window.DOMPurify.sanitize(html); preview.innerHTML = lastHtml; });
+                    } else {
+                        lastHtml = window.DOMPurify.sanitize(raw);
+                        preview.innerHTML = lastHtml;
+                    }
+                } catch (err) {
+                    preview.innerHTML = '';
+                    const p = document.createElement('p');
+                    p.className = 'render-fallback';
+                    p.textContent = '渲染出错：' + (err && err.message ? err.message : err);
+                    preview.appendChild(p);
+                }
+            }
+
+            function scheduleRender() {
+                if (renderTimer) clearTimeout(renderTimer);
+                renderTimer = setTimeout(render, 150);
+            }
+            function scheduleSave() {
+                saveState.textContent = '输入中...';
+                if (saveTimer) clearTimeout(saveTimer);
+                saveTimer = setTimeout(() => {
+                    try {
+                        localStorage.setItem(STORAGE_KEY, editor.value);
+                        saveState.textContent = '已自动保存';
+                    } catch (e) {
+                        saveState.textContent = '保存失败';
+                    }
+                }, 300);
+            }
+
+            // 编辑后统一刷新
+            function afterEdit() {
+                updateStatus();
+                scheduleRender();
+                scheduleSave();
+            }
+
+            // 包裹选中文字（before/after 语法）
+            function wrapSelection(before, after, placeholder) {
+                const start = editor.selectionStart;
+                const end = editor.selectionEnd;
+                const selected = editor.value.slice(start, end);
+                const text = selected || placeholder;
+                editor.setRangeText(before + text + after, start, end, 'end');
+                // 选中正文部分，方便直接输入替换
+                editor.setSelectionRange(start + before.length, start + before.length + text.length);
+                afterEdit();
+                editor.focus();
+            }
+
+            // 行首前缀（标题/引用/列表），再次点击则移除
+            function linePrefix(prefix) {
+                const value = editor.value;
+                const start = editor.selectionStart;
+                const end = editor.selectionEnd;
+                let lineStart = value.lastIndexOf('\n', start - 1) + 1;
+                let lineEnd = value.indexOf('\n', end);
+                if (lineEnd === -1) lineEnd = value.length;
+
+                const lines = value.slice(lineStart, lineEnd).split('\n');
+                const allPrefixed = lines.every(l => l.startsWith(prefix));
+                const newBlock = lines.map(l => allPrefixed ? l.slice(prefix.length) : prefix + l).join('\n');
+
+                editor.setRangeText(newBlock, lineStart, lineEnd, 'end');
+                afterEdit();
+                editor.focus();
+            }
+
+            // 插入表格模板
+            function insertTable() {
+                const value = editor.value;
+                const start = editor.selectionStart;
+                const before = (start > 0 && value[start - 1] !== '\n') ? '\n' : '';
+                const tpl = '| 列1 | 列2 | 列3 |\n| --- | --- | --- |\n| 内容 | 内容 | 内容 |\n';
+                editor.setRangeText(before + tpl, start, editor.selectionEnd, 'end');
+                afterEdit();
+                editor.focus();
+            }
+
+            // 工具栏动作分发
+            const wrapMap = {
+                bold: ['**', '**', '加粗文字'],
+                italic: ['*', '*', '斜体文字'],
+                inlineCode: ['`', '`', '代码'],
+                link: ['[', '](https://)', '链接文字'],
+                image: ['![', '](https://)', '图片描述'],
+                codeBlock: ['```\n', '\n```', '代码']
+            };
+            const lineMap = { heading: '# ', quote: '> ', ol: '1. ', ul: '- ' };
+
+            formatBar.addEventListener('click', (e) => {
+                const btn = e.target.closest('button[data-action]');
+                if (!btn) return;
+                const action = btn.dataset.action;
+                editor.focus();
+                if (wrapMap[action]) {
+                    wrapSelection(wrapMap[action][0], wrapMap[action][1], wrapMap[action][2]);
+                } else if (lineMap[action]) {
+                    linePrefix(lineMap[action]);
+                } else if (action === 'table') {
+                    insertTable();
+                }
+            });
+
+            // 下载文件
+            function downloadText(content, filename, mime) {
+                const blob = new Blob([content], { type: mime || 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+            }
+
+            // 导出 HTML 的内联样式
+            const EXPORT_CSS =
+                'body{margin:0;padding:32px;background:#0f0f12;color:#e4e4e7;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;line-height:1.6;}' +
+                '.markdown-body{max-width:820px;margin:0 auto;}' +
+                '.markdown-body h1{border-bottom:1px solid #333;padding-bottom:8px;}' +
+                '.markdown-body pre{background:#000;padding:14px;border-radius:8px;overflow-x:auto;}' +
+                '.markdown-body code{font-family:monospace;background:rgba(255,255,255,.08);padding:2px 5px;border-radius:4px;}' +
+                '.markdown-body pre code{background:transparent;padding:0;}' +
+                '.markdown-body blockquote{border-left:3px solid #818cf8;padding-left:14px;color:#a1a1aa;}' +
+                '.markdown-body table{border-collapse:collapse;width:100%;}' +
+                '.markdown-body th,.markdown-body td{border:1px solid #444;padding:8px 12px;}' +
+                '.markdown-body th{background:rgba(255,255,255,.06);}' +
+                '.markdown-body a{color:#818cf8;}' +
+                '.markdown-body img{max-width:100%;}';
+
+            function buildHtmlDocument(bodyHtml) {
+                return '<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>Markdown 导出</title>\n<style>' + EXPORT_CSS + '</style>\n</head>\n<body>\n<article class="markdown-body">\n' + bodyHtml + '\n</article>\n</body>\n</html>';
+            }
+
+            exportMdBtn.addEventListener('click', () => {
+                if (!editor.value.trim()) { toast('内容为空，无法导出'); return; }
+                downloadText(editor.value, 'document.md', 'text/markdown;charset=utf-8');
+                toast('已导出 document.md');
+            });
+
+            exportHtmlBtn.addEventListener('click', () => {
+                if (!window.marked || !window.DOMPurify) { toast('渲染库未加载，无法导出 HTML'); return; }
+                if (!editor.value.trim()) { toast('内容为空，无法导出'); return; }
+                downloadText(buildHtmlDocument(lastHtml), 'document.html', 'text/html;charset=utf-8');
+                toast('已导出 document.html');
+            });
+
+            // 复制 HTML 源码
+            function copyText(text) {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(
+                        () => toast('已复制到剪贴板'),
+                        () => fallbackCopy(text)
+                    );
+                } else {
+                    fallbackCopy(text);
+                }
+            }
+            function fallbackCopy(text) {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.cssText = 'position:fixed;opacity:0;';
+                document.body.appendChild(ta);
+                ta.select();
+                try { document.execCommand('copy'); toast('已复制到剪贴板'); }
+                catch (e) { toast('复制失败，请手动复制'); }
+                document.body.removeChild(ta);
+            }
+
+            copyHtmlBtn.addEventListener('click', () => {
+                if (!window.marked || !window.DOMPurify) { toast('渲染库未加载，无法复制 HTML'); return; }
+                if (!editor.value.trim()) { toast('内容为空，无法复制'); return; }
+                copyText(buildHtmlDocument(lastHtml));
+            });
+
+            // 导入 .md 文件
+            importBtn.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = () => {
+                    editor.value = String(reader.result || '');
+                    afterEdit();
+                    render();
+                    toast('已导入 ' + file.name);
+                };
+                reader.onerror = () => toast('文件读取失败');
+                reader.readAsText(file);
+                fileInput.value = '';
+            });
+
+            // 清空内容
+            clearBtn.addEventListener('click', () => {
+                editor.value = '';
+                afterEdit();
+                render();
+                toast('已清空内容');
+            });
+
+            // 输入监听
+            editor.addEventListener('input', afterEdit);
+
+            // 初始化：恢复保存内容或填充示例
+            let saved = null;
+            try { saved = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+            if (saved !== null && saved !== undefined) {
+                editor.value = saved;
+                saveState.textContent = '已恢复上次内容';
+            } else {
+                const sample = document.getElementById('sampleDoc');
+                editor.value = sample ? sample.textContent : '';
+                saveState.textContent = '已载入示例文档';
+            }
+
+            if (window.marked && window.marked.use) {
+                window.marked.use({ gfm: true, breaks: true });
+            }
+            updateStatus();
+            render();
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>代码格式化工具 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="在线代码格式化、美化与压缩工具，支持 JavaScript、HTML、CSS、XML，纯浏览器本地处理。">
+    <meta property="og:title" content="代码格式化工具 | PC-TOOL">
+    <meta property="og:description" content="免费在线代码格式化工具，支持 JavaScript、HTML、CSS、XML 的美化与压缩，完全纯前端本地运行。">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/code-format.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="zh_CN">
+    <link rel="stylesheet" href="common.css">
+    <!-- js-beautify 格式化库（CDN） -->
+    <script src="https://cdn.jsdelivr.net/npm/js-beautify@1.15.1/js/lib/beautify.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/js-beautify@1.15.1/js/lib/beautify-css.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/js-beautify@1.15.1/js/lib/beautify-html.js"></script>
+    <style>
+        .container {
+            max-width: 980px;
+        }
+        .container h1 {
+            color: #e4e4e7;
+            margin-bottom: 8px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .container > p {
+            color: #a1a1aa;
+            font-size: 15px;
+            margin-bottom: 20px;
+        }
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 12px;
+            align-items: center;
+        }
+        .tool-btn {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #e4e4e7;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .tool-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-1px);
+        }
+        .tool-btn.primary {
+            background: #818cf8;
+            color: #fff;
+            border-color: #818cf8;
+        }
+        .tool-btn.primary:hover {
+            background: #6366f1;
+        }
+        .settings-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 16px;
+            font-size: 13px;
+            color: #a1a1aa;
+        }
+        .settings-row label {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .format-select {
+            margin: 0;
+            padding: 6px 28px 6px 12px;
+            font-size: 13px;
+            background-color: rgba(15, 15, 18, 0.7);
+        }
+        .editor-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        @media (max-width: 768px) {
+            .editor-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .editor-box {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            text-align: left;
+        }
+        .editor-header {
+            font-size: 13px;
+            color: #a1a1aa;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .textarea-styled {
+            width: 100%;
+            height: 380px;
+            background: rgba(15, 15, 18, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 12px 14px;
+            color: #e4e4e7;
+            font-size: 13px;
+            line-height: 1.5;
+            resize: vertical;
+            outline: none;
+            font-family: Consolas, Monaco, "Courier New", monospace;
+            tab-size: 2;
+            transition: border-color 0.2s;
+        }
+        .textarea-styled:focus {
+            border-color: rgba(129, 140, 248, 0.5);
+        }
+        .status-bar {
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            display: none;
+            margin-top: 8px;
+            text-align: left;
+        }
+        .status-bar.success {
+            display: block;
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        .status-bar.error {
+            display: block;
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        .foot-note {
+            margin-top: 24px;
+            text-align: center;
+            font-size: 12px;
+            color: #71717a;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <a href="../index.html" class="back-link">← 返回转换工具首页</a>
+
+    <div class="container">
+        <h1>代码格式化工具</h1>
+        <p>支持 JavaScript、HTML、CSS、XML 的代码美化与压缩，全部在浏览器本地完成。</p>
+
+        <div class="toolbar">
+            <select id="langSel" class="format-select">
+                <option value="javascript">JavaScript</option>
+                <option value="html">HTML</option>
+                <option value="css">CSS</option>
+                <option value="xml">XML</option>
+            </select>
+            <button class="tool-btn primary" id="formatBtn">格式化</button>
+            <button class="tool-btn" id="minifyBtn">压缩</button>
+            <button class="tool-btn" id="copyBtn">复制结果</button>
+            <button class="tool-btn" id="sampleBtn">示例代码</button>
+            <button class="tool-btn" id="clearBtn">清空</button>
+        </div>
+
+        <div class="settings-row">
+            <label>缩进宽度
+                <select id="indentSizeSel" class="format-select">
+                    <option value="2">2 空格</option>
+                    <option value="4" selected>4 空格</option>
+                    <option value="8">8 空格</option>
+                </select>
+            </label>
+            <label>缩进字符
+                <select id="indentCharSel" class="format-select">
+                    <option value="space" selected>空格</option>
+                    <option value="tab">Tab</option>
+                </select>
+            </label>
+        </div>
+
+        <div class="editor-grid">
+            <div class="editor-box">
+                <div class="editor-header">
+                    <span>源码输入：</span>
+                    <span id="inputStat">0 字符</span>
+                </div>
+                <textarea class="textarea-styled" id="codeInput" placeholder="在此粘贴或输入代码..."></textarea>
+            </div>
+            <div class="editor-box">
+                <div class="editor-header">
+                    <span>处理结果：</span>
+                    <span id="outputStat">0 字符</span>
+                </div>
+                <textarea class="textarea-styled" id="codeOutput" placeholder="格式化结果展示区..." readonly></textarea>
+            </div>
+        </div>
+
+        <div id="statusMsg" class="status-bar"></div>
+
+        <div class="foot-note">所有处理均在浏览器本地完成，不会上传任何数据。</div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        (function () {
+            const langSel = document.getElementById('langSel');
+            const codeInput = document.getElementById('codeInput');
+            const codeOutput = document.getElementById('codeOutput');
+            const inputStat = document.getElementById('inputStat');
+            const outputStat = document.getElementById('outputStat');
+            const statusMsg = document.getElementById('statusMsg');
+            const indentSizeSel = document.getElementById('indentSizeSel');
+            const indentCharSel = document.getElementById('indentCharSel');
+
+            // 各语言内置示例
+            const SAMPLES = {
+                javascript: 'function greet(name) {\n    const message = `Hello, ${name}!`;\n    // 打印问候语\n    console.log(message);\n    return message;\n}\n\nconst user = { name: "PC-TOOL", active: true, tags: ["工具", "在线", "免费"] };\ngreet(user.name);',
+                html: '<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n<meta charset="UTF-8">\n<title>示例页面</title>\n</head>\n<body>\n<div class="container"><h1>你好，PC-TOOL</h1><p>这是一个 HTML 格式化示例。</p></div>\n</body>\n</html>',
+                css: 'body { margin: 0; padding: 0; background-color: #09090b; color: #f4f4f5; }\n.container { display: flex; align-items: center; justify-content: center; }\n.btn { padding: 8px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); }',
+                xml: '<?xml version="1.0" encoding="UTF-8"?>\n<config>\n<app name="PC-TOOL" version="1.0.0"><author>cute-Fish</author><features><feature>格式化</feature><feature>压缩</feature></features></app>\n</config>'
+            };
+
+            const LANG_LABELS = { javascript: 'JavaScript', html: 'HTML', css: 'CSS', xml: 'XML' };
+
+            // 判断 js-beautify 三个全局函数是否加载成功
+            function isLibLoaded() {
+                return typeof window.js_beautify === 'function' &&
+                    typeof window.css_beautify === 'function' &&
+                    typeof window.html_beautify === 'function';
+            }
+
+            function showStatus(ok, text) {
+                statusMsg.className = 'status-bar ' + (ok ? 'success' : 'error');
+                statusMsg.textContent = text;
+            }
+
+            function hideStatus() {
+                statusMsg.className = 'status-bar';
+                statusMsg.textContent = '';
+            }
+
+            // 根据设置项构造 js-beautify 参数
+            function getOptions() {
+                const indentSize = parseInt(indentSizeSel.value, 10) || 4;
+                const useTab = indentCharSel.value === 'tab';
+                return {
+                    indent_size: useTab ? 1 : indentSize,
+                    indent_char: useTab ? '\t' : ' ',
+                    preserve_newlines: true,
+                    max_preserve_newlines: 2,
+                    wrap_line_length: 0
+                };
+            }
+
+            function beautify(code, lang, options) {
+                if (lang === 'javascript') return window.js_beautify(code, options);
+                if (lang === 'css') return window.css_beautify(code, options);
+                // HTML 与 XML 均使用 html_beautify 处理
+                if (lang === 'html' || lang === 'xml') return window.html_beautify(code, options);
+                return code;
+            }
+
+            // 词法扫描式压缩：去除注释（保留字符串内部），并将连续空白折叠为单个空格
+            function minifyCode(code) {
+                let out = '';
+                let i = 0;
+                const n = code.length;
+                let state = 'normal'; // normal | single | double | template | line | block | html
+                let pendingSpace = false;
+
+                function isSpace(ch) {
+                    return ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r' || ch === '\f' || ch === '\v';
+                }
+
+                while (i < n) {
+                    const c = code[i];
+                    const n1 = code[i + 1];
+                    const n2 = code[i + 2];
+                    const n3 = code[i + 3];
+
+                    // 字符串内部原样保留，处理转义
+                    if (state === 'single' || state === 'double' || state === 'template') {
+                        const quote = state === 'single' ? "'" : state === 'double' ? '"' : '`';
+                        out += c;
+                        if (c === '\\') { out += (n1 || ''); i += 2; continue; }
+                        if (c === quote) state = 'normal';
+                        i++;
+                        continue;
+                    }
+                    if (state === 'line') {
+                        if (c === '\n' || c === '\r') state = 'normal';
+                        i++;
+                        continue;
+                    }
+                    if (state === 'block') {
+                        if (c === '*' && n1 === '/') { state = 'normal'; i += 2; continue; }
+                        i++;
+                        continue;
+                    }
+                    if (state === 'html') {
+                        if (c === '-' && n1 === '-' && n2 === '>') { state = 'normal'; i += 3; continue; }
+                        i++;
+                        continue;
+                    }
+
+                    // 普通状态
+                    if (c === "'") { state = 'single'; out += c; i++; continue; }
+                    if (c === '"') { state = 'double'; out += c; i++; continue; }
+                    if (c === '`') { state = 'template'; out += c; i++; continue; }
+                    if (c === '/' && n1 === '/') { state = 'line'; pendingSpace = true; i += 2; continue; }
+                    if (c === '/' && n1 === '*') { state = 'block'; pendingSpace = true; i += 2; continue; }
+                    if (c === '<' && n1 === '!' && n2 === '-' && n3 === '-') { state = 'html'; pendingSpace = true; i += 4; continue; }
+                    if (isSpace(c)) {
+                        if (out.length > 0 && !isSpace(out[out.length - 1])) pendingSpace = true;
+                        i++;
+                        continue;
+                    }
+                    if (pendingSpace) {
+                        if (out.length > 0 && !isSpace(out[out.length - 1])) out += ' ';
+                        pendingSpace = false;
+                    }
+                    out += c;
+                    i++;
+                }
+                return out.trim();
+            }
+
+            function updateStats() {
+                inputStat.textContent = codeInput.value.length + ' 字符';
+                outputStat.textContent = codeOutput.value.length + ' 字符';
+            }
+
+            function doFormat() {
+                const raw = codeInput.value;
+                if (!raw.trim()) {
+                    showStatus(false, '请先输入需要格式化的代码内容！');
+                    return;
+                }
+                if (!isLibLoaded()) {
+                    showStatus(false, '格式化库未加载，请检查网络后刷新页面重试。');
+                    return;
+                }
+                try {
+                    const lang = langSel.value;
+                    codeOutput.value = beautify(raw, lang, getOptions());
+                    showStatus(true, LANG_LABELS[lang] + ' 格式化完成！');
+                    updateStats();
+                } catch (err) {
+                    codeOutput.value = '';
+                    showStatus(false, '格式化失败：' + err.message);
+                    updateStats();
+                }
+            }
+
+            function doMinify() {
+                const raw = codeInput.value;
+                if (!raw.trim()) {
+                    showStatus(false, '请先输入需要压缩的代码内容！');
+                    return;
+                }
+                try {
+                    codeOutput.value = minifyCode(raw);
+                    showStatus(true, '压缩完成，已折叠为单行。');
+                    updateStats();
+                } catch (err) {
+                    codeOutput.value = '';
+                    showStatus(false, '压缩失败：' + err.message);
+                    updateStats();
+                }
+            }
+
+            function fillSample() {
+                codeInput.value = SAMPLES[langSel.value] || '';
+                updateStats();
+                doFormat();
+            }
+
+            function clearAll() {
+                codeInput.value = '';
+                codeOutput.value = '';
+                hideStatus();
+                updateStats();
+            }
+
+            function copyResult() {
+                if (!codeOutput.value) {
+                    showStatus(false, '暂无结果可复制！');
+                    return;
+                }
+                const done = () => {
+                    showStatus(true, '已复制到剪贴板！');
+                };
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(codeOutput.value).then(done).catch(() => {
+                        codeOutput.select();
+                        document.execCommand('copy');
+                        done();
+                    });
+                } else {
+                    codeOutput.select();
+                    document.execCommand('copy');
+                    done();
+                }
+            }
+
+            document.getElementById('formatBtn').addEventListener('click', doFormat);
+            document.getElementById('minifyBtn').addEventListener('click', doMinify);
+            document.getElementById('copyBtn').addEventListener('click', copyResult);
+            document.getElementById('sampleBtn').addEventListener('click', fillSample);
+            document.getElementById('clearBtn').addEventListener('click', clearAll);
+            codeInput.addEventListener('input', updateStats);
+
+            // 页面加载完成后检测 CDN 是否可用，失败给出友好提示
+            window.addEventListener('load', function () {
+                if (!isLibLoaded()) {
+                    showStatus(false, 'js-beautify 库加载失败，可能是网络问题，请刷新重试或检查网络连接。');
+                }
+            });
+        })();
+    </script>
+</body>
+</html>
