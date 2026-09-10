@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>音视频波形可视化 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="在线音视频波形与频谱动态可视化工具。支持上传音频与视频，实时渲染柱状频谱、对称波动波形、圆形辐射跳动谱、粒子环及整轨波形长图，并支持一键导出 PNG 高清图与 WebM/MP4 频谱动画视频。">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="音视频波形可视化 | PC-TOOL">
+    <meta property="og:description" content="纯前端音视频波形生成与动态频谱渲染工具，支持多种动效切换与高清图/视频导出。">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/audio-visualizer.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="zh_CN">
+    <style>
+        .container {
+            max-width: 880px;
+            width: 100%;
+        }
+
+        #mediaInput {
+            display: none;
+        }
+
+        .workspace-panel {
+            display: none;
+            margin-top: 20px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        /* 视窗画布容器 */
+        .stage-card {
+            background: rgba(12, 12, 15, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: 380px;
+            background: #09090c;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        #visualizerCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .stage-overlay-info {
+            position: absolute;
+            top: 14px;
+            left: 16px;
+            font-size: 13px;
+            color: rgba(244, 244, 245, 0.75);
+            background: rgba(0, 0, 0, 0.55);
+            padding: 4px 10px;
+            border-radius: 6px;
+            pointer-events: none;
+            backdrop-filter: blur(4px);
+        }
+
+        /* 隐藏的原生媒体播放控件（用于同步时间轴） */
+        #hiddenAudio {
+            display: none;
+        }
+
+        /* 播放控制条 */
+        .playback-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: rgba(24, 24, 27, 0.6);
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .ctrl-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #f4f4f5;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .ctrl-btn:hover {
+            background: rgba(255, 255, 255, 0.16);
+            border-color: rgba(255, 255, 255, 0.24);
+        }
+
+        .ctrl-btn.primary {
+            background: #818cf8;
+            border-color: #818cf8;
+            color: #09090b;
+            font-weight: 600;
+        }
+
+        .ctrl-btn.primary:hover {
+            background: #9ca3af;
+            border-color: #9ca3af;
+        }
+
+        .time-label {
+            font-size: 12px;
+            color: #a1a1aa;
+            font-variant-numeric: tabular-nums;
+            min-width: 90px;
+        }
+
+        .progress-slider {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.12);
+            outline: none;
+            cursor: pointer;
+            -webkit-appearance: none;
+        }
+
+        .progress-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #818cf8;
+            cursor: pointer;
+            box-shadow: 0 0 6px rgba(129, 140, 248, 0.8);
+        }
+
+        /* 选项设置面板 */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 14px;
+            margin-top: 16px;
+        }
+
+        .setting-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            padding: 12px 14px;
+        }
+
+        .setting-card label {
+            display: block;
+            font-size: 12px;
+            color: #a1a1aa;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        .setting-card select,
+        .setting-card input[type="range"],
+        .setting-card input[type="color"],
+        .setting-card input[type="text"] {
+            width: 100%;
+            padding: 6px 10px;
+            background: rgba(18, 18, 22, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 6px;
+            color: #f4f4f5;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .setting-card select:focus,
+        .setting-card input:focus {
+            border-color: #818cf8;
+        }
+
+        .range-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .range-val {
+            font-size: 12px;
+            color: #d4d4d8;
+            min-width: 38px;
+            text-align: right;
+        }
+
+        /* 导出操作区域 */
+        .actions-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 20px;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        /* 导出进度条 */
+        .record-progress {
+            display: none;
+            margin-top: 14px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 12px 16px;
+            border-radius: 8px;
+        }
+
+        .record-progress-bar {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .record-progress-fill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #818cf8, #34d399);
+            border-radius: 3px;
+            transition: width 0.15s;
+        }
+
+        /* 全音轨静态长图容器 */
+        .waveform-static-section {
+            margin-top: 24px;
+            background: rgba(24, 24, 27, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .waveform-static-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .waveform-static-header h3 {
+            font-size: 15px;
+            font-weight: 600;
+            color: #e4e4e7;
+        }
+
+        #staticWaveformCanvas {
+            width: 100%;
+            height: 90px;
+            background: #09090b;
+            border-radius: 6px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <a href="../index.html" class="back-link">← 返回转换工具首页</a>
+
+    <div class="container">
+        <h1>音视频波形可视化</h1>
+        <p>纯前端解析音视频文件，实时渲染动态频谱与波形图，支持导出静态高清波形长图与动效视频。</p>
+
+        <!-- 上传区域 -->
+        <div class="upload-area" id="uploadArea">
+            <p>点击或拖拽上传音视频文件</p>
+            <p style="font-size: 12px; color: #71717a; margin-top: 6px;">支持 MP3 / WAV / OGG / AAC / FLAC / MP4 / WebM 等常见多媒体格式</p>
+            <input type="file" id="mediaInput" accept="audio/*,video/*">
+        </div>
+
+        <!-- 隐藏音频源元素 -->
+        <audio id="hiddenAudio" preload="auto"></audio>
+
+        <!-- 工作区主面板 -->
+        <div class="workspace-panel" id="workspacePanel">
+            <!-- 视窗容器 -->
+            <div class="stage-card">
+                <div class="canvas-container">
+                    <canvas id="visualizerCanvas"></canvas>
+                    <div class="stage-overlay-info" id="mediaTitle">未选择文件</div>
+                </div>
+
+                <!-- 播放与进度条 -->
+                <div class="playback-bar">
+                    <button class="ctrl-btn primary" id="playBtn">
+                        <span id="playIcon">▶</span> <span id="playText">播放</span>
+                    </button>
+                    <span class="time-label" id="timeDisplay">00:00 / 00:00</span>
+                    <input type="range" class="progress-slider" id="timelineSlider" min="0" max="100" value="0" step="0.1">
+                    <button class="ctrl-btn" id="loopBtn" title="循环播放">🔁 单曲循环</button>
+                </div>
+            </div>
+
+            <!-- 可视化参数设置 -->
+            <div class="settings-grid">
+                <div class="setting-card">
+                    <label>可视化模式</label>
+                    <select id="visualMode">
+                        <option value="bars">柱状频谱 (Spectrum Bars)</option>
+                        <option value="wave">双向对衬波形 (Mirror Wave)</option>
+                        <option value="circle">环形辐射谱 (Radial Pulse)</option>
+                        <option value="particle">粒子波动环 (Particle Halo)</option>
+                    </select>
+                </div>
+
+                <div class="setting-card">
+                    <label>主题色调</label>
+                    <select id="colorTheme">
+                        <option value="neon">霓虹蓝紫 (Indigo Neon)</option>
+                        <option value="cyber">赛博青绿 (Emerald Cyber)</option>
+                        <option value="sunset">暖金夕阳 (Sunset Orange)</option>
+                        <option value="monochrome">极简银白 (Pure White)</option>
+                        <option value="custom">自定义单色</option>
+                    </select>
+                </div>
+
+                <div class="setting-card" id="customColorBox" style="display:none;">
+                    <label>自定义主颜色</label>
+                    <input type="color" id="customColorPicker" value="#818cf8">
+                </div>
+
+                <div class="setting-card">
+                    <label>灵敏度 (平滑阻尼)</label>
+                    <div class="range-wrapper">
+                        <input type="range" id="fftSmoothRange" min="0.6" max="0.95" step="0.05" value="0.85">
+                        <span class="range-val" id="smoothVal">0.85</span>
+                    </div>
+                </div>
+
+                <div class="setting-card">
+                    <label>画布背景效果</label>
+                    <select id="bgTheme">
+                        <option value="dark">纯净暗黑</option>
+                        <option value="grid">科幻网格底纹</option>
+                        <option value="gradient">微光径向渐变</option>
+                    </select>
+                </div>
+
+                <div class="setting-card">
+                    <label>视频导出时长 (秒)</label>
+                    <div class="range-wrapper">
+                        <input type="range" id="exportDurationRange" min="5" max="60" step="5" value="15">
+                        <span class="range-val" id="exportDurationVal">15s</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 导出功能按钮 -->
+            <div class="actions-group">
+                <button class="ctrl-btn" id="exportPngBtn">
+                    📷 截图当前频谱 (PNG)
+                </button>
+                <button class="ctrl-btn primary" id="recordVideoBtn">
+                    🎬 录制并导出频谱视频 (WebM)
+                </button>
+            </div>
+
+            <!-- 录制进度展示 -->
+            <div class="record-progress" id="recordProgressBox">
+                <div style="display:flex; justify-content:space-between; font-size:13px; color:#e4e4e7;">
+                    <span id="recordStatusText">正在录制音频频谱动效...</span>
+                    <span id="recordPercentText">0%</span>
+                </div>
+                <div class="record-progress-bar">
+                    <div class="record-progress-fill" id="recordProgressFill"></div>
+                </div>
+            </div>
+
+            <!-- 静态整轨波形长图部分 -->
+            <div class="waveform-static-section">
+                <div class="waveform-static-header">
+                    <h3>整轨波形特征 (全音频概览)</h3>
+                    <button class="ctrl-btn" id="exportWaveformPngBtn">📥 导出整轨波形长图</button>
+                </div>
+                <canvas id="staticWaveformCanvas"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        (function() {
+            // 节点引用
+            const uploadArea = document.getElementById('uploadArea');
+            const mediaInput = document.getElementById('mediaInput');
+            const workspacePanel = document.getElementById('workspacePanel');
+            const hiddenAudio = document.getElementById('hiddenAudio');
+            const visualizerCanvas = document.getElementById('visualizerCanvas');
+            const staticWaveformCanvas = document.getElementById('staticWaveformCanvas');
+            const mediaTitle = document.getElementById('mediaTitle');
+            const playBtn = document.getElementById('playBtn');
+            const playIcon = document.getElementById('playIcon');
+            const playText = document.getElementById('playText');
+            const timeDisplay = document.getElementById('timeDisplay');
+            const timelineSlider = document.getElementById('timelineSlider');
+            const loopBtn = document.getElementById('loopBtn');
+            const visualMode = document.getElementById('visualMode');
+            const colorTheme = document.getElementById('colorTheme');
+            const customColorBox = document.getElementById('customColorBox');
+            const customColorPicker = document.getElementById('customColorPicker');
+            const fftSmoothRange = document.getElementById('fftSmoothRange');
+            const smoothVal = document.getElementById('smoothVal');
+            const bgTheme = document.getElementById('bgTheme');
+            const exportDurationRange = document.getElementById('exportDurationRange');
+            const exportDurationVal = document.getElementById('exportDurationVal');
+            const exportPngBtn = document.getElementById('exportPngBtn');
+            const recordVideoBtn = document.getElementById('recordVideoBtn');
+            const recordProgressBox = document.getElementById('recordProgressBox');
+            const recordProgressFill = document.getElementById('recordProgressFill');
+            const recordStatusText = document.getElementById('recordStatusText');
+            const recordPercentText = document.getElementById('recordPercentText');
+            const exportWaveformPngBtn = document.getElementById('exportWaveformPngBtn');
+
+            // Web Audio API 上下文
+            let audioCtx = null;
+            let analyserNode = null;
+            let audioSourceNode = null;
+            let decodedAudioBuffer = null;
+            let isLooping = false;
+            let animationFrameId = null;
+            let currentFileName = 'visualizer';
+
+            // 粒子环状态
+            let particles = [];
+            for (let i = 0; i < 72; i++) {
+                particles.push({
+                    angle: (i / 72) * Math.PI * 2,
+                    dist: 80,
+                    size: Math.random() * 2 + 2,
+                    speed: Math.random() * 0.01 + 0.005
+                });
+            }
+
+            // 画布尺寸自适应
+            function resizeCanvas() {
+                const rect = visualizerCanvas.parentElement.getBoundingClientRect();
+                visualizerCanvas.width = rect.width * (window.devicePixelRatio || 1);
+                visualizerCanvas.height = rect.height * (window.devicePixelRatio || 1);
+                const staticRect = staticWaveformCanvas.getBoundingClientRect();
+                staticWaveformCanvas.width = staticRect.width * (window.devicePixelRatio || 1);
+                staticWaveformCanvas.height = 90 * (window.devicePixelRatio || 1);
+                if (decodedAudioBuffer) {
+                    drawStaticWaveform(decodedAudioBuffer);
+                }
+            }
+            window.addEventListener('resize', resizeCanvas);
+
+            // 初始化 AudioContext 及节点
+            function initAudioContext() {
+                if (!audioCtx) {
+                    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                    audioCtx = new AudioContextClass();
+                    analyserNode = audioCtx.createAnalyser();
+                    analyserNode.fftSize = 512;
+                    analyserNode.smoothingTimeConstant = parseFloat(fftSmoothRange.value);
+
+                    audioSourceNode = audioCtx.createMediaElementSource(hiddenAudio);
+                    audioSourceNode.connect(analyserNode);
+                    analyserNode.connect(audioCtx.destination);
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+            }
+
+            // 文件拖拽与点击上传
+            uploadArea.addEventListener('click', () => mediaInput.click());
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = '#818cf8';
+            });
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.style.borderColor = '';
+            });
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = '';
+                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    handleFile(e.dataTransfer.files[0]);
+                }
+            });
+            mediaInput.addEventListener('change', (e) => {
+                if (e.target.files && e.target.files[0]) {
+                    handleFile(e.target.files[0]);
+                }
+            });
+
+            // 处理加载的音视频文件
+            function handleFile(file) {
+                currentFileName = file.name.replace(/\.[^/.]+$/, '');
+                mediaTitle.textContent = file.name;
+
+                const fileUrl = URL.createObjectURL(file);
+                hiddenAudio.src = fileUrl;
+                workspacePanel.style.display = 'block';
+                resizeCanvas();
+
+                // 使用 FileReader 解码生成整轨静态波形
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const arrayBuffer = e.target.result;
+                    const offlineContextClass = window.OfflineAudioContext || window.AudioContext || window.webkitAudioContext;
+                    const tempCtx = new offlineContextClass(2, 44100, 44100);
+                    tempCtx.decodeAudioData(arrayBuffer).then(buffer => {
+                        decodedAudioBuffer = buffer;
+                        drawStaticWaveform(buffer);
+                    }).catch(err => {
+                        console.warn('静态波形图解析提示:', err);
+                    });
+                };
+                reader.readAsArrayBuffer(file);
+
+                startRendering();
+            }
+
+            // 格式化秒数为 mm:ss
+            function formatTime(sec) {
+                if (isNaN(sec)) return '00:00';
+                const m = Math.floor(sec / 60);
+                const s = Math.floor(sec % 60);
+                return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+            }
+
+            // 音频播放时间与进度控制
+            hiddenAudio.addEventListener('loadedmetadata', () => {
+                timeDisplay.textContent = `00:00 / ${formatTime(hiddenAudio.duration)}`;
+                timelineSlider.max = hiddenAudio.duration || 100;
+                timelineSlider.value = 0;
+            });
+
+            hiddenAudio.addEventListener('timeupdate', () => {
+                if (!timelineSlider.matches(':active')) {
+                    timelineSlider.value = hiddenAudio.currentTime;
+                }
+                timeDisplay.textContent = `${formatTime(hiddenAudio.currentTime)} / ${formatTime(hiddenAudio.duration)}`;
+            });
+
+            timelineSlider.addEventListener('input', () => {
+                hiddenAudio.currentTime = parseFloat(timelineSlider.value);
+            });
+
+            hiddenAudio.addEventListener('ended', () => {
+                if (!isLooping) {
+                    playIcon.textContent = '▶';
+                    playText.textContent = '播放';
+                }
+            });
+
+            playBtn.addEventListener('click', () => {
+                initAudioContext();
+                if (hiddenAudio.paused) {
+                    hiddenAudio.play().then(() => {
+                        playIcon.textContent = '⏸';
+                        playText.textContent = '暂停';
+                    }).catch(err => console.error(err));
+                } else {
+                    hiddenAudio.pause();
+                    playIcon.textContent = '▶';
+                    playText.textContent = '播放';
+                }
+            });
+
+            loopBtn.addEventListener('click', () => {
+                isLooping = !isLooping;
+                hiddenAudio.loop = isLooping;
+                loopBtn.style.color = isLooping ? '#818cf8' : '#f4f4f5';
+                loopBtn.style.borderColor = isLooping ? '#818cf8' : 'rgba(255, 255, 255, 0.12)';
+            });
+
+            // 监听设置改变
+            fftSmoothRange.addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value);
+                smoothVal.textContent = val.toFixed(2);
+                if (analyserNode) {
+                    analyserNode.smoothingTimeConstant = val;
+                }
+            });
+
+            exportDurationRange.addEventListener('input', (e) => {
+                exportDurationVal.textContent = `${e.target.value}s`;
+            });
+
+            colorTheme.addEventListener('change', () => {
+                customColorBox.style.display = colorTheme.value === 'custom' ? 'block' : 'none';
+            });
+
+            // 获取主题配色方案
+            function getThemeColors() {
+                const theme = colorTheme.value;
+                if (theme === 'neon') {
+                    return {
+                        primary: '#818cf8',
+                        secondary: '#c084fc',
+                        highlight: '#38bdf8',
+                        glow: 'rgba(129, 140, 248, 0.5)'
+                    };
+                } else if (theme === 'cyber') {
+                    return {
+                        primary: '#10b981',
+                        secondary: '#06b6d4',
+                        highlight: '#a7f3d0',
+                        glow: 'rgba(16, 185, 129, 0.5)'
+                    };
+                } else if (theme === 'sunset') {
+                    return {
+                        primary: '#f97316',
+                        secondary: '#e11d48',
+                        highlight: '#fde047',
+                        glow: 'rgba(249, 115, 22, 0.5)'
+                    };
+                } else if (theme === 'monochrome') {
+                    return {
+                        primary: '#f4f4f5',
+                        secondary: '#a1a1aa',
+                        highlight: '#ffffff',
+                        glow: 'rgba(255, 255, 255, 0.3)'
+                    };
+                } else {
+                    const c = customColorPicker.value;
+                    return {
+                        primary: c,
+                        secondary: c,
+                        highlight: '#ffffff',
+                        glow: c
+                    };
+                }
+            }
+
+            // 绘制背景环境
+            function drawCanvasBackground(ctx, w, h) {
+                const bg = bgTheme.value;
+                ctx.clearRect(0, 0, w, h);
+                if (bg === 'gradient') {
+                    const rad = ctx.createRadialGradient(w / 2, h / 2, 10, w / 2, h / 2, Math.max(w, h) / 1.4);
+                    rad.addColorStop(0, '#1c1b26');
+                    rad.addColorStop(1, '#09090c');
+                    ctx.fillStyle = rad;
+                    ctx.fillRect(0, 0, w, h);
+                } else if (bg === 'grid') {
+                    ctx.fillStyle = '#09090c';
+                    ctx.fillRect(0, 0, w, h);
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+                    ctx.lineWidth = 1;
+                    const step = 28;
+                    ctx.beginPath();
+                    for (let x = 0; x < w; x += step) {
+                        ctx.moveTo(x, 0); ctx.lineTo(x, h);
+                    }
+                    for (let y = 0; y < h; y += step) {
+                        ctx.moveTo(0, y); ctx.lineTo(w, y);
+                    }
+                    ctx.stroke();
+                } else {
+                    ctx.fillStyle = '#09090c';
+                    ctx.fillRect(0, 0, w, h);
+                }
+            }
+
+            // 主渲染循环
+            function startRendering() {
+                if (animationFrameId) cancelAnimationFrame(animationFrameId);
+
+                const ctx = visualizerCanvas.getContext('2d');
+
+                function render() {
+                    const w = visualizerCanvas.width;
+                    const h = visualizerCanvas.height;
+                    drawCanvasBackground(ctx, w, h);
+
+                    const colors = getThemeColors();
+                    const mode = visualMode.value;
+
+                    if (analyserNode) {
+                        const bufferLength = analyserNode.frequencyBinCount;
+                        const freqData = new Uint8Array(bufferLength);
+                        const timeData = new Uint8Array(bufferLength);
+                        analyserNode.getByteFrequencyData(freqData);
+                        analyserNode.getByteTimeDomainData(timeData);
+
+                        if (mode === 'bars') {
+                            // 柱状频谱
+                            const barCount = 64;
+                            const barWidth = (w / barCount) * 0.72;
+                            const spacing = (w / barCount) * 0.28;
+                            const step = Math.floor(bufferLength / barCount);
+
+                            for (let i = 0; i < barCount; i++) {
+                                const val = freqData[i * step] || 0;
+                                const barHeight = (val / 255) * (h * 0.72) + 4;
+                                const x = i * (barWidth + spacing) + spacing / 2;
+                                const y = h - barHeight;
+
+                                const grad = ctx.createLinearGradient(0, y, 0, h);
+                                grad.addColorStop(0, colors.highlight);
+                                grad.addColorStop(0.3, colors.secondary);
+                                grad.addColorStop(1, colors.primary);
+
+                                ctx.fillStyle = grad;
+                                ctx.shadowColor = colors.glow;
+                                ctx.shadowBlur = 8;
+                                ctx.fillRect(x, y, barWidth, barHeight);
+                                ctx.shadowBlur = 0;
+
+                                // 顶部反光小亮点
+                                ctx.fillStyle = colors.highlight;
+                                ctx.fillRect(x, y - 3, barWidth, 2);
+                            }
+                        } else if (mode === 'wave') {
+                            // 双向对称平滑曲线
+                            const centerY = h / 2;
+                            ctx.beginPath();
+                            ctx.lineWidth = 3;
+                            ctx.strokeStyle = colors.primary;
+                            ctx.shadowColor = colors.glow;
+                            ctx.shadowBlur = 10;
+
+                            const sliceWidth = w / bufferLength;
+                            let x = 0;
+
+                            for (let i = 0; i < bufferLength; i++) {
+                                const v = timeData[i] / 128.0;
+                                const y = v * (centerY * 0.75) + (centerY * 0.25);
+                                if (i === 0) ctx.moveTo(x, y);
+                                else ctx.lineTo(x, y);
+                                x += sliceWidth;
+                            }
+                            ctx.stroke();
+
+                            // 对称下半波
+                            ctx.beginPath();
+                            ctx.strokeStyle = colors.secondary;
+                            x = 0;
+                            for (let i = 0; i < bufferLength; i++) {
+                                const v = timeData[i] / 128.0;
+                                const y = h - (v * (centerY * 0.75) + (centerY * 0.25));
+                                if (i === 0) ctx.moveTo(x, y);
+                                else ctx.lineTo(x, y);
+                                x += sliceWidth;
+                            }
+                            ctx.stroke();
+                            ctx.shadowBlur = 0;
+                        } else if (mode === 'circle') {
+                            // 环形辐射跳动谱
+                            const centerX = w / 2;
+                            const centerY = h / 2;
+                            const radius = Math.min(w, h) * 0.22;
+                            const barCount = 72;
+                            const step = Math.floor(bufferLength / barCount);
+
+                            ctx.save();
+                            ctx.translate(centerX, centerY);
+
+                            // 内圈圆环
+                            ctx.beginPath();
+                            ctx.arc(0, 0, radius, 0, Math.PI * 2);
+                            ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+                            ctx.lineWidth = 2;
+                            ctx.stroke();
+
+                            for (let i = 0; i < barCount; i++) {
+                                const angle = (i / barCount) * Math.PI * 2;
+                                const val = freqData[i * step] || 0;
+                                const barLen = (val / 255) * (Math.min(w, h) * 0.24) + 6;
+
+                                const x1 = Math.cos(angle) * radius;
+                                const y1 = Math.sin(angle) * radius;
+                                const x2 = Math.cos(angle) * (radius + barLen);
+                                const y2 = Math.sin(angle) * (radius + barLen);
+
+                                ctx.beginPath();
+                                ctx.moveTo(x1, y1);
+                                ctx.lineTo(x2, y2);
+                                ctx.strokeStyle = (i % 2 === 0) ? colors.primary : colors.secondary;
+                                ctx.lineWidth = 3;
+                                ctx.shadowColor = colors.glow;
+                                ctx.shadowBlur = 6;
+                                ctx.stroke();
+                            }
+                            ctx.restore();
+                            ctx.shadowBlur = 0;
+                        } else if (mode === 'particle') {
+                            // 粒子光晕跳动
+                            const centerX = w / 2;
+                            const centerY = h / 2;
+                            let avgEnergy = 0;
+                            for (let i = 0; i < 40; i++) avgEnergy += freqData[i];
+                            avgEnergy = avgEnergy / 40 / 255; // 0 ~ 1 范围低频冲量
+
+                            const baseR = Math.min(w, h) * 0.2;
+                            const dynamicR = baseR + avgEnergy * 60;
+
+                            // 中心配套光晕
+                            const grad = ctx.createRadialGradient(centerX, centerY, 10, centerX, centerY, dynamicR * 1.5);
+                            grad.addColorStop(0, colors.glow);
+                            grad.addColorStop(1, 'rgba(0,0,0,0)');
+                            ctx.fillStyle = grad;
+                            ctx.fillRect(0, 0, w, h);
+
+                            // 粒子旋转与发射
+                            particles.forEach((p, idx) => {
+                                p.angle += p.speed;
+                                const dist = dynamicR + Math.sin(p.angle * 4) * (avgEnergy * 40);
+                                const px = centerX + Math.cos(p.angle) * dist;
+                                const py = centerY + Math.sin(p.angle) * dist;
+
+                                ctx.beginPath();
+                                ctx.arc(px, py, p.size * (1 + avgEnergy * 1.2), 0, Math.PI * 2);
+                                ctx.fillStyle = idx % 2 === 0 ? colors.primary : colors.highlight;
+                                ctx.shadowColor = colors.glow;
+                                ctx.shadowBlur = 8;
+                                ctx.fill();
+                            });
+                            ctx.shadowBlur = 0;
+                        }
+                    }
+
+                    animationFrameId = requestAnimationFrame(render);
+                }
+
+                render();
+            }
+
+            // 绘制静态波形长图（根据整首音频全貌绘制）
+            function drawStaticWaveform(audioBuffer) {
+                const ctx = staticWaveformCanvas.getContext('2d');
+                const w = staticWaveformCanvas.width;
+                const h = staticWaveformCanvas.height;
+                ctx.clearRect(0, 0, w, h);
+
+                ctx.fillStyle = '#09090b';
+                ctx.fillRect(0, 0, w, h);
+
+                const channelData = audioBuffer.getChannelData(0);
+                const step = Math.ceil(channelData.length / w);
+                const amp = h / 2;
+
+                ctx.fillStyle = 'rgba(129, 140, 248, 0.75)';
+                for (let i = 0; i < w; i++) {
+                    let min = 1.0;
+                    let max = -1.0;
+                    for (let j = 0; j < step; j++) {
+                        const datum = channelData[(i * step) + j];
+                        if (datum < min) min = datum;
+                        if (datum > max) max = datum;
+                    }
+                    const y1 = (1 + min) * amp;
+                    const y2 = Math.max(1, (max - min) * amp);
+                    ctx.fillRect(i, y1, 1, y2);
+                }
+
+                // 中心参考虚线
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath();
+                ctx.moveTo(0, h / 2);
+                ctx.lineTo(w, h / 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // 导出单帧 PNG 截图
+            exportPngBtn.addEventListener('click', () => {
+                const dataUrl = visualizerCanvas.toDataURL('image/png');
+                const a = document.createElement('a');
+                a.href = dataUrl;
+                a.download = `${currentFileName}_spectrum_${Date.now()}.png`;
+                a.click();
+            });
+
+            // 导出静态整轨波形长图 PNG
+            exportWaveformPngBtn.addEventListener('click', () => {
+                const dataUrl = staticWaveformCanvas.toDataURL('image/png');
+                const a = document.createElement('a');
+                a.href = dataUrl;
+                a.download = `${currentFileName}_waveform_${Date.now()}.png`;
+                a.click();
+            });
+
+            // 录制视频 WebM (MediaRecorder API)
+            recordVideoBtn.addEventListener('click', () => {
+                if (!window.MediaRecorder) {
+                    alert('当前浏览器暂不支持 MediaRecorder 录制 API');
+                    return;
+                }
+                initAudioContext();
+
+                // 获取 Canvas 视频流与音频流
+                const canvasStream = visualizerCanvas.captureStream(30);
+                let combinedStream = canvasStream;
+
+                try {
+                    const dest = audioCtx.createMediaStreamDestination();
+                    audioSourceNode.connect(dest);
+                    const audioTracks = dest.stream.getAudioTracks();
+                    if (audioTracks.length > 0) {
+                        combinedStream = new MediaStream([
+                            ...canvasStream.getVideoTracks(),
+                            ...audioTracks
+                        ]);
+                    }
+                } catch (e) {
+                    console.warn('音频混流提示:', e);
+                }
+
+                let mimeType = 'video/webm;codecs=vp9';
+                if (!MediaRecorder.isTypeSupported(mimeType)) {
+                    mimeType = 'video/webm';
+                }
+
+                const recorder = new MediaRecorder(combinedStream, {
+                    mimeType: mimeType,
+                    videoBitsPerSecond: 4000000
+                });
+
+                const chunks = [];
+                recorder.ondataavailable = (e) => {
+                    if (e.data && e.data.size > 0) chunks.push(e.data);
+                };
+
+                const durationSec = parseInt(exportDurationRange.value, 10);
+                let elapsedSec = 0;
+
+                recordProgressBox.style.display = 'block';
+                recordVideoBtn.disabled = true;
+                recordVideoBtn.style.opacity = '0.6';
+
+                // 开始音频播放与录制
+                hiddenAudio.currentTime = 0;
+                hiddenAudio.play();
+                recorder.start(100);
+
+                const progressInterval = setInterval(() => {
+                    elapsedSec += 0.5;
+                    const percent = Math.min(100, Math.floor((elapsedSec / durationSec) * 100));
+                    recordProgressFill.style.width = `${percent}%`;
+                    recordPercentText.textContent = `${percent}%`;
+                    recordStatusText.textContent = `正在录制动态频谱 (${elapsedSec.toFixed(1)}s / ${durationSec}s)...`;
+
+                    if (elapsedSec >= durationSec) {
+                        clearInterval(progressInterval);
+                        if (recorder.state !== 'inactive') {
+                            recorder.stop();
+                        }
+                    }
+                }, 500);
+
+                recorder.onstop = () => {
+                    hiddenAudio.pause();
+                    playIcon.textContent = '▶';
+                    playText.textContent = '播放';
+                    recordProgressFill.style.width = '100%';
+                    recordPercentText.textContent = '100%';
+                    recordStatusText.textContent = '录制完成，正在生成视频文件...';
+
+                    const blob = new Blob(chunks, { type: 'video/webm' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${currentFileName}_spectrum_${durationSec}s.webm`;
+                    a.click();
+
+                    setTimeout(() => {
+                        recordProgressBox.style.display = 'none';
+                        recordVideoBtn.disabled = false;
+                        recordVideoBtn.style.opacity = '1';
+                        recordProgressFill.style.width = '0%';
+                    }, 2500);
+                };
+            });
+        })();
+    </script>
+</body>
+</html>
