@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>正在前往第三方网页 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <meta name="description" content="PC-TOOL 第三方网站跳转安全提示页面">
+    <link rel="stylesheet" href="tool/common.css">
+    <style>
+        .container {
+            max-width: 540px;
+            width: 100%;
+            text-align: center;
+            padding: 36px 28px;
+        }
+
+        .warning-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            box-shadow: 0 0 24px rgba(245, 158, 11, 0.2);
+        }
+
+        .warning-icon svg {
+            width: 32px;
+            height: 32px;
+        }
+
+        .target-url-box {
+            margin: 20px 0 24px;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            word-break: break-all;
+            font-size: 13px;
+            color: #818cf8;
+            font-family: monospace;
+            user-select: all;
+        }
+
+        .notice-text {
+            font-size: 14px;
+            color: #a1a1aa;
+            line-height: 1.6;
+            margin-bottom: 28px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .btn-cancel {
+            background: rgba(255, 255, 255, 0.06);
+            color: #d4d4d8;
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-cancel:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #ffffff;
+        }
+
+        .btn-confirm {
+            background: #818cf8;
+            color: #09090b;
+            font-weight: 600;
+        }
+
+        .btn-confirm:hover {
+            background: #93c5fd;
+            box-shadow: 0 0 16px rgba(129, 140, 248, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <div class="container">
+        <div class="warning-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+        </div>
+
+        <h2 style="font-size: 20px; font-weight: 600; color: #f4f4f5; margin-bottom: 10px;">即将离开 PC-TOOL</h2>
+        <p class="notice-text">
+            您即将跳转到第三方外部网站。<br>
+            外部网站的内容、隐私政策与安全性由其独立运营方负责，请注意保护个人信息安全。
+        </p>
+
+        <div class="target-url-box" id="targetUrlDisplay">正在读取目标链接...</div>
+
+        <div class="btn-group">
+            <button class="action-btn btn-cancel" id="cancelBtn">返回首页</button>
+            <button class="action-btn btn-confirm" id="confirmBtn">继续访问</button>
+        </div>
+    </div>
+
+    <script src="tool/common.js"></script>
+    <script>
+        (function() {
+            var params = new URLSearchParams(window.location.search);
+            var target = params.get('target');
+            var targetUrlDisplay = document.getElementById('targetUrlDisplay');
+            var confirmBtn = document.getElementById('confirmBtn');
+            var cancelBtn = document.getElementById('cancelBtn');
+
+            var safeTarget = 'https://www.arealme.com/reaction-test/cn/';
+
+            if (target) {
+                try {
+                    var parsed = new URL(target);
+                    // 仅支持 http / https 协议
+                    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+                        safeTarget = target;
+                    }
+                } catch (e) {
+                    // 无效 url 则使用默认值
+                }
+            }
+
+            targetUrlDisplay.textContent = safeTarget;
+
+            cancelBtn.addEventListener('click', function() {
+                if (window.history.length > 1) {
+                    window.history.back();
+                } else {
+                    window.location.href = 'index.html';
+                }
+            });
+
+            confirmBtn.addEventListener('click', function() {
+                window.location.replace(safeTarget);
+            });
+        })();
+    </script>
+</body>
+</html>
