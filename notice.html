@@ -15,6 +15,12 @@
     <meta property="og:locale" content="zh_CN">
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
+        :root {
+            --primary: #818cf8;
+            --primary-glow: rgba(129, 140, 248, 0.4);
+            --accent: #34d399;
+            --accent-glow: rgba(52, 211, 153, 0.35);
+        }
         body {
             background:#09090b; color:#f4f4f5;
             font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
@@ -22,7 +28,9 @@
             background-attachment:fixed;
             -webkit-font-smoothing:antialiased;
             min-height:100vh;
-            padding:80px 20px 60px;
+            overflow-x:hidden;
+            display:flex;
+            flex-direction:column;
             position:relative;
             transition: background-color 0.5s ease, color 0.5s ease;
         }
@@ -96,490 +104,851 @@
             z-index:0; pointer-events:none; filter:blur(2px);
         }
 
+        .top-nav {
+            position:fixed; top:0; left:0; right:0; height:70px;
+            display:flex; align-items:center; justify-content:space-between;
+            padding:0 28px; z-index:50;
+            background:linear-gradient(to bottom, rgba(9,9,11,0.85), rgba(9,9,11,0));
+            pointer-events:none;
+        }
+        .top-nav > * { pointer-events:auto; }
+
         .back-link {
-            position:fixed; top:20px; left:20px; z-index:10;
-            color:#a1a1aa; font-size:15px; text-decoration:none;
-            background:rgba(24,24,27,0.5); backdrop-filter:blur(10px);
-            -webkit-backdrop-filter:blur(10px);
-            padding:8px 16px; border-radius:8px;
-            border:1px solid rgba(255,255,255,0.05);
-            transition:all 0.3s;
+            color:#a1a1aa; font-size:14px; text-decoration:none;
+            background:rgba(24,24,27,0.7); backdrop-filter:blur(12px);
+            -webkit-backdrop-filter:blur(12px);
+            padding:8px 18px; border-radius:999px;
+            border:1px solid rgba(255,255,255,0.08);
+            transition:all 0.25s cubic-bezier(0.16,1,0.3,1);
+            display:inline-flex; align-items:center; gap:6px;
         }
-        .back-link:hover { color:#e4e4e7; border-color:rgba(255,255,255,0.15); }
-
-        .container {
-            position:relative; z-index:1;
-            max-width:700px; margin:0 auto;
-            animation:fadeIn 0.6s ease-out forwards;
-        }
-        @keyframes fadeIn { from{opacity:0} to{opacity:1} }
-
-        .page-header {
-            text-align:center; margin-bottom:48px;
-        }
-        .page-header h1 {
-            font-size:32px; font-weight:700; letter-spacing:-0.02em;
-            color:#e4e4e7; margin-bottom:8px;
-        }
-        .page-header .subtitle {
-            color:#71717a; font-size:15px;
+        .back-link:hover {
+            color:#fff; border-color:rgba(255,255,255,0.25);
+            background:rgba(39,39,42,0.8);
+            box-shadow:0 4px 20px rgba(0,0,0,0.3);
+            transform:translateX(-2px);
         }
 
-        .timeline {
-            position:relative; padding-left:36px;
+        .nav-actions {
+            display:flex; align-items:center; gap:10px;
         }
-        .timeline::before {
+        .nav-btn {
+            background:rgba(24,24,27,0.7);
+            border:1px solid rgba(255,255,255,0.08);
+            color:#a1a1aa;
+            padding:7px 15px;
+            border-radius:999px;
+            font-size:13px;
+            cursor:pointer;
+            backdrop-filter:blur(12px);
+            -webkit-backdrop-filter:blur(12px);
+            transition:all 0.2s;
+            display:inline-flex; align-items:center; gap:5px;
+        }
+        .nav-btn:hover {
+            color:#f4f4f5;
+            border-color:rgba(129,140,248,0.5);
+            background:rgba(39,39,42,0.9);
+        }
+        .nav-btn.primary {
+            border-color:rgba(129,140,248,0.4);
+            color:#c7d2fe;
+            background:rgba(99,102,241,0.15);
+        }
+        .nav-btn.primary:hover {
+            background:rgba(99,102,241,0.3);
+            color:#fff;
+            box-shadow:0 0 16px rgba(99,102,241,0.3);
+        }
+
+        /* 顶部标题区与左右切换箭头控制 */
+        .header-section {
+            position:relative; z-index:10;
+            text-align:center;
+            padding-top:76px;
+            padding-bottom:12px;
+            flex-shrink:0;
+        }
+        .header-section h1 {
+            font-size:28px; font-weight:700; letter-spacing:-0.02em;
+            color:#e4e4e7; margin-bottom:6px;
+        }
+        .header-section .subtitle {
+            color:#71717a; font-size:14px;
+            margin-bottom:14px;
+        }
+
+        /* 上方居中方向控制条 */
+        .top-arrow-controller {
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            gap:14px;
+            background:rgba(24,24,27,0.65);
+            border:1px solid rgba(255,255,255,0.08);
+            padding:6px 14px;
+            border-radius:999px;
+            backdrop-filter:blur(14px);
+            -webkit-backdrop-filter:blur(14px);
+            box-shadow:0 6px 24px rgba(0,0,0,0.35);
+        }
+        .arrow-action-btn {
+            width:38px; height:38px;
+            border-radius:50%;
+            background:rgba(255,255,255,0.06);
+            border:1px solid rgba(255,255,255,0.1);
+            color:#f4f4f5;
+            cursor:pointer;
+            display:inline-flex; align-items:center; justify-content:center;
+            transition:transform 0.15s, background 0.15s, border-color 0.15s;
+            outline:none;
+            user-select:none;
+            -webkit-user-select:none;
+            touch-action:manipulation;
+        }
+        .arrow-action-btn svg {
+            width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round;
+            pointer-events:none;
+        }
+        .arrow-action-btn:hover {
+            background:rgba(129,140,248,0.2);
+            border-color:rgba(129,140,248,0.6);
+            color:#fff;
+            box-shadow:0 0 14px rgba(129,140,248,0.4);
+            transform:scale(1.08);
+        }
+        .arrow-action-btn:active {
+            transform:scale(0.95);
+        }
+        .arrow-action-btn:hover.btn-prev svg {
+            transform:translateX(-2px);
+        }
+        .arrow-action-btn:hover.btn-next svg {
+            transform:translateX(2px);
+        }
+        .top-arrow-controller .controller-text {
+            font-size:13px;
+            color:#a1a1aa;
+            font-weight:500;
+            padding:0 4px;
+            letter-spacing:0.02em;
+        }
+
+        /* 左右滑动主视口 */
+        .horizontal-viewport {
+            position:relative; z-index:10;
+            flex:1;
+            display:flex;
+            flex-direction:column;
+            justify-content:center;
+            min-height:540px;
+            padding:10px 0 20px;
+        }
+
+        /* 轴线轨道整体 */
+        .timeline-track-wrap {
+            overflow-x:auto;
+            overflow-y:hidden;
+            scrollbar-width:none;
+            -ms-overflow-style:none;
+            padding:30px 60px 40px;
+            position:relative;
+            opacity:0;
+            transition:opacity 0.25s ease-out;
+        }
+        .timeline-track-wrap.ready {
+            opacity:1;
+        }
+        .timeline-track-wrap::-webkit-scrollbar {
+            display:none;
+        }
+
+        .timeline-rail {
+            display:flex;
+            position:relative;
+            align-items:flex-start;
+            gap:48px;
+            padding-top:36px;
+            width:max-content;
+            margin:0 auto;
+        }
+
+        /* 贯穿左右的横向发光主轴线 */
+        .timeline-rail::before {
             content:'';
-            position:absolute; left:11px; top:8px; bottom:8px;
-            width:2px;
-            background:linear-gradient(to bottom, rgba(129,140,248,0.4), rgba(16,185,129,0.2));
-            border-radius:1px;
+            position:absolute;
+            top:12px;
+            left:0;
+            right:0;
+            height:3px;
+            background:linear-gradient(to right, 
+                rgba(52, 211, 153, 0.25) 0%, 
+                rgba(129, 140, 248, 0.6) 50%, 
+                rgba(236, 72, 153, 0.8) 100%
+            );
+            border-radius:2px;
+            box-shadow:0 0 16px rgba(129,140,248,0.4);
+            z-index:1;
         }
 
-        .notice-item {
-            position:relative; margin-bottom:40px; opacity:0;
-            animation:itemIn 0.6s cubic-bezier(0.16,1,0.3,1) forwards;
-        }
-        @keyframes itemIn {
-            from { transform:translateX(-20px); opacity:0; }
-            to { transform:translateX(0); opacity:1; }
-        }
-        .notice-item:nth-child(1) { animation-delay:0.00s; }
-        .notice-item:nth-child(2) { animation-delay:0.08s; }
-        .notice-item:nth-child(3) { animation-delay:0.16s; }
-        .notice-item:nth-child(4) { animation-delay:0.24s; }
-        .notice-item:nth-child(5) { animation-delay:0.32s; }
-        .notice-item:nth-child(6) { animation-delay:0.40s; }
-        .notice-item:nth-child(7) { animation-delay:0.48s; }
-
-        .notice-item::before {
-            content:'';
-            position:absolute; left:-28px; top:10px;
-            width:10px; height:10px;
-            background:#818cf8; border-radius:50%;
-            border:2px solid rgba(129,140,248,0.3);
-            box-shadow:0 0 12px rgba(129,140,248,0.4);
+        /* 方向提示标签 */
+        .track-direction-label {
+            position:absolute;
+            top:-20px;
+            font-size:12px;
+            font-weight:600;
+            letter-spacing:0.08em;
+            text-transform:uppercase;
+            padding:3px 12px;
+            border-radius:6px;
+            background:rgba(24,24,27,0.75);
+            backdrop-filter:blur(8px);
             z-index:2;
         }
-        .notice-item:nth-child(even)::before {
-            background:#34d399; border-color:rgba(16,185,129,0.3);
-            box-shadow:0 0 12px rgba(16,185,129,0.4);
+        .label-past {
+            left:10px;
+            color:#6ee7b7;
+            border:1px solid rgba(16,185,129,0.3);
+        }
+        .label-present {
+            right:10px;
+            color:#f472b6;
+            border:1px solid rgba(236,72,153,0.4);
+            box-shadow:0 0 12px rgba(236,72,153,0.3);
         }
 
-        .notice-item .notice-date {
-            font-size:13px; color:#71717a; margin-bottom:6px;
-            letter-spacing:0.03em; font-weight:500;
+        /* 单个时间轴节点 */
+        .timeline-node {
+            position:relative;
+            width:380px;
+            flex-shrink:0;
         }
 
+        /* 轴线节点圆形光标：严格锁定在横线中心 */
+        .node-pin {
+            position:absolute;
+            top:-23px; /* rail padding-top(36px) - line center(13.5px) = 22.5px */
+            left:28px;
+            width:14px;
+            height:14px;
+            border-radius:50%;
+            background:#818cf8;
+            border:2.5px solid #09090b;
+            box-shadow:0 0 0 2px rgba(129,140,248,0.5), 0 0 14px rgba(129,140,248,0.7);
+            z-index:4;
+            transform:translate(-50%, -50%);
+            transition:transform 0.25s, background 0.25s, box-shadow 0.25s;
+            pointer-events:none;
+        }
+        .timeline-node:hover .node-pin {
+            transform:translate(-50%, -50%) scale(1.3);
+            background:#a5b4fc;
+            box-shadow:0 0 0 3px rgba(129,140,248,0.8), 0 0 20px rgba(129,140,248,0.9);
+        }
+
+        .timeline-node.current .node-pin {
+            background:#ec4899;
+            box-shadow:0 0 0 3px rgba(236,72,153,0.5), 0 0 18px rgba(236,72,153,0.9);
+            animation:pulseGlow 2s infinite alternate;
+        }
+        @keyframes pulseGlow {
+            0% { transform:translate(-50%, -50%) scale(1); box-shadow:0 0 0 2px rgba(236,72,153,0.4), 0 0 12px rgba(236,72,153,0.6); }
+            100% { transform:translate(-50%, -50%) scale(1.25); box-shadow:0 0 0 4px rgba(236,72,153,0.8), 0 0 22px rgba(236,72,153,1); }
+        }
+
+        /* 顶部日期徽章 */
+        .node-date {
+            display:inline-flex;
+            align-items:center;
+            font-size:13px;
+            font-weight:600;
+            color:#a1a1aa;
+            margin-bottom:12px;
+            letter-spacing:0.04em;
+            padding:4px 14px;
+            border-radius:8px;
+            background:rgba(24,24,27,0.6);
+            border:1px solid rgba(255,255,255,0.06);
+            backdrop-filter:blur(8px);
+        }
+        .timeline-node.current .node-date {
+            color:#f472b6;
+            border-color:rgba(236,72,153,0.3);
+            background:rgba(236,72,153,0.1);
+        }
+
+        /* 卡片主体 */
         .notice-card {
-            background:rgba(24,24,27,0.25);
-            border:1px solid rgba(255,255,255,0.05);
-            border-radius:14px; padding:24px 28px;
-            backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
-            transition:all 0.3s;
+            background:rgba(24,24,27,0.45);
+            border:1px solid rgba(255,255,255,0.07);
+            border-radius:16px;
+            padding:22px 24px;
+            backdrop-filter:blur(14px);
+            -webkit-backdrop-filter:blur(14px);
+            box-shadow:0 10px 30px rgba(0,0,0,0.35);
+            transition:all 0.3s cubic-bezier(0.16,1,0.3,1);
+            max-height:460px;
+            overflow-y:auto;
+            scrollbar-width:thin;
+            scrollbar-color:rgba(255,255,255,0.15) transparent;
+        }
+        .notice-card::-webkit-scrollbar {
+            width:4px;
+        }
+        .notice-card::-webkit-scrollbar-thumb {
+            background:rgba(255,255,255,0.15);
+            border-radius:4px;
         }
         .notice-card:hover {
-            background:rgba(24,24,27,0.45);
-            border-color:rgba(255,255,255,0.1);
-            box-shadow:0 8px 32px rgba(0,0,0,0.3);
+            background:rgba(28,28,32,0.65);
+            border-color:rgba(255,255,255,0.16);
+            box-shadow:0 16px 40px rgba(0,0,0,0.5);
+            transform:translateY(-4px);
         }
 
-        .notice-card h3 {
-            font-size:16px; font-weight:600; color:#e4e4e7;
-            margin-bottom:10px;
+        .timeline-node.current .notice-card {
+            border-color:rgba(236,72,153,0.3);
+            background:rgba(28,24,30,0.55);
         }
 
-        .notice-card .notice-body {
-            color:#a1a1aa; font-size:14px; line-height:1.75;
-        }
-        .notice-card .notice-body ul {
-            padding-left:18px; margin-top:6px;
-        }
-        .notice-card .notice-body li {
-            margin-bottom:5px; color:#cdcdd3;
-        }
-        .notice-card .notice-body strong {
-            color:#e4e4e7;
+        .card-header {
+            margin-bottom:12px;
+            display:flex;
+            flex-wrap:wrap;
+            align-items:center;
+            gap:6px;
         }
 
         .tag {
-            display:inline-block; padding:2px 10px; border-radius:6px;
-            font-size:12px; font-weight:500; margin-right:6px;
+            display:inline-block; padding:3px 10px; border-radius:6px;
+            font-size:12px; font-weight:600;
         }
-        .tag.new { background:rgba(16,185,129,0.2); color:#6ee7b7; }
-        .tag.fix { background:rgba(245,158,11,0.2); color:#fcd34d; }
-        .tag.upgrade { background:rgba(129,140,248,0.2); color:#a5b4fc; }
-        .tag.warning { background:rgba(239,68,68,0.2); color:#f87171; }
+        .tag.new { background:rgba(16,185,129,0.18); color:#6ee7b7; border:1px solid rgba(16,185,129,0.25); }
+        .tag.fix { background:rgba(245,158,11,0.18); color:#fcd34d; border:1px solid rgba(245,158,11,0.25); }
+        .tag.upgrade { background:rgba(129,140,248,0.18); color:#a5b4fc; border:1px solid rgba(129,140,248,0.25); }
+        .tag.warning { background:rgba(239,68,68,0.18); color:#f87171; border:1px solid rgba(239,68,68,0.25); }
+        .tag.latest { background:rgba(236,72,153,0.2); color:#f472b6; border:1px solid rgba(236,72,153,0.35); }
+
+        .notice-body {
+            color:#a1a1aa; font-size:13.5px; line-height:1.75;
+        }
+        .notice-body ul {
+            padding-left:18px; margin-top:4px;
+        }
+        .notice-body li {
+            margin-bottom:8px; color:#d4d4d8;
+        }
+        .notice-body li:last-child {
+            margin-bottom:0;
+        }
+        .notice-body strong {
+            color:#f4f4f5; font-weight:600;
+        }
+
+        /* 悬浮滚动导航条与进度指示器 */
+        .bottom-controller {
+            position:relative; z-index:20;
+            display:flex; flex-direction:column;
+            align-items:center; justify-content:center;
+            padding:12px 20px 24px;
+            gap:10px;
+        }
+
+        .scroll-progress-container {
+            width:min(480px, 80vw);
+            height:5px;
+            background:rgba(255,255,255,0.08);
+            border-radius:999px;
+            overflow:hidden;
+            position:relative;
+            cursor:pointer;
+        }
+        .scroll-progress-bar {
+            height:100%;
+            width:0%;
+            background:linear-gradient(to right, #34d399, #818cf8, #ec4899);
+            border-radius:999px;
+            transition:width 0.15s ease-out;
+        }
 
         .footer-note {
-            text-align:center; margin-top:48px; color:#52525b;
-            font-size:14px;
+            text-align:center; color:#52525b;
+            font-size:13px;
         }
 
-        @media (max-width:640px) {
-            .container { padding:0 4px; }
-            .timeline { padding-left:28px; }
-            .notice-item::before { left:-22px; width:8px; height:8px; }
-            .notice-card { padding:18px 20px; }
-            .page-header h1 { font-size:26px; }
+        @media (max-width:768px) {
+            .top-nav { padding:0 16px; }
+            .timeline-node { width:310px; }
+            .timeline-rail { gap:28px; }
+            .timeline-track-wrap { padding:30px 24px 30px; }
+            .header-section { padding-top:68px; }
+            .header-section h1 { font-size:24px; }
         }
     </style>
 </head>
 <body>
     <canvas id="bg-canvas" class="bg-canvas"></canvas>
 
-    <a href="index.html" class="back-link">← 返回首页</a>
-
-    <div class="container">
-        <div class="page-header">
-            <h1>更新公告</h1>
-            <p class="subtitle">记录每一次蜕变和进步</p>
+    <div class="top-nav">
+        <a href="index.html" class="back-link">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            返回首页
+        </a>
+        <div class="nav-actions">
+            <button class="nav-btn" id="btn-to-past" title="滑动至最早起点">最早记录</button>
+            <button class="nav-btn primary" id="btn-to-latest" title="滑动至最新更新">最新发布</button>
         </div>
+    </div>
 
-        <div class="timeline">
-        <!-- 注：时间线最新在最上 -->
+    <div class="header-section">
+        <h1>更新公告</h1>
+        <div class="subtitle">记录每一次蜕变和进步</div>
 
-            <div class="notice-item">
-                <div class="notice-date">2026-09-10</div>
-                <div class="notice-card">
-                    <h3>
-                        <span class="tag new">新增</span>
-                    </h3>
-                    <div class="notice-body">
-                        <ul>
-                            <li>新增<strong>图片EXIF查看与抹除</strong>工具 — 本地解析照片拍摄参数与GPS定位信息，一键抹除隐私元数据导出</li>
-                            <li>新增<strong>配色方案生成器</strong>工具 — 色轮谐调算法生成互补/类似/三角等配色方案，支持CSS变量/Tailwind/JSON导出与明暗色阶</li>
-                            <li>新增<strong>JWT在线解码器</strong>工具 — 实时解析Token结构与Payload，自动转换时间戳并检测有效期状态</li>
-                            <li>新增<strong>代码格式化工具</strong> — 支持JavaScript/HTML/CSS/XML美化与压缩，可自定义缩进规则</li>
-                            <li>新增<strong>Markdown编辑器</strong>工具 — 实时预览渲染，支持快捷语法工具条、本地导入与HTML导出，内容自动保存</li>
-                            <li>新增<strong>打字速度测试</strong>工具 — 中英文双语WPM测速，实时正确率统计与结局评级</li>
-                        </ul>
+        <!-- 顶部左右切换箭头控制 -->
+        <div class="top-arrow-controller">
+            <button class="arrow-action-btn btn-prev" id="top-prev-btn" title="查看更早公告">
+                <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+            <span class="controller-text"></span>
+            <button class="arrow-action-btn btn-next" id="top-next-btn" title="查看最新公告">
+                <svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- 横向时间轴主体 -->
+    <div class="horizontal-viewport" id="viewport">
+        <div class="timeline-track-wrap" id="trackWrap">
+            <div class="timeline-rail" id="rail">
+                <span class="track-direction-label label-past">起始记录（旧）</span>
+                <span class="track-direction-label label-present">最新前沿（新）</span>
+
+                <!-- 1. 2026-06-01 (首发) -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-06-01</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag new">首发</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li><strong>PC-TOOL 正式上线</strong> — 免费在线工具集合，为人民服务，不收一分钱</li>
+                                <li>上线<strong>二维码生成器</strong> — 输入文字 / 链接生成二维码，支持自定义颜色、添加 Logo</li>
+                                <li>上线<strong>二维码解析</strong> — 上传二维码图片读出内容</li>
+                                <li>上线<strong>图片转格式</strong> — 支持 JPG / PNG / WebP / GIF / BMP / PDF 互转</li>
+                                <li>上线<strong>图片压缩</strong> — 支持批量压缩，可调节质量</li>
+                                <li>上线<strong>图片转 Base64</strong> — 拖入图片直接出 Base64 字符串</li>
+                                <li>上线<strong>Base64 转图片</strong> — 粘贴 Base64 字符串还原图片</li>
+                                <li>上线<strong>颜色格式转换</strong> — HEX / RGB / HSL 互转 + 调色板</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="notice-item">
-                <div class="notice-date">2026-09-09</div>
-                <div class="notice-card">
-                    <h3>
-                        <span class="tag fix">UI修复</span>
-                        <span class="tag new">新增</span>
-                    </h3>
-                    <div class="notice-body">
-                        <ul>
-                            <li>修复：image-gif.html image-watermark.html image-rotate.html image-filter.html image-compress.html image-base64.html image-base64-decode.html file-hash.html 的返回主页按钮位置错误问题</li>
-                            <li>修复：image-stitch.html image-gif.html 的层级嵌套问题</li>
-                            <li>新增：image-enhance.html 支持 AI 模型选择(其实效果并不这么样 毕竟github速率太低了把模型塞进去直接下载到爆炸，预期模型是Real-ESRGAN)</li>
-                            <li>新增：音乐智能bpm识别工具</li>
-                            <li>呃 就这么将就着看吧 反正也没人看 我懒得去一堆文件中他们叫什么了😂</li>
-                        </ul>
+                <!-- 2. 2026-06-15 -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-06-15</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag new">新增</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>新增<strong>图片拼接</strong> — 多图横向或纵向拼接，可自定义输出分辨率</li>
+                                <li>新增<strong>多图合成 GIF</strong> — 可自定义帧率</li>
+                                <li>新增<strong>图片加水印</strong> — 支持文字 / 图片 / 平铺水印，可调透明度与旋转</li>
+                                <li>新增<strong>图片旋转 / 翻转</strong> — 90° 旋转、水平 / 垂直翻转</li>
+                                <li>新增<strong>图片调色 / 滤镜</strong> — 亮度、对比度、饱和度、色相、模糊等调节</li>
+                                <li>新增<strong>图片 DPI 转换</strong> — 调整 DPI 像素不变</li>
+                                <li>新增<strong>图片抠图</strong> — 智能去除图片背景，完全离线运行保护隐私</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="notice-item">
-                <div class="notice-date">2026-09-08</div>
-                <div class="notice-card">
-                    <h3>
-                        <span class="tag warning">公告</span>
-                    </h3>
-                    <div class="notice-body">
-                        <ul>
-                            <li>站长邮箱：fish@cutefish.online</li>
-                            <li>域名邮箱：feedback@pc-tool.cn</li>
-                            <li>开启捐款渠道：https://cutefish.online/pc-tool-donate/</li>
-                        </ul>
+                <!-- 3. 2026-06-30 -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-06-30</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag new">新增</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>新增<strong>音频转格式</strong> — 支持 MP3 / WAV / OGG / M4A 互转</li>
+                                <li>新增<strong>音频转 OGG</strong> — 支持 MP3 / WAV / FLAC / AAC 等格式</li>
+                                <li>新增<strong>音频压缩</strong> — 可调节压缩质量</li>
+                                <li>引入<strong>音乐解析</strong>（第三方）服务</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="notice-item">
-                <div class="notice-date">2026-09-07</div>
-                <div class="notice-card">
-                    <h3>
-                        <span class="tag upgrade">UI升级</span>
-                        <span class="tag new">新增</span>
-                        <span class="tag fix">修复</span>
-                    </h3>
-                    <div class="notice-body">
-                        <ul>
-                            <li><strong>【主页分类重构与动效升级】</strong>：主页工具列表全面按分类分组呈现，支持顶部平滑锚点定位导航，分类按钮增加入场阶梯弹性动效。将“音视频处理”细分为独立的“音频处理”与“视频处理”。</li>
-                            <li><strong>【新增：鼠标连点与手柄测试】</strong>：支持鼠标 CPS 实时点击测速、动态波形曲线绘制、峰值与平均值统计；支持接入 HTML5 Gamepad 游戏手柄，实时检测双摇杆死区坐标偏移、按键触发矩阵与马达震动测试。</li>
-                            <li><strong>【新增：随机密码生成器】</strong>：纯本地密码学级随机算法，支持灵活自定义长度、大小写字母、数字、特殊字符及过滤易混淆字符，实时检测密码熵值与安全强度，支持单组/批量一键复制。</li>
-                            <li><strong>【新增：CSV / Excel 互转工具】</strong>：支持 CSV 与 Excel (.xlsx/.xls) 双向互转，内置 GBK/UTF-8 编码与 BOM 头防中文乱码机制，支持表格数据在线前置预览。</li>
-                            <li><strong>【修复：文字转语音 (TTS) 导出无声问题】</strong>：重构音频录制捕获机制，接入标准标签页音频流与 PCM 16-bit WAV 转码，彻底解决导出文件静音的问题。</li>
-                        </ul>
+                <!-- 4. 2026-07-10 -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-07-10</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag new">新增</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>新增<strong>视频压缩</strong> — 支持 MP4 / WebM / MOV / AVI 格式，可调节画质与分辨率</li>
+                                <li>新增<strong>视频转格式</strong> — 视频转 WebM</li>
+                                <li>新增<strong>视频提取音频</strong> — 从视频中分离导出音频</li>
+                                <li>新增<strong>视频转 GIF</strong> — 自定义帧率和尺寸</li>
+                                <li>新增<strong>视频截取片段</strong> — 设定起止时间截取</li>
+                                <li>新增<strong>视频截图 / 取帧</strong> — 播放到某一帧导出为图片</li>
+                                <li>新增<strong>B 站视频转 URL</strong> — 提取 B 站视频直链，适用于 VRChat 等场景</li>
+                                <li>引入<strong>视频解析</strong>（第三方）服务</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="notice-item">
-                <div class="notice-date">2026-09-06</div>
-                <div class="notice-card">
-                    <h3>
-                        <span class="tag warning">公告</span>
-                    </h3>
-                    <div class="notice-body">
-                        <ul>
-                            <li>现反馈全部移到QQ交流群：1121812272中</li>
-                        </ul>
+                <!-- 5. 2026-07-20 -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-07-20</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag new">新增</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>新增<strong>音频截取</strong> — 设定起止时间裁剪音频片段</li>
+                                <li>新增<strong>音频合并</strong> — 多段音频首尾拼接</li>
+                                <li>新增<strong>PDF合并</strong> — 多个 PDF 合并为一个，pdf-lib 纯前端实现</li>
+                                <li>新增<strong>Word 与 PDF 互转</strong> — 双向文档转换</li>
+                                <li>新增<strong>文件哈希计算</strong> — 拖入文件计算 MD5 / SHA1 / SHA256</li>
+                                <li>新增<strong>节拍器（BPM）</strong> — 精准节拍，支持键盘空格快捷启停</li>
+                                <li>新增<strong>AI Chat 框架</strong>（第三方）— 智能对话平台</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="notice-item">
-                <div class="notice-date">2026-09-05</div>
-                <div class="notice-card">
-                    <h3>
-                        <span class="tag new">新增</span>
-                    </h3>
-                    <div class="notice-body">
-                        <ul>
-                            <li>新增<strong>键盘按键自助测试</strong>工具 — 全键盘在线自检，支持实时高亮、加深染色标记与快捷键屏蔽</li>
-                        </ul>
+                <!-- 6. 2026-07-30 -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-07-30</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag upgrade">升级</span>
+                            <span class="tag new">新增</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>图片转格式升级为<strong>批量转换</strong>，支持多张图片同时上传、逐一处理、一键全部下载</li>
+                                <li>新增<strong>图片裁剪</strong>工具，支持自由比例及 1:1、4:3、16:9 等常用预设比例</li>
+                                <li>首页新增<strong>更新公告</strong>入口，方便查阅版本动态</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="notice-item">
-                <div class="notice-date">2026-09-04</div>
-                <div class="notice-card">
-                    <h3>
-                        <span class="tag upgrade">重磅升级</span>
-                        <span class="tag new">全量上线</span>
-                    </h3>
-                    <div class="notice-body">
-                        <ul>
-                            <li><strong>【开发 / 文本工具（9 款）】</strong>：JSON 格式化与校验、URL 编码 / 解码、时间戳转换器、正则表达式测试、随机密码 / UUID 生成器、进制转换、MD5 / SHA 加密、Unicode 转换、HTML 实体编解码。</li>
-                            <li><strong>【图片工具（8 款）】</strong>：图片取色器、图片转黑白 / 反色、GIF 压缩、图片去水印、图片转 SVG、图片拼图 / 九宫格切图、图片马赛克 / 模糊、照片转手绘 / 素描。</li>
-                            <li><strong>【PDF 工具（6 款）】</strong>：PDF 拆分、PDF 压缩、PDF 转图片、图片转 PDF、PDF 加密 / 解密、PDF 提取文字。</li>
-                            <li><strong>【视频工具（5 款）】</strong>：视频合并、视频加水印、视频变速、视频去水印、视频转壁纸 / 封面。</li>
-                            <li><strong>【音频工具（4 款）】</strong>：音频变速、音频变调、文字转语音（TTS）、语音转文字（ASR）。</li>
-                            <li><strong>【网络 / 运维工具（6 款）】</strong>：短链接生成、User-Agent 解析、HTTP 状态码查询、网站测速 / Ping、SSL 证书查询、端口扫描。</li>
-                            <li><strong>【生活 / 计算工具（6 款）】</strong>：日期计算器、单位换算、BMI 计算器、房贷 / 复利计算器、汇率换算、今日黄历 / 天气查询。</li>
-                            <li><strong>【其他工具（4 款）】</strong>：条形码生成器、随机数、抽签转盘、倒计时器、番茄钟、摩斯密码编解码。</li>
-                        </ul>
+                <!-- 7. 2026-08-01 -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-08-01</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag warning">公告</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>cuteFish手断了，cuteFish的项目全部暂停。pc-tool.cn项目由qiamao继续维护</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="notice-item">
-                <div class="notice-date">2026-09-04</div>
-                <div class="notice-card">
-                    <h3>
-                        <span class="tag warning">公告</span>
-                    </h3>
-                    <div class="notice-body">
-                        <ul>
-                            <li>cuteFish：i'm back!!!👍👍👍，虽然手的钢钉还没有摘，但是可以编写代码，我将和qiamao全力更好的维护pc-tool.cn</li>
-                        </ul>
+                <!-- 8. 2026-08-15 -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-08-15</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag new">修改</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>之前写代码不知道我还是烟火脑血栓犯了（我说是烟火你信吗？）</li>
+                                <li>结果给word与pdf互转导向写错了，有人用才发现，现已修复</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="notice-item">
-                <div class="notice-date">2026-09-04</div>
-                <div class="notice-card">
-                    <h3>
-                        <span class="tag new">新增</span>
-                    </h3>
-                    <div class="notice-body">
-                        <ul>
-                            <li>新增<strong>屏幕坏点自助检测</strong>工具 — 全屏纯色自助检测显示器坏点、亮点、暗点与色偏</li>
-                        </ul>
+                <!-- 9. 2026-09-03 (倒放) -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-09-03</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag new">新增</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>新增<strong>视频倒放</strong>工具 — 将视频画面与音频进行倒放处理，支持音画同步倒放与预览下载</li>
+                                <li>新增<strong>音频倒放</strong>工具 — 本地采样数据倒放，支持 WAV 与 MP3 格式导出</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="notice-item">
-                <div class="notice-date">2026-09-03</div>
-                <div class="notice-card">
-                    <h3>
-                        <span class="tag fix">修复</span>
-                    </h3>
-                    <div class="notice-body">
-                        <ul>
-                            <li>网站恢复访问，若仍有问题请反馈</li>
-                        </ul>
+                <!-- 10. 2026-09-03 (警告) -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-09-03</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag warning">警告</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>网站疑似被墙了，建议去github下载html本地使用（正在解决）</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="notice-item">
-                <div class="notice-date">2026-09-03</div>
-                <div class="notice-card">
-                    <h3>
-                        <span class="tag warning">警告</span>
-                    </h3>
-                    <div class="notice-body">
-                        <ul>
-                            <li>网站疑似被墙了，建议去github下载html本地使用😭（正在解决）</li>
-                        </ul>
+                <!-- 11. 2026-09-03 (修复) -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-09-03</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag fix">修复</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>网站恢复访问，若仍有问题请反馈</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="notice-item">
-                <div class="notice-date">2026-09-03</div>
-                <div class="notice-card">
-                    <h3>
-                        <span class="tag new">新增</span>
-                    </h3>
-                    <div class="notice-body">
-                        <ul>
-                            <li>新增<strong>视频倒放</strong>工具 — 将视频画面与音频进行倒放处理，支持音画同步倒放与预览下载</li>
-                            <li>新增<strong>音频倒放</strong>工具 — 本地采样数据倒放，支持 WAV 与 MP3 格式导出</li>
-                        </ul>
+                <!-- 12. 2026-09-04 (坏点检测) -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-09-04</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag new">新增</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>新增<strong>屏幕坏点自助检测</strong>工具 — 全屏纯色自助检测显示器坏点、亮点、暗点与色偏</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="notice-item">
-                <div class="notice-date">2026-08-15</div>
-                <div class="notice-card">
-                    <h3>
-                        <span class="tag new">修改</span>
-                    </h3>
-                    <div class="notice-body">
-                        <ul>
-                            <li>之前写代码不知道我还是烟火脑血栓犯了（我说是烟火你信吗？？？）</li>
-                            <li>结果给word与pdf互转导向写错了😰，有人用才发现，现已修复</li>
-                        </ul>
+                <!-- 13. 2026-09-04 (回归公告) -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-09-04</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag warning">公告</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>cuteFish：i'm back! 虽然手的钢钉还没有摘，但是可以编写代码，我将和qiamao全力更好的维护pc-tool.cn</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="notice-item">
-                <div class="notice-date">2026-08-01</div>
-                <div class="notice-card">
-                    <h3>
-                        <span class="tag warning">公告</span>
-                    </h3>
-                    <div class="notice-body">
-                        <ul>
-                            <li>cuteFish手断了，cuteFish的项目全部暂停。pc-tool.cn项目由qiamao继续维护👍👍👍</li>
-                        </ul>
+                <!-- 14. 2026-09-04 (重磅升级) -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-09-04</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag upgrade">重磅升级</span>
+                            <span class="tag new">全量上线</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li><strong>【开发 / 文本工具（9 款）】</strong>：JSON 格式化与校验、URL 编码 / 解码、时间戳转换器、正则表达式测试、随机密码 / UUID 生成器、进制转换、MD5 / SHA 加密、Unicode 转换、HTML 实体编解码。</li>
+                                <li><strong>【图片工具（8 款）】</strong>：图片取色器、图片转黑白 / 反色、GIF 压缩、图片去水印、图片转 SVG、图片拼图 / 九宫格切图、图片马赛克 / 模糊、照片转手绘 / 素描。</li>
+                                <li><strong>【PDF 工具（6 款）】</strong>：PDF 拆分、PDF 压缩、PDF 转图片、图片转 PDF、PDF 加密 / 解密、PDF 提取文字。</li>
+                                <li><strong>【视频工具（5 款）】</strong>：视频合并、视频加水印、视频变速、视频去水印、视频转壁纸 / 封面。</li>
+                                <li><strong>【音频工具（4 款）】</strong>：音频变速、音频变调、文字转语音（TTS）、语音转文字（ASR）。</li>
+                                <li><strong>【网络 / 运维工具（6 款）】</strong>：短链接生成、User-Agent 解析、HTTP 状态码查询、网站测速 / Ping、SSL 证书查询、端口扫描。</li>
+                                <li><strong>【生活 / 计算工具（6 款）】</strong>：日期计算器、单位换算、BMI 计算器、房贷 / 复利计算器、汇率换算、今日黄历 / 天气查询。</li>
+                                <li><strong>【其他工具（4 款）】</strong>：条形码生成器、随机数、抽签转盘、倒计时器、番茄钟、摩斯密码编解码。</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="notice-item">
-                <div class="notice-date">2026-07-30</div>
-                <div class="notice-card">
-                    <h3>
-                        <span class="tag upgrade">升级</span>
-                        <span class="tag new">新增</span>
-                    </h3>
-                    <div class="notice-body">
-                        <ul>
-                            <li>图片转格式升级为<strong>批量转换</strong>，支持多张图片同时上传、逐一处理、一键全部下载</li>
-                            <li>新增<strong>图片裁剪</strong>工具，支持自由比例及 1:1、4:3、16:9 等常用预设比例</li>
-                            <li>首页新增<strong>更新公告</strong>入口，方便查阅版本动态</li>
-                        </ul>
+                <!-- 15. 2026-09-05 -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-09-05</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag new">新增</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>新增<strong>键盘按键自助测试</strong>工具 — 全键盘在线自检，支持实时高亮、加深染色标记与快捷键屏蔽</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="notice-item">
-                <div class="notice-date">2026-07-20</div>
-                <div class="notice-card">
-                    <h3>
-                        <span class="tag new">新增</span>
-                    </h3>
-                    <div class="notice-body">
-                        <ul>
-                            <li>新增<strong>音频截取</strong> — 设定起止时间裁剪音频片段</li>
-                            <li>新增<strong>音频合并</strong> — 多段音频首尾拼接</li>
-                            <li>新增<strong>PDF合并</strong> — 多个 PDF 合并为一个，pdf-lib 纯前端实现</li>
-                            <li>新增<strong>Word 与 PDF 互转</strong> — 双向文档转换</li>
-                            <li>新增<strong>文件哈希计算</strong> — 拖入文件计算 MD5 / SHA1 / SHA256</li>
-                            <li>新增<strong>节拍器（BPM）</strong> — 精准节拍，支持键盘空格快捷启停</li>
-                            <li>新增<strong>AI Chat 框架</strong>（第三方）— 智能对话平台</li>
-                        </ul>
+                <!-- 16. 2026-09-06 -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-09-06</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag warning">公告</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>现反馈全部移到QQ交流群：1121812272中</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="notice-item">
-                <div class="notice-date">2026-07-10</div>
-                <div class="notice-card">
-                    <h3>
-                        <span class="tag new">新增</span>
-                    </h3>
-                    <div class="notice-body">
-                        <ul>
-                            <li>新增<strong>视频压缩</strong> — 支持 MP4 / WebM / MOV / AVI 格式，可调节画质与分辨率</li>
-                            <li>新增<strong>视频转格式</strong> — 视频转 WebM</li>
-                            <li>新增<strong>视频提取音频</strong> — 从视频中分离导出音频</li>
-                            <li>新增<strong>视频转 GIF</strong> — 自定义帧率和尺寸</li>
-                            <li>新增<strong>视频截取片段</strong> — 设定起止时间截取</li>
-                            <li>新增<strong>视频截图 / 取帧</strong> — 播放到某一帧导出为图片</li>
-                            <li>新增<strong>B 站视频转 URL</strong> — 提取 B 站视频直链，适用于 VRChat 等场景</li>
-                            <li>引入<strong>视频解析</strong>（第三方）服务</li>
-                        </ul>
+                <!-- 17. 2026-09-07 -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-09-07</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag upgrade">UI升级</span>
+                            <span class="tag new">新增</span>
+                            <span class="tag fix">修复</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li><strong>【主页分类重构与动效升级】</strong>：主页工具列表全面按分类分组呈现，支持顶部平滑锚点定位导航，分类按钮增加入场阶梯弹性动效。将“音视频处理”细分为独立的“音频处理”与“视频处理”。</li>
+                                <li><strong>【新增：鼠标连点与手柄测试】</strong>：支持鼠标 CPS 实时点击测速、动态波形曲线绘制、峰值与平均值统计；支持接入 HTML5 Gamepad 游戏手柄，实时检测双摇杆死区坐标偏移、按键触发矩阵与马达震动测试。</li>
+                                <li><strong>【新增：随机密码生成器】</strong>：纯本地密码学级随机算法，支持灵活自定义长度、大小写字母、数字、特殊字符及过滤易混淆字符，实时检测密码熵值与安全强度，支持单组/批量一键复制。</li>
+                                <li><strong>【新增：CSV / Excel 互转工具】</strong>：支持 CSV 与 Excel (.xlsx/.xls) 双向互转，内置 GBK/UTF-8 编码与 BOM 头防中文乱码机制，支持表格数据在线前置预览。</li>
+                                <li><strong>【修复：文字转语音 (TTS) 导出无声问题】</strong>：重构音频录制捕获机制，接入标准标签页音频流与 PCM 16-bit WAV 转码，彻底解决导出文件静音的问题。</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="notice-item">
-                <div class="notice-date">2026-06-30</div>
-                <div class="notice-card">
-                    <h3>
-                        <span class="tag new">新增</span>
-                    </h3>
-                    <div class="notice-body">
-                        <ul>
-                            <li>新增<strong>音频转格式</strong> — 支持 MP3 / WAV / OGG / M4A 互转</li>
-                            <li>新增<strong>音频转 OGG</strong> — 支持 MP3 / WAV / FLAC / AAC 等格式</li>
-                            <li>新增<strong>音频压缩</strong> — 可调节压缩质量</li>
-                            <li>引入<strong>音乐解析</strong>（第三方）服务</li>
-                        </ul>
+                <!-- 18. 2026-09-08 -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-09-08</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag warning">公告</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>站长邮箱：fish@cutefish.online</li>
+                                <li>域名邮箱：feedback@pc-tool.cn</li>
+                                <li>开启捐款渠道：https://cutefish.online/pc-tool-donate/</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="notice-item">
-                <div class="notice-date">2026-06-15</div>
-                <div class="notice-card">
-                    <h3>
-                        <span class="tag new">新增</span>
-                    </h3>
-                    <div class="notice-body">
-                        <ul>
-                            <li>新增<strong>图片拼接</strong> — 多图横向或纵向拼接，可自定义输出分辨率</li>
-                            <li>新增<strong>多图合成 GIF</strong> — 可自定义帧率</li>
-                            <li>新增<strong>图片加水印</strong> — 支持文字 / 图片 / 平铺水印，可调透明度与旋转</li>
-                            <li>新增<strong>图片旋转 / 翻转</strong> — 90° 旋转、水平 / 垂直翻转</li>
-                            <li>新增<strong>图片调色 / 滤镜</strong> — 亮度、对比度、饱和度、色相、模糊等调节</li>
-                            <li>新增<strong>图片 DPI 转换</strong> — 调整 DPI 像素不变</li>
-                            <li>新增<strong>图片抠图</strong> — 智能去除图片背景，完全离线运行保护隐私</li>
-                        </ul>
+                <!-- 19. 2026-09-09 -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-09-09</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag fix">UI修复</span>
+                            <span class="tag new">新增</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>修复：image-gif.html image-watermark.html image-rotate.html image-filter.html image-compress.html image-base64.html image-base64-decode.html file-hash.html 的返回主页按钮位置错误问题</li>
+                                <li>修复：image-stitch.html image-gif.html 的层级嵌套问题</li>
+                                <li>新增：image-enhance.html 支持 AI 模型选择(其实效果并不怎么好 毕竟github速率太低了把模型塞进去直接下载到爆炸，预期模型是Real-ESRGAN)</li>
+                                <li>新增：音乐智能bpm识别工具</li>
+                                <li>就这么将就着看吧 反正也没人看 我懒得去一堆文件中看他们叫什么了</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="notice-item">
-                <div class="notice-date">2026-06-01</div>
-                <div class="notice-card">
-                    <h3>
-                        <span class="tag new">首发</span>
-                    </h3>
-                    <div class="notice-body">
-                        <ul>
-                            <li><strong>PC-TOOL 正式上线</strong> — 免费在线工具集合，为人民服务，不收一分钱</li>
-                            <li>上线<strong>二维码生成器</strong> — 输入文字 / 链接生成二维码，支持自定义颜色、添加 Logo</li>
-                            <li>上线<strong>二维码解析</strong> — 上传二维码图片读出内容</li>
-                            <li>上线<strong>图片转格式</strong> — 支持 JPG / PNG / WebP / GIF / BMP / PDF 互转</li>
-                            <li>上线<strong>图片压缩</strong> — 支持批量压缩，可调节质量</li>
-                            <li>上线<strong>图片转 Base64</strong> — 拖入图片直接出 Base64 字符串</li>
-                            <li>上线<strong>Base64 转图片</strong> — 粘贴 Base64 字符串还原图片</li>
-                            <li>上线<strong>颜色格式转换</strong> — HEX / RGB / HSL 互转 + 调色板</li>
-                        </ul>
+                <!-- 20. 2026-09-10 -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-09-10</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag new">新增</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>新增<strong>图片EXIF查看与抹除</strong>工具 — 本地解析照片拍摄参数与GPS定位信息，一键抹除隐私元数据导出</li>
+                                <li>新增<strong>配色方案生成器</strong>工具 — 色轮谐调算法生成互补/类似/三角等配色方案，支持CSS变量/Tailwind/JSON导出与明暗色阶</li>
+                                <li>新增<strong>JWT在线解码器</strong>工具 — 实时解析Token结构与Payload，自动转换时间戳并检测有效期状态</li>
+                                <li>新增<strong>代码格式化工具</strong> — 支持JavaScript/HTML/CSS/XML美化与压缩，可自定义缩进规则</li>
+                                <li>新增<strong>Markdown编辑器</strong>工具 — 实时预览渲染，支持快捷语法工具条、本地导入与HTML导出，内容自动保存</li>
+                                <li>新增<strong>打字速度测试</strong>工具 — 中英文双语WPM测速，实时正确率统计与结局评级</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
+
+                <!-- 21. 2026-09-11 -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-09-11</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag new">新增</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>新增<strong>文本对比 Diff</strong>工具 — 按行查看新增、删除和未变化内容</li>
+                                <li>新增<strong>大小写与命名风格转换</strong>工具 — 支持常见大小写、camelCase、snake_case、kebab-case 等格式</li>
+                                <li>新增<strong>文本整理工具</strong> — 支持去重、排序、去空行和添加行号</li>
+                                <li>新增<strong>字数统计</strong>工具 — 统计字符、中文、英文单词、数字、行数、段落和字节</li>
+                                <li>新增<strong>简繁转换与中文拼音</strong>工具 — 支持简繁转换、数字声调和声调符号拼音标注</li>
+                                <li>新增<strong>证件照制作</strong>工具 — 支持换底色、规格裁剪、A4 排版和打印</li>
+                                <li>新增<strong>ICO / 图标生成</strong>工具 — 支持多尺寸 PNG/JPG/SVG 图片生成标准 ICO 文件</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 22. 最新动态 (右侧现在) -->
+                <div class="timeline-node current">
+                    <div class="node-pin"></div>
+                    <div class="node-date">****-**-**</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>我好累...我真的好累。我好想死，我想死。为什么。。？为什么都这样 why？？。。</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
+    </div>
 
+    <!-- 底部进度条 -->
+    <div class="bottom-controller">
+        <div class="scroll-progress-container" id="progressBarTrack" title="点击跳转时间点">
+            <div class="scroll-progress-bar" id="progressBar"></div>
+        </div>
         <p class="footer-note">为人民服务 · 不收一分钱 · 只为爱发电</p>
     </div>
 
@@ -598,6 +967,145 @@
         if ('scrollRestoration' in history) {
             history.scrollRestoration = 'manual';
         }
+
+        (function() {
+            var trackWrap = document.getElementById('trackWrap');
+            var progressBar = document.getElementById('progressBar');
+            var progressBarTrack = document.getElementById('progressBarTrack');
+            var btnToPast = document.getElementById('btn-to-past');
+            var btnToLatest = document.getElementById('btn-to-latest');
+            var topPrevBtn = document.getElementById('top-prev-btn');
+            var topNextBtn = document.getElementById('top-next-btn');
+
+            // 零延迟丝滑平移动画系统（支持连击累加与硬件加速）
+            var currentAnimationId = null;
+            var currentTargetScroll = null;
+
+            function smoothScrollTo(target, customDuration) {
+                var maxScroll = trackWrap.scrollWidth - trackWrap.clientWidth;
+                target = Math.max(0, Math.min(maxScroll, target));
+                
+                if (currentAnimationId) {
+                    cancelAnimationFrame(currentAnimationId);
+                }
+
+                var start = trackWrap.scrollLeft;
+                var distance = target - start;
+                if (Math.abs(distance) < 1) {
+                    trackWrap.scrollLeft = target;
+                    updateProgress();
+                    return;
+                }
+
+                var duration = customDuration || 280; // 280ms 快速干脆过渡，无任何等待感
+                var startTime = performance.now();
+
+                function easeOutQuad(t) {
+                    return t * (2 - t);
+                }
+
+                function frame(now) {
+                    var elapsed = now - startTime;
+                    var progress = Math.min(elapsed / duration, 1);
+                    var factor = easeOutQuad(progress);
+
+                    trackWrap.scrollLeft = start + distance * factor;
+                    updateProgress();
+
+                    if (progress < 1) {
+                        currentAnimationId = requestAnimationFrame(frame);
+                    } else {
+                        currentAnimationId = null;
+                        currentTargetScroll = null;
+                    }
+                }
+
+                currentTargetScroll = target;
+                currentAnimationId = requestAnimationFrame(frame);
+            }
+
+            // 单步位移大小
+            var STEP_DISTANCE = 430;
+
+            function stepScroll(direction) {
+                // 如果正在连击，基于目标值继续累加，彻底告别卡顿延迟
+                var basePos = (currentTargetScroll !== null) ? currentTargetScroll : trackWrap.scrollLeft;
+                smoothScrollTo(basePos + (direction * STEP_DISTANCE), 260);
+            }
+
+            function scrollToLatest() {
+                var maxScroll = trackWrap.scrollWidth - trackWrap.clientWidth;
+                smoothScrollTo(maxScroll, 350);
+            }
+
+            function scrollToPast() {
+                smoothScrollTo(0, 350);
+            }
+
+            // 更新进度条
+            function updateProgress() {
+                var maxScroll = trackWrap.scrollWidth - trackWrap.clientWidth;
+                if (maxScroll <= 0) {
+                    progressBar.style.width = '100%';
+                    return;
+                }
+                var pct = (trackWrap.scrollLeft / maxScroll) * 100;
+                progressBar.style.width = Math.min(100, Math.max(0, pct)) + '%';
+            }
+
+            trackWrap.addEventListener('scroll', updateProgress, { passive: true });
+            window.addEventListener('resize', updateProgress);
+
+            // 上方点击箭头移动（即时触发，支持 pointerdown 瞬间起动，消除移动端或PC 300ms 点击延迟）
+            topPrevBtn.addEventListener('pointerdown', function(e) {
+                if (e.button !== 0) return;
+                stepScroll(-1);
+            });
+            topNextBtn.addEventListener('pointerdown', function(e) {
+                if (e.button !== 0) return;
+                stepScroll(1);
+            });
+
+            // 顶部直达按钮
+            btnToPast.addEventListener('click', scrollToPast);
+            btnToLatest.addEventListener('click', scrollToLatest);
+
+            // 进度条点击快速定位
+            progressBarTrack.addEventListener('click', function(e) {
+                var rect = progressBarTrack.getBoundingClientRect();
+                var clickX = e.clientX - rect.left;
+                var pct = clickX / rect.width;
+                var maxScroll = trackWrap.scrollWidth - trackWrap.clientWidth;
+                smoothScrollTo(maxScroll * pct, 320);
+            });
+
+            // 键盘左右箭头支持平滑过渡
+            window.addEventListener('keydown', function(e) {
+                if (e.key === 'ArrowLeft') {
+                    stepScroll(-1);
+                } else if (e.key === 'ArrowRight') {
+                    stepScroll(1);
+                }
+            });
+
+            // 页面初始加载：在首次绘制前瞬间对齐到最新（最右侧），杜绝瞬移动画
+            function initScrollPosition() {
+                var maxScroll = trackWrap.scrollWidth - trackWrap.clientWidth;
+                trackWrap.scrollLeft = maxScroll;
+                updateProgress();
+                trackWrap.classList.add('ready');
+            }
+
+            // 立即同步执行一次（DOM 解析完成即对齐）
+            initScrollPosition();
+
+            // 若有图片等晚加载资源，在 load 阶段做二次无感校准
+            window.addEventListener('load', function() {
+                initScrollPosition();
+            });
+        })();
+
+        // 贪吃蛇背景动效保持原有逻辑
         (function() {
             var canvas = document.getElementById('bg-canvas');
             var ctx = canvas.getContext('2d');

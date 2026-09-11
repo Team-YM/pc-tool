@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>在线证件照制作</title>
+    <meta name="description" content="纯浏览器证件照制作工具，支持换底、裁剪、排版打印。">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .container { max-width: 1050px; }
+        .workspace { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr); gap: 24px; }
+        .panel { padding: 18px; background: rgba(255,255,255,.025); border: 1px solid rgba(255,255,255,.06); border-radius: 10px; }
+        .panel h2 { font-size: 17px; margin-bottom: 14px; color: #e4e4e7; }
+        .control-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+        .field { display: flex; flex-direction: column; gap: 5px; color: #a1a1aa; font-size: 13px; }
+        .field input, .field select { width: 100%; padding: 9px 10px; color: #e4e4e7; background: rgba(0,0,0,.25); border: 1px solid rgba(255,255,255,.12); border-radius: 7px; }
+        .field input[type="color"] { padding: 2px; height: 38px; }
+        .field input[type="range"] { padding: 0; accent-color: #818cf8; }
+        .wide { grid-column: 1 / -1; }
+        .canvas-wrap { min-height: 360px; display: flex; align-items: center; justify-content: center; padding: 15px; background: repeating-conic-gradient(rgba(255,255,255,.04) 0 25%, transparent 0 50%) 50% / 20px 20px; border-radius: 8px; overflow: auto; }
+        canvas { max-width: 100%; height: auto; display: block; }
+        #photoCanvas { max-height: 420px; }
+        .action-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 14px; }
+        .action-row .btn, .action-row .download-btn { margin: 0; }
+        .hint { color: #71717a; font-size: 12px; margin-top: 12px; }
+        #printCanvas { max-width: 100%; max-height: 520px; }
+        @media (max-width: 760px) { .workspace { grid-template-columns: 1fr; } .container { padding: 20px; } }
+        @media print { body { background: #fff; padding: 0; } body > *:not(#printArea) { display: none !important; } #printArea { display: block !important; } #printOnlyCanvas { width: 100%; max-height: none; } }
+        #printArea { display: none; }
+    </style>
+</head>
+<body>
+<canvas id="bg-canvas" class="bg-canvas"></canvas>
+<a href="../index.html" class="back-link">← 返回首页</a>
+<div class="container">
+    <h1>在线证件照制作</h1>
+    <p>本地完成尺寸裁剪、轻量换底和 A4 排版，图片不会上传服务器。</p>
+    <div class="upload-area" id="uploadArea"><p>点击或拖拽上传照片</p><input type="file" id="fileInput" accept="image/*"></div>
+    <div class="workspace">
+        <section class="panel">
+            <h2>规格与换底</h2>
+            <div class="control-grid">
+                <label class="field wide">证件照规格<select id="sizePreset"><option value="295x413">一寸 · 295 × 413</option><option value="413x579">二寸 · 413 × 579</option><option value="260x378">小一寸 · 260 × 378</option><option value="custom">自定义尺寸</option></select></label>
+                <label class="field">宽度（px）<input id="widthInput" type="number" min="20" max="4000" value="295"></label>
+                <label class="field">高度（px）<input id="heightInput" type="number" min="20" max="4000" value="413"></label>
+                <label class="field">底色<select id="colorPreset"><option value="#ffffff">白色</option><option value="#438edb">蓝色</option><option value="#d9363e">红色</option><option value="custom">自定义颜色</option></select></label>
+                <label class="field">颜色输入<input id="colorInput" type="color" value="#ffffff"></label>
+                <label class="field wide">裁剪模式<select id="fitMode"><option value="crop">按规格裁剪（填满画布）</option><option value="fit">完整图片适配（保留全部）</option></select></label>
+                <label class="field wide">背景替换阈值 <span id="thresholdValue">42</span><input id="threshold" type="range" min="5" max="130" value="42"></label>
+            </div>
+            <p class="hint">背景替换适合纯色或浅色背景，阈值越大替换范围越广；人物边缘可能需要多次调整。</p>
+            <div class="action-row"><button class="btn" id="replaceBtn">换底并生成</button><button class="btn" id="resetBtn">仅重新裁剪</button></div>
+        </section>
+        <section class="panel">
+            <h2>证件照预览</h2>
+            <div class="canvas-wrap"><canvas id="photoCanvas" width="295" height="413"></canvas></div>
+            <div class="action-row"><button class="download-btn" id="downloadPhoto">下载 PNG</button></div>
+        </section>
+    </div>
+    <section class="panel" style="margin-top:24px;">
+        <h2>A4 排版打印</h2>
+        <div class="control-grid">
+            <label class="field">每行数量<select id="columns"><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option></select></label>
+            <label class="field">间距（px）<input id="spacing" type="number" min="0" max="100" value="12"></label>
+        </div>
+        <div class="action-row"><button class="btn" id="layoutBtn">生成 A4 排版</button><button class="btn" id="printBtn">打印 A4</button><button class="download-btn" id="downloadPrint">下载排版 PNG</button></div>
+        <div class="canvas-wrap"><canvas id="printCanvas" width="2480" height="3508"></canvas></div>
+    </section>
+</div>
+<div id="printArea"><canvas id="printOnlyCanvas"></canvas></div>
+<script src="common.js"></script>
+<script>
+(function () {
+    var uploadArea = document.getElementById('uploadArea'), fileInput = document.getElementById('fileInput');
+    var photoCanvas = document.getElementById('photoCanvas'), photoCtx = photoCanvas.getContext('2d');
+    var printCanvas = document.getElementById('printCanvas'), printCtx = printCanvas.getContext('2d');
+    var image = null, outputReady = false;
+    var $ = function (id) { return document.getElementById(id); };
+    function notify(message) { if (typeof showToast === 'function') showToast(message); else alert(message); }
+    function size() { return { w: Math.max(20, parseInt($('widthInput').value, 10) || 295), h: Math.max(20, parseInt($('heightInput').value, 10) || 413) }; }
+    function backgroundColor() { return $('colorPreset').value === 'custom' ? $('colorInput').value : $('colorPreset').value; }
+    function parseColor(hex) { return [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)]; }
+    function drawCover(ctx, source, w, h, fit) {
+        var scale = fit ? Math.min(w / source.width, h / source.height) : Math.max(w / source.width, h / source.height);
+        var dw = source.width * scale, dh = source.height * scale;
+        ctx.drawImage(source, (w - dw) / 2, (h - dh) / 2, dw, dh);
+    }
+    function buildPhoto(replace) {
+        if (!image) { notify('请先上传照片'); return false; }
+        var s = size(), color = backgroundColor(), rgb = parseColor(color);
+        photoCanvas.width = s.w; photoCanvas.height = s.h;
+        photoCtx.fillStyle = color; photoCtx.fillRect(0, 0, s.w, s.h);
+        drawCover(photoCtx, image, s.w, s.h, $('fitMode').value === 'fit');
+        if (replace) {
+            var data = photoCtx.getImageData(0, 0, s.w, s.h), px = data.data, threshold = parseInt($('threshold').value, 10);
+            var samples = [photoCtx.getImageData(0, 0, 1, 1).data, photoCtx.getImageData(s.w - 1, 0, 1, 1).data, photoCtx.getImageData(0, s.h - 1, 1, 1).data, photoCtx.getImageData(s.w - 1, s.h - 1, 1, 1).data];
+            var base = [0, 0, 0]; samples.forEach(function (p) { base[0] += p[0]; base[1] += p[1]; base[2] += p[2]; }); base = base.map(function (v) { return v / samples.length; });
+            for (var i = 0; i < px.length; i += 4) { var d = Math.sqrt(Math.pow(px[i] - base[0], 2) + Math.pow(px[i + 1] - base[1], 2) + Math.pow(px[i + 2] - base[2], 2)); if (d < threshold) { px[i] = rgb[0]; px[i + 1] = rgb[1]; px[i + 2] = rgb[2]; } }
+            photoCtx.putImageData(data, 0, 0);
+        }
+        outputReady = true; $('downloadPhoto').style.display = 'inline-block'; return true;
+    }
+    function fileLoaded(file) {
+        if (!file || !file.type.startsWith('image/')) { notify('请选择图片文件'); return; }
+        var src = URL.createObjectURL(file), img = new Image();
+        img.onload = function () { image = img; buildPhoto(false); URL.revokeObjectURL(src); };
+        img.src = src;
+    }
+    uploadArea.onclick = function () { fileInput.click(); }; fileInput.onchange = function () { fileLoaded(fileInput.files[0]); };
+    if (typeof setupDragDrop === 'function') setupDragDrop(uploadArea, function (files) { fileLoaded(files[0]); });
+    $('sizePreset').onchange = function () { if (this.value !== 'custom') { var p = this.value.split('x'); $('widthInput').value = p[0]; $('heightInput').value = p[1]; } if (image) buildPhoto(false); };
+    ['widthInput', 'heightInput', 'fitMode'].forEach(function (id) { $(id).onchange = function () { if (image) buildPhoto(false); }; });
+    $('colorPreset').onchange = function () { if (this.value !== 'custom') $('colorInput').value = this.value; };
+    $('threshold').oninput = function () { $('thresholdValue').textContent = this.value; };
+    $('replaceBtn').onclick = function () { buildPhoto(true); };
+    $('resetBtn').onclick = function () { buildPhoto(false); };
+    $('downloadPhoto').onclick = function () { if (!outputReady) { notify('请先生成证件照'); return; } photoCanvas.toBlob(function (blob) { downloadFile(URL.createObjectURL(blob), '证件照.png'); }, 'image/png'); };
+    function layout() {
+        if (!outputReady) { notify('请先生成证件照'); return false; }
+        var cols = parseInt($('columns').value, 10), gap = Math.max(0, parseInt($('spacing').value, 10) || 0), margin = 90;
+        printCanvas.width = 2480; printCanvas.height = 3508; printCtx.fillStyle = '#fff'; printCtx.fillRect(0, 0, printCanvas.width, printCanvas.height);
+        var cellW = (printCanvas.width - margin * 2 - gap * (cols - 1)) / cols, cellH = cellW * photoCanvas.height / photoCanvas.width;
+        for (var y = margin; y + cellH <= printCanvas.height - margin; y += cellH + gap) for (var x = margin; x + cellW <= printCanvas.width - margin + 1; x += cellW + gap) printCtx.drawImage(photoCanvas, x, y, cellW, cellH);
+        $('downloadPrint').style.display = 'inline-block'; return true;
+    }
+    $('layoutBtn').onclick = layout;
+    $('downloadPrint').onclick = function () { if (layout()) printCanvas.toBlob(function (blob) { downloadFile(URL.createObjectURL(blob), '证件照-A4排版.png'); }, 'image/png'); };
+    $('printBtn').onclick = function () { if (!layout()) return; var printOnly = $('printOnlyCanvas'); printOnly.width = printCanvas.width; printOnly.height = printCanvas.height; printOnly.getContext('2d').drawImage(printCanvas, 0, 0); window.print(); };
+})();
+</script>
+</body>
+</html>

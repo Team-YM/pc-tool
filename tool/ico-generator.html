@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ICO 图标生成器</title>
+    <meta name="description" content="纯浏览器生成多尺寸 ICO 图标，支持 PNG、JPG 和 SVG。">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .container { max-width: 920px; }
+        .workspace { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        .panel { padding: 18px; background: rgba(255,255,255,.025); border: 1px solid rgba(255,255,255,.06); border-radius: 10px; }
+        .panel h2 { font-size: 17px; margin-bottom: 14px; color: #e4e4e7; }
+        .field { display: flex; flex-direction: column; gap: 5px; color: #a1a1aa; font-size: 13px; margin-bottom: 13px; }
+        .field input[type="color"], .field select { padding: 8px; color: #e4e4e7; background: rgba(0,0,0,.25); border: 1px solid rgba(255,255,255,.12); border-radius: 7px; }
+        .field input[type="color"] { height: 38px; }
+        .checks { display: flex; flex-wrap: wrap; gap: 9px; }
+        .checks label { padding: 8px 10px; color: #d4d4d8; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); border-radius: 7px; cursor: pointer; }
+        .checks input { accent-color: #818cf8; }
+        .canvas-wrap { min-height: 350px; display: flex; align-items: center; justify-content: center; padding: 18px; background: repeating-conic-gradient(rgba(255,255,255,.04) 0 25%, transparent 0 50%) 50% / 20px 20px; border-radius: 8px; }
+        #preview { max-width: 100%; max-height: 400px; display: block; image-rendering: auto; }
+        .size-list { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+        .size-chip { padding: 5px 9px; color: #a5b4fc; background: rgba(129,140,248,.12); border: 1px solid rgba(129,140,248,.25); border-radius: 6px; font-size: 12px; }
+        .action-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 15px; }
+        .action-row .btn, .action-row .download-btn { margin: 0; }
+        .hint { color: #71717a; font-size: 12px; margin-top: 12px; }
+        @media (max-width: 700px) { .workspace { grid-template-columns: 1fr; } .container { padding: 20px; } }
+    </style>
+</head>
+<body>
+<canvas id="bg-canvas" class="bg-canvas"></canvas>
+<a href="../index.html" class="back-link">← 返回首页</a>
+<div class="container">
+    <h1>ICO 图标生成器</h1>
+    <p>在浏览器本地把图片写入包含多尺寸 PNG 的标准 ICO 文件。</p>
+    <div class="upload-area" id="uploadArea"><p>点击或拖拽上传图片（PNG / JPG / SVG）</p><input type="file" id="fileInput" accept="image/png,image/jpeg,image/svg+xml,.svg"></div>
+    <div class="workspace">
+        <section class="panel">
+            <h2>生成设置</h2>
+            <label class="field">裁剪模式<select id="fitMode"><option value="crop">正方形裁剪（填满）</option><option value="fit">完整适配（保留透明/留白）</option></select></label>
+            <label class="field"><span><input type="checkbox" id="transparent" checked> 透明背景</span></label>
+            <label class="field">背景色<input type="color" id="bgColor" value="#ffffff"></label>
+            <div class="field"><span>ICO 尺寸（至少选择一项）</span><div class="checks" id="sizeChecks"><label><input type="checkbox" value="16" checked> 16</label><label><input type="checkbox" value="32" checked> 32</label><label><input type="checkbox" value="48" checked> 48</label><label><input type="checkbox" value="64" checked> 64</label><label><input type="checkbox" value="128"> 128</label><label><input type="checkbox" value="256"> 256</label></div></div>
+            <div class="action-row"><button class="btn" id="generateBtn">生成 ICO</button><button class="download-btn" id="downloadPng">下载 PNG 预览</button></div>
+            <p class="hint">本地文件直接绘制到 Canvas，不会产生跨源请求。SVG 需由浏览器正常加载后再生成。</p>
+        </section>
+        <section class="panel">
+            <h2>预览</h2>
+            <div class="canvas-wrap"><canvas id="preview" width="256" height="256"></canvas></div>
+            <div class="size-list" id="sizeList"><span class="hint">上传图片后显示已选尺寸</span></div>
+        </section>
+    </div>
+</div>
+<script src="common.js"></script>
+<script>
+(function () {
+    var area = document.getElementById('uploadArea'), input = document.getElementById('fileInput'), canvas = document.getElementById('preview'), ctx = canvas.getContext('2d');
+    var image = null, outputReady = false, $ = function (id) { return document.getElementById(id); };
+    function notify(message) { if (typeof showToast === 'function') showToast(message); else alert(message); }
+    function selectedSizes() { return Array.prototype.slice.call(document.querySelectorAll('#sizeChecks input:checked')).map(function (el) { return parseInt(el.value, 10); }).sort(function (a, b) { return a - b; }); }
+    function draw(ctx2, side) {
+        var transparent = $('transparent').checked, fit = $('fitMode').value === 'fit';
+        ctx2.clearRect(0, 0, side, side);
+        if (!transparent) { ctx2.fillStyle = $('bgColor').value; ctx2.fillRect(0, 0, side, side); }
+        var scale = fit ? Math.min(side / image.width, side / image.height) : Math.max(side / image.width, side / image.height);
+        var w = image.width * scale, h = image.height * scale;
+        ctx2.drawImage(image, (side - w) / 2, (side - h) / 2, w, h);
+    }
+    function renderPreview() { if (!image) return; draw(ctx, 256); $('downloadPng').style.display = 'inline-block'; }
+    function loadFile(file) {
+        if (!file || (!file.type.startsWith('image/') && !/\.svg$/i.test(file.name))) { notify('请选择 PNG、JPG 或 SVG 图片'); return; }
+        var url = URL.createObjectURL(file), img = new Image();
+        img.onload = function () { image = img; renderPreview(); URL.revokeObjectURL(url); updateList(); };
+        img.onerror = function () { URL.revokeObjectURL(url); notify('图片加载失败，请换一个文件'); };
+        img.src = url;
+    }
+    function updateList() { var list = $('sizeList'); list.textContent = ''; selectedSizes().forEach(function (size) { var chip = document.createElement('span'); chip.className = 'size-chip'; chip.textContent = size + ' × ' + size; list.appendChild(chip); }); }
+    area.onclick = function () { input.click(); }; input.onchange = function () { loadFile(input.files[0]); };
+    if (typeof setupDragDrop === 'function') setupDragDrop(area, function (files) { loadFile(files[0]); });
+    $('fitMode').onchange = renderPreview; $('transparent').onchange = renderPreview; $('bgColor').oninput = renderPreview;
+    document.querySelectorAll('#sizeChecks input').forEach(function (box) { box.onchange = updateList; }); updateList();
+    $('downloadPng').onclick = function () { if (!image) { notify('请先上传图片'); return; } canvas.toBlob(function (blob) { downloadFile(URL.createObjectURL(blob), '预览.png'); }, 'image/png'); };
+    function pngBytes(side) { var c = document.createElement('canvas'); c.width = side; c.height = side; draw(c.getContext('2d'), side); return c.toDataURL('image/png').split(',')[1]; }
+    function base64Bytes(base64) { var raw = atob(base64), bytes = new Uint8Array(raw.length); for (var i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i); return bytes; }
+    function write16(view, offset, value) { view.setUint16(offset, value, true); }
+    function write32(view, offset, value) { view.setUint32(offset, value, true); }
+    function makeIco(sizes) {
+        var images = sizes.map(function (side) { return { side: side, data: base64Bytes(pngBytes(side)) }; }), headerSize = 6, directorySize = images.length * 16, offset = headerSize + directorySize, total = offset;
+        images.forEach(function (item) { item.offset = offset; offset += item.data.length; total = offset; });
+        var buffer = new ArrayBuffer(total), view = new DataView(buffer), bytes = new Uint8Array(buffer);
+        write16(view, 0, 0); write16(view, 2, 1); write16(view, 4, images.length);
+        images.forEach(function (item, index) { var p = headerSize + index * 16; view.setUint8(p, item.side === 256 ? 0 : item.side); view.setUint8(p + 1, item.side === 256 ? 0 : item.side); view.setUint8(p + 2, 0); view.setUint8(p + 3, 0); write16(view, p + 4, 1); write16(view, p + 6, 32); write32(view, p + 8, item.data.length); write32(view, p + 12, item.offset); bytes.set(item.data, item.offset); });
+        return new Blob([buffer], { type: 'image/x-icon' });
+    }
+    $('generateBtn').onclick = function () { if (!image) { notify('请先上传图片'); return; } var sizes = selectedSizes(); if (!sizes.length) { notify('请至少选择一个尺寸'); return; } var blob = makeIco(sizes); downloadFile(URL.createObjectURL(blob), 'favicon.ico'); notify('ICO 已生成并开始下载'); };
+})();
+</script>
+</body>
+</html>
