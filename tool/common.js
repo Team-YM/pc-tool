@@ -1,5 +1,35 @@
 /* ================= 公共工具脚本 - PC-TOOL ================= */
 
+// ========== 主题同步与初始化 ==========
+(function initTheme() {
+    try {
+        var saved = localStorage.getItem('pctool_theme');
+        if (saved === 'light') {
+            document.documentElement.classList.add('light-theme');
+            if (document.body) {
+                document.body.classList.add('light-theme');
+            } else {
+                document.addEventListener('DOMContentLoaded', function () {
+                    document.body.classList.add('light-theme');
+                });
+            }
+        }
+    } catch (e) {}
+
+    // 跨页面或同页主题同步监听
+    window.addEventListener('storage', function (e) {
+        if (e.key === 'pctool_theme') {
+            if (e.newValue === 'light') {
+                document.documentElement.classList.add('light-theme');
+                if (document.body) document.body.classList.add('light-theme');
+            } else {
+                document.documentElement.classList.remove('light-theme');
+                if (document.body) document.body.classList.remove('light-theme');
+            }
+        }
+    });
+})();
+
 // ========== 增强粒子背景动画 ==========
 (function () {
     var canvas = document.getElementById('bg-canvas');

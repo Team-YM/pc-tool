@@ -8,7 +8,7 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-/* ---------- 页面背景 ---------- */
+/* ---------- 页面背景与主题过渡 ---------- */
 body {
     display: flex;
     align-items: center;
@@ -22,6 +22,108 @@ body {
     background-attachment: fixed;
     position: relative;
     padding: 20px;
+    transition: background-color 0.5s ease, background-image 0.5s ease, color 0.5s ease;
+}
+
+.container, .back-link, .upload-area, .format-select, .btn, .convert-btn, .compress-btn, .extract-btn, .download-btn, .result-box, input, select, textarea {
+    transition: background-color 0.5s ease, border-color 0.5s ease, color 0.5s ease, box-shadow 0.5s ease;
+}
+
+/* ==================== 浅色模式适配 (PC-TOOL) ==================== */
+body.light-theme {
+    background-color: #f4f6fb;
+    background-image: linear-gradient(to bottom left, #ffffff, #eef2f8, #e5eaf2);
+    color: #1f2937;
+}
+
+body.light-theme .back-link {
+    color: #4b5563;
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+}
+
+body.light-theme .back-link:hover {
+    color: #111827;
+    background: rgba(255, 255, 255, 0.95);
+    border-color: rgba(0, 0, 0, 0.15);
+}
+
+body.light-theme .container {
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+body.light-theme .container h1 {
+    color: #111827;
+}
+
+body.light-theme .container > p {
+    color: #4b5563;
+}
+
+body.light-theme .upload-area {
+    border: 2px dashed rgba(0, 0, 0, 0.15);
+    background: rgba(0, 0, 0, 0.02);
+    color: #6b7280;
+}
+
+body.light-theme .upload-area:hover {
+    background: rgba(99, 102, 241, 0.04);
+    border-color: rgba(99, 102, 241, 0.4);
+    color: #4f46e5;
+}
+
+body.light-theme .format-select {
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    background-color: rgba(255, 255, 255, 0.9);
+    color: #1f2937;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%234b5563" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>');
+}
+
+body.light-theme .btn,
+body.light-theme .convert-btn,
+body.light-theme .compress-btn,
+body.light-theme .extract-btn {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    color: #1f2937;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+body.light-theme .btn:hover,
+body.light-theme .convert-btn:hover,
+body.light-theme .compress-btn:hover,
+body.light-theme .extract-btn:hover {
+    background: #ffffff;
+    border-color: rgba(99, 102, 241, 0.4);
+    color: #4338ca;
+}
+
+body.light-theme .result-box {
+    background: rgba(0, 0, 0, 0.02);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+body.light-theme .result-box h3 {
+    color: #111827;
+}
+
+body.light-theme .contact-tip {
+    color: #6b7280;
+}
+
+body.light-theme ::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.03);
+}
+
+body.light-theme ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+}
+
+body.light-theme ::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.25);
 }
 
 a {

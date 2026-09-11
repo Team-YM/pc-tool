@@ -24,6 +24,71 @@
             min-height:100vh;
             padding:80px 20px 60px;
             position:relative;
+            transition: background-color 0.5s ease, color 0.5s ease;
+        }
+
+        .back-link, .notice-card, .page-header h1, .page-header .subtitle, .footer-note {
+            transition: background-color 0.5s ease, border-color 0.5s ease, color 0.5s ease, box-shadow 0.5s ease;
+        }
+
+        /* 浅色主题适配 */
+        body.light-theme {
+            background-color: #f4f6fb;
+            background-image: linear-gradient(to bottom left, #ffffff, #edf2f9, #e4ecf7);
+            color: #1f2937;
+        }
+
+        body.light-theme .back-link {
+            color: #4b5563;
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+        }
+
+        body.light-theme .back-link:hover {
+            color: #111827;
+            background: rgba(255, 255, 255, 0.95);
+            border-color: rgba(0, 0, 0, 0.16);
+        }
+
+        body.light-theme .page-header h1 {
+            color: #111827;
+        }
+
+        body.light-theme .page-header .subtitle {
+            color: #6b7280;
+        }
+
+        body.light-theme .notice-card {
+            background: rgba(255, 255, 255, 0.78);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+        }
+
+        body.light-theme .notice-card:hover {
+            background: rgba(255, 255, 255, 0.95);
+            border-color: rgba(99, 102, 241, 0.3);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+        }
+
+        body.light-theme .notice-card h3 {
+            color: #111827;
+        }
+
+        body.light-theme .notice-card .notice-body {
+            color: #4b5563;
+        }
+
+        body.light-theme .notice-card .notice-body li {
+            color: #374151;
+        }
+
+        body.light-theme .notice-card .notice-body strong {
+            color: #111827;
+        }
+
+        body.light-theme .footer-note {
+            color: #9ca3af;
         }
 
         .bg-canvas {
@@ -518,6 +583,17 @@
         <p class="footer-note">为人民服务 · 不收一分钱 · 只为爱发电</p>
     </div>
 
+    <script>
+        (function() {
+            try {
+                if (localStorage.getItem('pctool_theme') === 'light') {
+                    document.documentElement.classList.add('light-theme');
+                    if (document.body) document.body.classList.add('light-theme');
+                    else document.addEventListener('DOMContentLoaded', function() { document.body.classList.add('light-theme'); });
+                }
+            } catch(e) {}
+        })();
+    </script>
     <script>
         if ('scrollRestoration' in history) {
             history.scrollRestoration = 'manual';

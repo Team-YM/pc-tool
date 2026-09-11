@@ -10,6 +10,12 @@
             if (!isMobile && !isTablet) {
                 window.location.replace('./index.html');
             }
+            // 立即应用浅色/深色主题防白屏闪烁
+            try {
+                if (localStorage.getItem('pctool_theme') === 'light') {
+                    document.documentElement.classList.add('light-theme');
+                }
+            } catch (e) {}
         })();
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
@@ -45,6 +51,12 @@
             min-height: 100dvh;
             padding-top: env(safe-area-inset-top, 0px);
             padding-bottom: env(safe-area-inset-bottom, 0px);
+            transition: background-color 0.5s ease, color 0.5s ease;
+        }
+
+        .header, .header-search-btn, .theme-toggle-btn, .search-input-wrap, .quick-nav-btn,
+        .creator-item, .notice, .tool-item, .footer {
+            transition: background-color 0.5s ease, border-color 0.5s ease, color 0.5s ease, box-shadow 0.5s ease;
         }
 
         /* ==================== 浮动背景光球 ==================== */
@@ -738,6 +750,239 @@
         @keyframes rippleAnim {
             to { transform: scale(4); opacity: 0; }
         }
+
+        /* ==================== iOS 控制中心风格切换按钮 (移动端) ==================== */
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .theme-toggle-btn {
+            position: relative;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.04);
+            color: #f4f4f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            outline: none;
+            overflow: hidden;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .theme-toggle-btn:active {
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(0.92);
+        }
+
+        /* iOS 深色模式控制图标 */
+        .ios-dark-icon {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            box-sizing: border-box;
+            border: 2px solid #ffffff;
+            background: linear-gradient(to right, #ffffff 50%, transparent 50%);
+            box-shadow: 0 0 6px rgba(255, 255, 255, 0.25);
+            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
+        }
+
+        body.light-theme .ios-dark-icon {
+            border-color: #1f2937;
+            background: linear-gradient(to right, transparent 50%, #1f2937 50%);
+            transform: rotate(180deg);
+            box-shadow: 0 0 6px rgba(0, 0, 0, 0.15);
+        }
+
+        /* ==================== 浅色模式全局色调覆盖 (移动端) ==================== */
+        body.light-theme {
+            background-color: #f4f6fb;
+            color: #1f2937;
+        }
+
+        body.light-theme .bg-orb--1 {
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        body.light-theme .bg-orb--2 {
+            background: rgba(16, 185, 129, 0.08);
+        }
+
+        body.light-theme .bg-orb--3 {
+            background: rgba(139, 92, 246, 0.07);
+        }
+
+        body.light-theme .bg-orb--4 {
+            background: rgba(236, 72, 153, 0.05);
+        }
+
+        body.light-theme .header {
+            background: rgba(255, 255, 255, 0.85);
+            border-bottom-color: rgba(0, 0, 0, 0.08);
+        }
+
+        body.light-theme .header-title {
+            color: #111827;
+        }
+
+        body.light-theme .header-search-btn,
+        body.light-theme .theme-toggle-btn {
+            border-color: rgba(0, 0, 0, 0.1);
+            background: rgba(0, 0, 0, 0.04);
+            color: #4b5563;
+        }
+
+        body.light-theme .header-search-btn:active,
+        body.light-theme .theme-toggle-btn:active {
+            background: rgba(0, 0, 0, 0.08);
+            color: #111827;
+        }
+
+        body.light-theme .hero h1 {
+            color: #111827;
+        }
+
+        body.light-theme .hero p {
+            color: #4b5563;
+        }
+
+        body.light-theme .notice {
+            background: rgba(255, 255, 255, 0.8);
+            border-color: rgba(0, 0, 0, 0.08);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+        }
+
+        body.light-theme .notice-title {
+            color: #6366f1;
+        }
+
+        body.light-theme .notice-content p {
+            color: #374151;
+        }
+
+        body.light-theme .notice-content a {
+            color: #4f46e5;
+        }
+
+        body.light-theme .creators-title,
+        body.light-theme .section-title {
+            color: #6b7280;
+        }
+
+        body.light-theme .creator-item {
+            background: rgba(255, 255, 255, 0.8);
+            border-color: rgba(0, 0, 0, 0.08);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+        }
+
+        body.light-theme .creator-item:active {
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        body.light-theme .creator-name {
+            color: #111827;
+        }
+
+        body.light-theme .creator-desc {
+            color: #6b7280;
+        }
+
+        body.light-theme .creator-arrow {
+            color: #9ca3af;
+        }
+
+        body.light-theme .creator-avatar {
+            border-color: rgba(0, 0, 0, 0.1);
+        }
+
+        body.light-theme .search-input-wrap {
+            background: rgba(255, 255, 255, 0.85);
+            border-color: rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+        }
+
+        body.light-theme .search-input {
+            color: #111827;
+        }
+
+        body.light-theme .search-input::placeholder {
+            color: #9ca3af;
+        }
+
+        body.light-theme .search-clear {
+            background: rgba(0, 0, 0, 0.06);
+            color: #6b7280;
+        }
+
+        body.light-theme .quick-nav-btn {
+            color: #4b5563;
+            background: rgba(255, 255, 255, 0.75);
+            border-color: rgba(0, 0, 0, 0.08);
+        }
+
+        body.light-theme .quick-nav-btn:active {
+            background: #ffffff;
+        }
+
+        body.light-theme .quick-nav-btn.active {
+            color: #4f46e5;
+            background: rgba(99, 102, 241, 0.12);
+            border-color: rgba(99, 102, 241, 0.35);
+        }
+
+        body.light-theme .category-title {
+            color: #111827;
+        }
+
+        body.light-theme .category-count {
+            color: #6b7280;
+            background: rgba(0, 0, 0, 0.04);
+            border-color: rgba(0, 0, 0, 0.08);
+        }
+
+        body.light-theme .tool-item {
+            background: rgba(255, 255, 255, 0.78);
+            border-color: rgba(0, 0, 0, 0.08);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+        }
+
+        body.light-theme .tool-item:active {
+            background: rgba(255, 255, 255, 0.95);
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+
+        body.light-theme .tool-name {
+            color: #111827;
+        }
+
+        body.light-theme .tool-desc {
+            color: #6b7280;
+        }
+
+        body.light-theme .tool-arrow {
+            color: #9ca3af;
+        }
+
+        body.light-theme .footer {
+            border-top-color: rgba(0, 0, 0, 0.08);
+            color: #6b7280;
+        }
+
+        body.light-theme .footer-brand {
+            color: #374151;
+        }
+
+        body.light-theme .footer-divider {
+            background: rgba(0, 0, 0, 0.15);
+        }
     </style>
 </head>
 <body>
@@ -754,9 +999,14 @@
                 </div>
                 <span class="header-title">工具箱</span>
             </div>
-            <button class="header-search-btn" id="searchToggle" aria-label="搜索工具">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            </button>
+            <div class="header-actions">
+                <button class="theme-toggle-btn" id="themeToggle" aria-label="切换深色/浅色模式" title="切换深色/浅色模式">
+                    <span class="ios-dark-icon" aria-hidden="true"></span>
+                </button>
+                <button class="header-search-btn" id="searchToggle" aria-label="搜索工具">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </button>
+            </div>
         </div>
     </header>
 
@@ -2124,6 +2374,30 @@
             });
 
             searchInput.addEventListener('input', filterTools);
+
+            // 主题切换逻辑
+            var themeToggleBtn = document.getElementById('themeToggle');
+            function applyTheme(theme) {
+                if (theme === 'light') {
+                    document.body.classList.add('light-theme');
+                    document.documentElement.classList.add('light-theme');
+                    localStorage.setItem('pctool_theme', 'light');
+                } else {
+                    document.body.classList.remove('light-theme');
+                    document.documentElement.classList.remove('light-theme');
+                    localStorage.setItem('pctool_theme', 'dark');
+                }
+            }
+
+            var currentTheme = localStorage.getItem('pctool_theme') || 'dark';
+            applyTheme(currentTheme);
+
+            if (themeToggleBtn) {
+                themeToggleBtn.addEventListener('click', function() {
+                    var isLight = document.body.classList.contains('light-theme');
+                    applyTheme(isLight ? 'dark' : 'light');
+                });
+            }
         })();
     </script>
 </body>
