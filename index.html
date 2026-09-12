@@ -1,1826 +1,1495 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <script>
-        (function() {
-            var ua = navigator.userAgent || navigator.vendor || window.opera;
-            // 检测是否为手机或平板
-            var isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|webOS/i.test(ua);
-            var isTablet = /iPad|Android(?!.*Mobile)|Tablet|PlayBook|Silk/i.test(ua) || (/(?:Macintosh|Windows)/i.test(ua) && 'ontouchend' in document && window.innerWidth <= 1024);
-            if ((isMobile || isTablet) && window.location.pathname.indexOf('mobile.html') === -1) {
-                window.location.replace('./mobile.html');
-            }
-            // 立即应用浅色/深色主题防白屏闪烁
-            try {
-                if (localStorage.getItem('pctool_theme') === 'light') {
-                    document.documentElement.classList.add('light-theme');
-                }
-            } catch (e) {}
-        })();
-    </script>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>工具箱 | PC-TOOL</title>
-    <link rel="icon" type="image/png" href="favicon.png">
-    <meta name="description" content="PC-TOOL 免费在线工具集合——图片转换、视频压缩、音频转格式、图片抠图、B站视频转URL……每一个功能都为效率而生，完全免费，为人民服务！">
-    <link rel="apple-touch-icon" sizes="180x180" href="favicon.png">
-    <!-- OGP 社交分享标签 (QQ/微信/Telegram 等) -->
-    <meta property="og:title" content="工具箱 | PC-TOOL">
-    <meta property="og:description" content="免费在线工具集合，每一个功能都为效率而生，完全免费，为人民服务！">
-    <meta property="og:image" content="https://pc-tool.cn/avatar.jpg">
-    <meta property="og:url" content="https://www.pc-tool.cn/">
-    <meta property="og:type" content="website">
-    <meta property="og:site_name" content="PC-TOOL">
-    <meta property="og:locale" content="zh_CN">
-    <style>
-        /* ================= 基础重置 ================= */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        }
-
-        body {
-            background-color: #09090b;
-            color: #f4f4f5;
-            line-height: 1.6;
-            overflow-x: hidden;
-            -webkit-font-smoothing: antialiased;
-            background-image: linear-gradient(to bottom left, #242323, #131314, #000000);
-            transition: background-color 0.5s ease, background-image 0.5s ease, color 0.5s ease;
-        }
-
-        .header, .header-search-btn, .theme-toggle-btn, .search-input-wrap, .category-section, .category-title,
-        .quick-nav-btn, .creator-card, .notice, .card-inner, .footer {
-            transition: background-color 0.5s ease, border-color 0.5s ease, color 0.5s ease, box-shadow 0.5s ease;
-        }
-
-        .bg-canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            z-index: -1;
-            pointer-events: none;
-        }
-
-        a {
-            text-decoration: none;
-            color: inherit;
-        }
-
-        @keyframes slideDown {
-            from { transform: translateY(-100%); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        @keyframes fadeUp {
-            from { transform: translateY(30px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        .header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 64px;
-            background: rgba(9, 9, 11, 0.7);
-            backdrop-filter: blur(30px);
-            -webkit-backdrop-filter: blur(30px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            display: flex;
-            align-items: center;
-            padding: 0 24px;
-            z-index: 100;
-            animation: slideDown 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .header-inner {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .header-title {
-            font-size: 18px;
-            font-weight: 600;
-            letter-spacing: 1px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: #e4e4e7;
-        }
-
-        .header-title svg {
-            width: 20px;
-            height: 20px;
-            color: #a1a1aa;
-        }
-
-        .header-search-btn {
-            width: 38px;
-            height: 38px;
-            border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            background: rgba(255, 255, 255, 0.04);
-            color: #a1a1aa;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            flex-shrink: 0;
-        }
-
-        .header-search-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: #e4e4e7;
-            border-color: rgba(255, 255, 255, 0.15);
-        }
-
-        .header-search-btn svg {
-            width: 18px;
-            height: 18px;
-        }
-
-        /* ==================== 搜索栏 ==================== */
-        .search-bar {
-            margin-bottom: 20px;
-            max-width: 480px;
-        }
-
-        .search-input-wrap {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: rgba(24, 24, 27, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 12px;
-            padding: 11px 16px;
-            transition: border-color 0.2s;
-        }
-
-        .search-input-wrap:focus-within {
-            border-color: rgba(129, 140, 248, 0.5);
-            box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.08);
-        }
-
-        .search-input-wrap svg {
-            width: 18px;
-            height: 18px;
-            color: #71717a;
-            flex-shrink: 0;
-        }
-
-        .search-input {
-            flex: 1;
-            background: none;
-            border: none;
-            outline: none;
-            color: #e4e4e7;
-            font-size: 1rem;
-            min-width: 0;
-        }
-
-        .search-input::placeholder {
-            color: #52525b;
-        }
-
-        .search-clear {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            border: none;
-            background: rgba(255, 255, 255, 0.06);
-            color: #71717a;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            flex-shrink: 0;
-            font-size: 16px;
-            line-height: 1;
-            transition: all 0.15s;
-        }
-
-        .search-clear:hover {
-            background: rgba(255, 255, 255, 0.14);
-            color: #e4e4e7;
-        }
-
-        /* 搜索为空 */
-        .search-empty {
-            display: none;
-            text-align: center;
-            padding: 48px 24px;
-            color: #52525b;
-            font-size: 1rem;
-            grid-column: 1 / -1;
-        }
-
-        .search-empty.show {
-            display: block;
-        }
-
-        /* 分类分组区域与标题 */
-        .category-sections {
-            display: flex;
-            flex-direction: column;
-            gap: 48px;
-        }
-
-        .category-group {
-            display: flex;
-            flex-direction: column;
-            gap: 18px;
-            opacity: 0;
-            animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.25s forwards;
-        }
-
-        .category-group.group-hidden {
-            display: none !important;
-        }
-
-        .category-group-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-        }
-
-        .category-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: #f4f4f5;
-            letter-spacing: -0.01em;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .category-title::before {
-            content: '';
-            display: inline-block;
-            width: 4px;
-            height: 18px;
-            background: linear-gradient(180deg, #6366f1, #38bdf8);
-            border-radius: 2px;
-        }
-
-        .category-count {
-            font-size: 0.8125rem;
-            font-weight: 500;
-            color: #71717a;
-            background: rgba(255, 255, 255, 0.05);
-            padding: 2px 8px;
-            border-radius: 999px;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-        }
-
-        /* 快捷分类定位锚点栏 (仿造主页顶部卡片的入场动画规格) */
-        .category-quick-nav {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-            padding: 4px 0 20px;
-            margin-bottom: 16px;
-        }
-
-        .quick-nav-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 7px 16px;
-            border-radius: 9999px;
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: #a1a1aa;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            cursor: pointer;
-            white-space: nowrap;
-            text-decoration: none;
-            transition: all 0.2s ease;
-            user-select: none;
-            opacity: 0;
-            animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-
-        .quick-nav-btn:nth-child(1)  { animation-delay: 0.20s; }
-        .quick-nav-btn:nth-child(2)  { animation-delay: 0.24s; }
-        .quick-nav-btn:nth-child(3)  { animation-delay: 0.28s; }
-        .quick-nav-btn:nth-child(4)  { animation-delay: 0.32s; }
-        .quick-nav-btn:nth-child(5)  { animation-delay: 0.36s; }
-        .quick-nav-btn:nth-child(6)  { animation-delay: 0.40s; }
-        .quick-nav-btn:nth-child(7)  { animation-delay: 0.44s; }
-        .quick-nav-btn:nth-child(8)  { animation-delay: 0.48s; }
-        .quick-nav-btn:nth-child(9)  { animation-delay: 0.52s; }
-        .quick-nav-btn:nth-child(10) { animation-delay: 0.56s; }
-
-        .quick-nav-btn:hover {
-            color: #f4f4f5;
-            background: rgba(255, 255, 255, 0.09);
-            border-color: rgba(255, 255, 255, 0.2);
-            transform: translateY(-1px);
-        }
-
-        .quick-nav-btn.active {
-            color: #ffffff;
-            background: rgba(99, 102, 241, 0.25);
-            border-color: rgba(129, 140, 248, 0.5);
-        }
-
-        /* 搜索时隐藏不匹配的卡片 */
-        .card.search-hidden {
-            display: none !important;
-        }
-
-        .main-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 120px 24px 60px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .hero {
-            margin-bottom: 60px;
-            animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-
-        .hero h1 {
-            font-size: clamp(2.5rem, 5vw, 4rem);
-            font-weight: 700;
-            letter-spacing: -0.02em;
-            margin-bottom: 16px;
-            position: relative;
-            display: inline-block;
-        }
-
-        .hero h1 span {
-            color: #93939c;
-        }
-
-        /* 鼠标探照灯暗金色光晕层 */
-        .hero-title-gold {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            /* 暗金色渐变与高贵光泽 */
-            background: linear-gradient(135deg, #d4af37 0%, #b8860b 45%, #e6ca65 70%, #996515 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-            color: transparent;
-            opacity: 0;
-            transition: opacity 0.25s ease-out;
-            /* 圆形光晕遮罩跟随鼠标 */
-            -webkit-mask-image: radial-gradient(circle 120px at var(--mouse-x, -999px) var(--mouse-y, -999px), black 0%, black 45%, transparent 100%);
-            mask-image: radial-gradient(circle 120px at var(--mouse-x, -999px) var(--mouse-y, -999px), black 0%, black 45%, transparent 100%);
-        }
-
-        .hero p {
-            color: #e9e9e9;
-            font-size: 1.125rem;
-            max-width: 600px;
-            font-weight: 300;
-        }
-
-        /* 公告通知 */
-        .notice {
-            background: rgba(24, 24, 27, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(30px);
-            -webkit-backdrop-filter: blur(30px);
-            border-radius: 20px;
-            padding: 24px;
-            margin-bottom: 28px;
-            animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
-            opacity: 0;
-        }
-
-        /* 创作者/制作者博客板块 */
-        .creators-section {
-            margin-bottom: 32px;
-            animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.15s forwards;
-            opacity: 0;
-        }
-
-        .creators-title {
-            font-size: 0.8125rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: #a1a1aa;
-            font-weight: 600;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .creators-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 16px;
-        }
-
-        .creator-card {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            padding: 16px 20px;
-            border-radius: 16px;
-            background: rgba(24, 24, 27, 0.35);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .creator-card::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(circle at right center, rgba(255, 255, 255, 0.06), transparent 70%);
-            opacity: 0;
-            transition: opacity 0.25s;
-            pointer-events: none;
-        }
-
-        .creator-card:hover {
-            transform: translateY(-2px);
-            background: rgba(35, 35, 42, 0.65);
-            border-color: rgba(255, 255, 255, 0.18);
-            box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.5), 0 0 20px rgba(255, 255, 255, 0.04);
-        }
-
-        .creator-card:hover::before {
-            opacity: 1;
-        }
-
-        .creator-avatar {
-            width: 52px;
-            height: 52px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid rgba(255, 255, 255, 0.15);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            flex-shrink: 0;
-            transition: transform 0.25s ease, border-color 0.25s ease;
-        }
-
-        .creator-card:hover .creator-avatar {
-            transform: scale(1.05);
-            border-color: rgba(255, 255, 255, 0.4);
-        }
-
-        .creator-meta {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .creator-name-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 3px;
-        }
-
-        .creator-name {
-            font-size: 1rem;
-            font-weight: 600;
-            color: #f4f4f5;
-        }
-
-        .creator-badge {
-            font-size: 0.7rem;
-            padding: 2px 7px;
-            border-radius: 9999px;
-            background: rgba(129, 140, 248, 0.15);
-            color: #a5b4fc;
-            border: 1px solid rgba(129, 140, 248, 0.3);
-            letter-spacing: 0.02em;
-        }
-
-        .creator-desc {
-            font-size: 0.8125rem;
-            color: #93939c;
-            line-height: 1.4;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .creator-arrow {
-            color: #71717a;
-            flex-shrink: 0;
-            transition: transform 0.2s, color 0.2s;
-        }
-
-        .creator-card:hover .creator-arrow {
-            color: #f4f4f5;
-            transform: translateX(3px);
-        }
-
-        .notice-title {
-            font-size: 0.8125rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: #cdcdd3;
-            font-weight: 600;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .notice-content p {
-            color: rgb(255, 255, 255);
-            font-size: 1.0625rem;
-            margin-bottom: 8px;
-            font-weight: 300;
-        }
-
-        .notice-content p:last-child {
-            margin-bottom: 0;
-        }
-
-        .notice-content a {
-            color: #b8b8b8;
-            text-decoration: underline;
-            text-underline-offset: 4px;
-            text-decoration-color: #52525b;
-            transition: text-decoration-color 0.3s;
-        }
-
-        .notice-content a:hover {
-            text-decoration-color: #cdcdd3;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-            gap: 24px;
-            perspective: 1200px;
-        }
-
-        .card {
-            position: relative;
-            display: block;
-            opacity: 0;
-            animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-            cursor: pointer;
-        }
-
-        .card-inner {
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            min-height: 152px;
-            padding: 24px;
-            border-radius: 16px;
-            overflow: hidden;
-            background: rgba(24, 24, 27, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(30px);
-            -webkit-backdrop-filter: blur(30px);
-            transform-origin: 50% 50%;
-            transform-style: preserve-3d;
-            transition: transform 0.22s ease-out, background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
-            will-change: transform;
-        }
-
-        .card:nth-child(1) { animation-delay: 0.15s; }
-        .card:nth-child(2) { animation-delay: 0.20s; }
-        .card:nth-child(3) { animation-delay: 0.25s; }
-        .card:nth-child(4) { animation-delay: 0.30s; }
-        .card:nth-child(5) { animation-delay: 0.35s; }
-        .card:nth-child(6) { animation-delay: 0.40s; }
-        .card:nth-child(7) { animation-delay: 0.45s; }
-        .card:nth-child(8) { animation-delay: 0.50s; }
-        .card:nth-child(9) { animation-delay: 0.55s; }
-        .card:nth-child(24) { animation-delay: 0.60s; }
-
-        .card:hover .card-inner {
-            background: rgba(55, 55, 60, 0.75);
-            border-color: rgba(255, 255, 255, 0.35);
-            box-shadow: 0 16px 48px -8px rgba(255, 255, 255, 0.18),
-                        0 0 32px rgba(255, 255, 255, 0.06),
-                        inset 0 0 30px rgba(255, 255, 255, 0.05),
-                        0 22px 32px -18px rgba(0, 0, 0, 0.75);
-            transform: perspective(900px) scale(1.01);
-        }
-
-        .card:active .card-inner {
-            transform: perspective(900px) scale(0.98) !important;
-            transition: transform 0.1s ease !important;
-            box-shadow: 0 4px 10px -5px rgba(255, 255, 255, 0.05),
-                        inset 0 0 10px rgba(0, 0, 0, 0.5);
-            background: rgba(24, 24, 27, 0.8);
-        }
-
-        .card-inner::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(circle at var(--glare-x, 50%) var(--glare-y, 50%), rgba(255,255,255,0.22), transparent 55%);
-            opacity: 0;
-            transition: opacity 0.35s ease;
-            pointer-events: none;
-            z-index: 2;
-        }
-
-        .card:hover .card-inner::after {
-            opacity: 1;
-        }
-
-        .card-icon,
-        .card-title,
-        .card-line {
-            position: relative;
-            z-index: 1;
-        }
-
-        .card-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.03);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 16px;
-            transition: background 0.3s;
-        }
-
-        .card-icon svg {
-            width: 20px;
-            height: 20px;
-            color: #a1a1aa;
-            transition: color 0.3s, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-
-        .card:hover .card-icon {
-            background: rgba(255, 255, 255, 0.18);
-        }
-
-        .card:hover .card-icon svg {
-            color: #ffffff;
-            transform: scale(1.15) rotate(5deg);
-            filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.4));
-        }
-
-        .card-title {
-            font-size: 1.125rem;
-            font-weight: 500;
-            color: #e4e4e7;
-            transition: color 0.3s;
-        }
-
-        .card:hover .card-title {
-            color: #ffffff;
-            text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
-        }
-
-        .card-line {
-            height: 2px;
-            width: 0;
-            background: rgba(255, 255, 255, 0.8);
-            margin-top: 16px;
-            border-radius: 2px;
-            transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-            opacity: 0.6;
-        }
-
-        .card:hover .card-line {
-            width: 100%;
-            box-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
-        }
-
-        .footer {
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            padding: 40px 24px;
-            margin-top: 60px;
-            animation: fadeIn 1s 0.8s forwards;
-            opacity: 0;
-            position: relative;
-            z-index: 1;
-        }
-
-        .footer-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            align-items: center;
-            gap: 20px;
-            color: #b6b6b6;
-            font-size: 0.875rem;
-        }
-
-        .footer-info {
-            display: flex;
-            align-items: center;
-            gap: 24px;
-        }
-
-        .footer-divider {
-            width: 1px;
-            height: 16px;
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        /* ==================== iOS 控制中心风格深色/浅色模式切换按钮 ==================== */
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .theme-toggle-btn {
-            position: relative;
-            width: 38px;
-            height: 38px;
-            border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            background: rgba(255, 255, 255, 0.05);
-            color: #f4f4f5;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            outline: none;
-            overflow: hidden;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-        }
-
-        .theme-toggle-btn:hover {
-            background: rgba(255, 255, 255, 0.12);
-            border-color: rgba(255, 255, 255, 0.2);
-            transform: scale(1.04);
-        }
-
-        .theme-toggle-btn:active {
-            transform: scale(0.92);
-        }
-
-        /* iOS 控制中心专属的深色模式双色半圆微标图标 */
-        .ios-dark-icon {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            box-sizing: border-box;
-            border: 2px solid #ffffff;
-            background: linear-gradient(to right, #ffffff 50%, transparent 50%);
-            box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
-            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
-        }
-
-        /* 浅色模式下的图标翻转与色调变化（高还原 iOS 控制中心处于关闭/开启切换动效） */
-        body.light-theme .ios-dark-icon {
-            border-color: #1f2937;
-            background: linear-gradient(to right, transparent 50%, #1f2937 50%);
-            transform: rotate(180deg);
-            box-shadow: 0 0 8px rgba(0, 0, 0, 0.15);
-        }
-
-        /* ==================== 浅色模式全局色调覆盖 (PC端) ==================== */
-        body.light-theme {
-            background-color: #f4f6fb;
-            background-image: linear-gradient(to bottom left, #ffffff, #edf2f9, #e4ecf7);
-            color: #1f2937;
-        }
-
-        body.light-theme .header {
-            background: rgba(255, 255, 255, 0.78);
-            border-bottom-color: rgba(0, 0, 0, 0.08);
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
-        }
-
-        body.light-theme .header-title {
-            color: #111827;
-        }
-
-        body.light-theme .header-title svg {
-            color: #4b5563;
-        }
-
-        body.light-theme .header-search-btn {
-            border-color: rgba(0, 0, 0, 0.1);
-            background: rgba(0, 0, 0, 0.04);
-            color: #4b5563;
-        }
-
-        body.light-theme .header-search-btn:hover {
-            background: rgba(0, 0, 0, 0.08);
-            color: #111827;
-            border-color: rgba(0, 0, 0, 0.18);
-        }
-
-        body.light-theme .theme-toggle-btn {
-            border-color: rgba(0, 0, 0, 0.1);
-            background: rgba(0, 0, 0, 0.04);
-            color: #1f2937;
-        }
-
-        body.light-theme .theme-toggle-btn:hover {
-            background: rgba(0, 0, 0, 0.08);
-            border-color: rgba(0, 0, 0, 0.18);
-        }
-
-        body.light-theme .hero h1 {
-            color: #111827;
-        }
-
-        body.light-theme .hero h1 span:first-child {
-            color: #6b7280;
-        }
-
-        body.light-theme .hero p {
-            color: #4b5563;
-        }
-
-        body.light-theme .notice {
-            background: rgba(255, 255, 255, 0.75);
-            border: 1px solid rgba(0, 0, 0, 0.08);
-            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05);
-        }
-
-        body.light-theme .notice-title {
-            color: #6366f1;
-        }
-
-        body.light-theme .notice-content p {
-            color: #374151;
-        }
-
-        body.light-theme .notice-content a {
-            color: #4f46e5;
-            text-decoration-color: #cbd5e1;
-        }
-
-        body.light-theme .creators-title {
-            color: #4b5563;
-        }
-
-        body.light-theme .creator-card {
-            background: rgba(255, 255, 255, 0.75);
-            border: 1px solid rgba(0, 0, 0, 0.08);
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04);
-        }
-
-        body.light-theme .creator-card:hover {
-            background: rgba(255, 255, 255, 0.95);
-            border-color: rgba(99, 102, 241, 0.3);
-            box-shadow: 0 14px 32px -6px rgba(0, 0, 0, 0.08);
-        }
-
-        body.light-theme .creator-name {
-            color: #111827;
-        }
-
-        body.light-theme .creator-desc {
-            color: #6b7280;
-        }
-
-        body.light-theme .creator-arrow {
-            color: #9ca3af;
-        }
-
-        body.light-theme .creator-avatar {
-            border-color: rgba(0, 0, 0, 0.1);
-        }
-
-        body.light-theme .search-input-wrap {
-            background: rgba(255, 255, 255, 0.85);
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
-        }
-
-        body.light-theme .search-input-wrap:focus-within {
-            border-color: #6366f1;
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
-        }
-
-        body.light-theme .search-input {
-            color: #111827;
-        }
-
-        body.light-theme .search-input::placeholder {
-            color: #9ca3af;
-        }
-
-        body.light-theme .search-clear {
-            background: rgba(0, 0, 0, 0.05);
-            color: #6b7280;
-        }
-
-        body.light-theme .quick-nav-btn {
-            color: #4b5563;
-            background: rgba(255, 255, 255, 0.7);
-            border: 1px solid rgba(0, 0, 0, 0.08);
-        }
-
-        body.light-theme .quick-nav-btn:hover {
-            color: #111827;
-            background: #ffffff;
-            border-color: rgba(0, 0, 0, 0.16);
-        }
-
-        body.light-theme .quick-nav-btn.active {
-            color: #4f46e5;
-            background: rgba(99, 102, 241, 0.12);
-            border-color: rgba(99, 102, 241, 0.35);
-        }
-
-        body.light-theme .category-title {
-            color: #111827;
-        }
-
-        body.light-theme .category-count {
-            color: #6b7280;
-            background: rgba(0, 0, 0, 0.04);
-            border-color: rgba(0, 0, 0, 0.08);
-        }
-
-        body.light-theme .card-inner {
-            background: rgba(255, 255, 255, 0.72);
-            border: 1px solid rgba(0, 0, 0, 0.08);
-            box-shadow: 0 10px 24px -6px rgba(0, 0, 0, 0.04);
-        }
-
-        body.light-theme .card:hover .card-inner {
-            background: rgba(255, 255, 255, 0.95);
-            border-color: rgba(99, 102, 241, 0.35);
-            box-shadow: 0 20px 38px -8px rgba(99, 102, 241, 0.14),
-                        0 8px 16px -4px rgba(0, 0, 0, 0.06);
-        }
-
-        body.light-theme .card-icon {
-            background: rgba(0, 0, 0, 0.04);
-        }
-
-        body.light-theme .card-icon svg {
-            color: #4b5563;
-        }
-
-        body.light-theme .card:hover .card-icon {
-            background: rgba(99, 102, 241, 0.12);
-        }
-
-        body.light-theme .card:hover .card-icon svg {
-            color: #4f46e5;
-            filter: drop-shadow(0 0 6px rgba(99, 102, 241, 0.3));
-        }
-
-        body.light-theme .card-title {
-            color: #1f2937;
-        }
-
-        body.light-theme .card:hover .card-title {
-            color: #111827;
-            text-shadow: none;
-        }
-
-        body.light-theme .card-line {
-            background: #6366f1;
-        }
-
-        body.light-theme .footer {
-            border-top-color: rgba(0, 0, 0, 0.08);
-        }
-
-        body.light-theme .footer-content {
-            color: #6b7280;
-        }
-
-        body.light-theme .footer-divider {
-            background: rgba(0, 0, 0, 0.1);
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <script>
+    (function() {
+      // 允许通过 URL 参数 ?view=desktop 或 sessionStorage 强制留在电脑版
+      if (window.location.search.indexOf('view=desktop') !== -1) {
+        sessionStorage.setItem('preferred_view', 'desktop');
+      }
+      if (sessionStorage.getItem('preferred_view') === 'desktop') {
+        return;
+      }
+      var ua = navigator.userAgent || navigator.vendor || window.opera;
+      var isMobile = /Mobi|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|webOS/i.test(ua);
+      var isSmallScreen = window.innerWidth <= 768;
+      if (isMobile || (isSmallScreen && 'ontouchstart' in window)) {
+        window.location.replace('./mobile.html');
+      }
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PC-Tool — 开源 Web 极客工具箱，浏览器即是一切</title>
+  <meta name="description" content="PC-Tool.cn 专为专业创作者与极客打造的纯前端开源在线工具箱。无需安装，开箱即用，代码完全开源在 GitHub。" />
+  <!-- Google Fonts: Inter & SF Pro / Noto -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Noto+Sans+SC:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+  <!-- GSAP & ScrollTrigger -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  
+  <style>
+    :root {
+      --bg: #000000;
+      --bg-surface: #0a0a0c;
+      --bg-card: rgba(20, 20, 24, 0.65);
+      --bg-glass: rgba(18, 18, 22, 0.72);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-specular: rgba(255, 255, 255, 0.16);
+      --border-bright: rgba(255, 255, 255, 0.28);
+      --text-main: #f5f5f7;
+      --text-muted: #86868b;
+      --text-sub: #a1a1a6;
+      --accent: #2997ff;
+      --accent-glow: rgba(41, 151, 255, 0.35);
+      --accent-grad: linear-gradient(135deg, #2997ff 0%, #a259ff 100%);
+      --apple-ease: cubic-bezier(0.16, 1, 0.3, 1);
+      --apple-impact: cubic-bezier(0.2, 0, 0, 1);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Plus Jakarta Sans", "Noto Sans SC", "Helvetica Neue", sans-serif;
+      overflow-x: hidden;
+      line-height: 1.5;
+      selection-background-color: #2997ff;
+      selection-color: #ffffff;
+    }
+
+    /* 滚动条 */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #050505;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #222;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #333;
+    }
+
+    /* 导航栏 - 经典苹果磨砂玻璃 */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 52px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      background: rgba(0, 0, 0, 0.75);
+      border-bottom: 1px solid var(--border-subtle);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.3s ease;
+    }
+
+    .nav-inner {
+      width: 100%;
+      max-width: 1024px;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      color: var(--text-main);
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: -0.3px;
+    }
+
+    .nav-brand svg {
+      fill: #fff;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 28px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--text-sub);
+      text-decoration: none;
+      font-size: 12px;
+      letter-spacing: -0.1px;
+      transition: color 0.2s ease;
+    }
+
+    .nav-links a:hover {
+      color: var(--text-main);
+    }
+
+    .nav-cta {
+      background: #f5f5f7;
+      color: #000;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 14px;
+      border-radius: 980px;
+      text-decoration: none;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .nav-cta:hover {
+      background: #ffffff;
+      transform: scale(1.04);
+      box-shadow: 0 0 16px rgba(255, 255, 255, 0.2);
+    }
+
+    /* 容器基准 */
+    .container {
+      max-width: 1140px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+    }
+
+    /* 文本渐变与金属光泽 */
+    .gradient-text {
+      background: linear-gradient(180deg, #ffffff 15%, #a1a1a6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .accent-gradient-text {
+      background: linear-gradient(135deg, #2997ff 0%, #9055ff 50%, #ff5284 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .shimmer-text {
+      background: linear-gradient(90deg, #86868b 0%, #ffffff 50%, #86868b 100%);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: shimmerFlow 6s ease-in-out infinite;
+    }
+
+    @keyframes shimmerFlow {
+      0% { background-position: -100% center; }
+      100% { background-position: 200% center; }
+    }
+
+    /* 苹果式文本遮罩揭幕 */
+    .reveal-wrap {
+      display: inline-block;
+      overflow: hidden;
+      vertical-align: bottom;
+    }
+
+    .reveal-inner {
+      display: inline-block;
+      will-change: transform, opacity;
+    }
+
+    /* HERO 区域 */
+    .hero-section {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding-top: 130px;
+      text-align: center;
+      position: relative;
+      background: radial-gradient(circle at 50% 18%, rgba(41, 151, 255, 0.15) 0%, rgba(0, 0, 0, 0) 65%);
+    }
+
+    .pill-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 18px;
+      border-radius: 980px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-specular);
+      color: var(--text-sub);
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 26px;
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+      transition: all 0.3s var(--apple-ease);
+    }
+
+    .pill-badge:hover {
+      border-color: rgba(41, 151, 255, 0.4);
+      background: rgba(41, 151, 255, 0.08);
+      color: #fff;
+    }
+
+    .pill-badge .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #2997ff;
+      box-shadow: 0 0 10px #2997ff;
+      animation: pulseDot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .hero-title {
+      font-size: clamp(44px, 7.5vw, 88px);
+      font-weight: 800;
+      letter-spacing: -0.045em;
+      line-height: 1.05;
+      max-width: 960px;
+      margin-bottom: 22px;
+    }
+
+    .hero-subtitle {
+      font-size: clamp(18px, 2.2vw, 24px);
+      color: var(--text-muted);
+      font-weight: 400;
+      max-width: 680px;
+      margin-bottom: 42px;
+      line-height: 1.45;
+      letter-spacing: -0.02em;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 56px;
+      z-index: 10;
+    }
+
+    .btn-primary {
+      background: #0071e3;
+      color: #fff;
+      padding: 13px 30px;
+      border-radius: 980px;
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s var(--apple-ease);
+      box-shadow: 0 4px 24px rgba(0, 113, 227, 0.4);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-primary:hover {
+      background: #0077ed;
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 8px 36px rgba(0, 113, 227, 0.6);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-main);
+      padding: 13px 30px;
+      border-radius: 980px;
+      font-size: 15px;
+      font-weight: 500;
+      text-decoration: none;
+      border: 1px solid var(--border-subtle);
+      transition: all 0.3s var(--apple-ease);
+      backdrop-filter: blur(10px);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: var(--border-bright);
+      transform: translateY(-2px);
+    }
+
+    /* 苹果风格产品视窗 (Device Mockup) */
+    .hero-mockup-wrapper {
+      width: 100%;
+      max-width: 1040px;
+      margin: 0 auto;
+      perspective: 1200px;
+      padding: 0 16px 80px 16px;
+    }
+
+    .mockup-window {
+      background: #101013;
+      border-radius: 22px;
+      border: 1px solid var(--border-specular);
+      box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.95), 0 0 60px rgba(41, 151, 255, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+      overflow: hidden;
+      transform-origin: center top;
+      transition: border-color 0.4s var(--apple-ease), box-shadow 0.4s var(--apple-ease);
+      position: relative;
+    }
+
+    .mockup-window::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%);
+      pointer-events: none;
+    }
+
+    .window-header {
+      background: rgba(22, 22, 26, 0.95);
+      height: 46px;
+      display: flex;
+      align-items: center;
+      padding: 0 18px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      position: relative;
+    }
+
+    .traffic-lights {
+      display: flex;
+      gap: 8px;
+    }
+
+    .traffic-lights span {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    .traffic-red { background: #ff5f56; }
+    .traffic-yellow { background: #ffbd2e; }
+    .traffic-green { background: #27c93f; }
+
+    .window-title {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .window-body {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      min-height: 480px;
+      background: #0d0d0f;
+    }
+
+    .window-sidebar {
+      border-right: 1px solid rgba(255, 255, 255, 0.05);
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: #111115;
+    }
+
+    .sidebar-category {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #55555c;
+      padding: 8px 12px 4px;
+      font-weight: 700;
+    }
+
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      color: var(--text-sub);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .sidebar-item.active {
+      background: rgba(41, 151, 255, 0.15);
+      color: #2997ff;
+      font-weight: 600;
+    }
+
+    .sidebar-item:hover:not(.active) {
+      background: rgba(255, 255, 255, 0.04);
+      color: #fff;
+    }
+
+    .sidebar-item svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+    }
+
+    .window-content {
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .canvas-stat-bar {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .stat-card-mini {
+      background: #16161a;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 14px;
+      padding: 18px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card-mini::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .stat-num {
+      font-size: 26px;
+      font-weight: 700;
+      color: #fff;
+      font-feature-settings: "tnum";
+    }
+
+    .stat-num span {
+      font-size: 13px;
+      font-weight: 400;
+      color: #27c93f;
+      margin-left: 4px;
+    }
+
+    .canvas-hero-card {
+      background: linear-gradient(180deg, #18181f 0%, #121216 100%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+    }
+
+    .canvas-radar-box {
+      width: 120px;
+      height: 120px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .radar-circle {
+      position: absolute;
+      border-radius: 50%;
+      border: 1px dashed rgba(41, 151, 255, 0.3);
+      width: 100%;
+      height: 100%;
+      animation: spin 12s linear infinite;
+    }
+
+    .radar-core {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #2997ff 0%, #0056b3 100%);
+      box-shadow: 0 0 24px #2997ff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+
+    /* 苹果经典 PINNED 序列展厅 (Scroll Scrub Storytelling) */
+    .pinned-story-section {
+      position: relative;
+      background: #000;
+      width: 100%;
+    }
+
+    .pinned-container {
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .story-backdrop-blur {
+      position: absolute;
+      width: 700px;
+      height: 700px;
+      background: radial-gradient(circle, rgba(41, 151, 255, 0.16) 0%, rgba(162, 89, 255, 0.08) 40%, rgba(0, 0, 0, 0) 70%);
+      border-radius: 50%;
+      filter: blur(90px);
+      pointer-events: none;
+      transition: all 0.8s var(--apple-ease);
+    }
+
+    .story-timeline-nav {
+      position: absolute;
+      bottom: 40px;
+      display: flex;
+      gap: 12px;
+      z-index: 20;
+    }
+
+    .timeline-dot {
+      width: 32px;
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.2);
+      transition: all 0.4s var(--apple-ease);
+    }
+
+    .timeline-dot.active {
+      background: #2997ff;
+      width: 48px;
+      box-shadow: 0 0 12px rgba(41, 151, 255, 0.6);
+    }
+
+    .story-slide {
+      position: absolute;
+      width: 100%;
+      max-width: 980px;
+      padding: 0 30px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      opacity: 0;
+      transform: translateY(50px) scale(0.94);
+      filter: blur(10px);
+      pointer-events: none;
+      transition: filter 0.5s ease;
+    }
+
+    .story-slide.active-slide {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: blur(0px);
+      pointer-events: auto;
+    }
+
+    .story-tag {
+      font-size: 13px;
+      font-weight: 700;
+      color: #2997ff;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      margin-bottom: 16px;
+      padding: 4px 14px;
+      background: rgba(41, 151, 255, 0.1);
+      border-radius: 980px;
+      border: 1px solid rgba(41, 151, 255, 0.25);
+    }
+
+    .story-heading {
+      font-size: clamp(38px, 5.8vw, 72px);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1.1;
+      margin-bottom: 22px;
+    }
+
+    .story-desc {
+      font-size: clamp(16px, 1.8vw, 21px);
+      color: var(--text-muted);
+      max-width: 660px;
+      line-height: 1.6;
+    }
+
+    .spec-badge-row {
+      display: flex;
+      gap: 14px;
+      margin-top: 30px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .spec-pill {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      padding: 10px 22px;
+      border-radius: 980px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-sub);
+      backdrop-filter: blur(12px);
+      transition: all 0.3s var(--apple-ease);
+    }
+
+    .spec-pill:hover {
+      border-color: rgba(255, 255, 255, 0.25);
+      color: #fff;
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateY(-2px);
+    }
+
+    /* BENTO GRID (苹果风格矩阵板块) */
+    .bento-section {
+      padding: 140px 0;
+      background: #000;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 70px;
+    }
+
+    .section-eyebrow {
+      color: var(--accent);
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: clamp(32px, 4.5vw, 56px);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+    }
+
+    .bento-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 24px;
+    }
+
+    .bento-card {
+      background: #0f0f12;
+      border: 1px solid var(--border-subtle);
+      border-radius: 28px;
+      padding: 40px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      opacity: 1;
+      visibility: visible;
+      transition: border-color 0.4s var(--apple-ease), transform 0.4s var(--apple-ease), box-shadow 0.4s var(--apple-ease);
+    }
+
+    .bento-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .bento-card:hover {
+      border-color: rgba(255, 255, 255, 0.28);
+      transform: translateY(-6px);
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7), 0 0 30px rgba(41, 151, 255, 0.08);
+    }
+
+    .bento-card:hover::before {
+      opacity: 1;
+    }
+
+    .bento-glow {
+      position: absolute;
+      width: 320px;
+      height: 320px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(41, 151, 255, 0.14) 0%, transparent 70%);
+      top: -100px;
+      right: -100px;
+      pointer-events: none;
+      transition: transform 0.6s var(--apple-ease);
+    }
+
+    .bento-card:hover .bento-glow {
+      transform: scale(1.15);
+    }
+
+    .bento-card.col-8 {
+      grid-column: span 8;
+    }
+
+    .bento-card.col-4 {
+      grid-column: span 4;
+    }
+
+    .bento-card.col-6 {
+      grid-column: span 6;
+    }
+
+    .bento-card.col-12 {
+      grid-column: span 12;
+    }
+
+    .bento-card-title {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 10px;
+      color: #fff;
+    }
+
+    .bento-card-desc {
+      font-size: 15px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      max-width: 440px;
+    }
+
+    .bento-preview-box {
+      margin-top: 30px;
+      background: #08080a;
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      padding: 24px;
+    }
+
+    /* 快捷键可视化条 */
+    .keyboard-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 14px;
+    }
+
+    .key-cap {
+      background: #202024;
+      border: 1px solid #323238;
+      border-bottom: 3px solid #141416;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #e1e1e6;
+      font-family: monospace;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+    }
+
+    /* 数字性能对比区 */
+    .metrics-section {
+      padding: 100px 0 140px;
+      background: #000;
+      position: relative;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 30px;
+      text-align: center;
+    }
+
+    .metric-box {
+      padding: 46px 24px;
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      transition: all 0.3s var(--apple-ease);
+    }
+
+    .metric-box::before {
+      content: '';
+      position: absolute;
+      top: -1px;
+      left: 20%;
+      right: 20%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(41, 151, 255, 0.4), transparent);
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .metric-box:hover::before {
+      opacity: 1;
+    }
+
+    .metric-value {
+      font-size: clamp(52px, 6.5vw, 84px);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      margin-bottom: 14px;
+      background: linear-gradient(180deg, #ffffff 30%, #86868b 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .metric-label {
+      font-size: 16px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+
+    .metric-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+      max-width: 260px;
+    }
+
+    /* CTA 区域 - 苹果旗舰巨幅 */
+    .cta-section {
+      padding: 120px 0 160px;
+      position: relative;
+      background: radial-gradient(circle at 50% 50%, rgba(41, 151, 255, 0.18) 0%, rgba(0, 0, 0, 0) 65%);
+      text-align: center;
+    }
+
+    .cta-card {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 60px 30px;
+      border-radius: 36px;
+      background: rgba(18, 18, 22, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(30px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 36px;
+      padding: 1px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.25), transparent 50%, rgba(41, 151, 255, 0.3));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    .cta-title {
+      font-size: clamp(34px, 5vw, 54px);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 18px;
+    }
+
+    .cta-desc {
+      font-size: 17px;
+      color: var(--text-muted);
+      margin-bottom: 36px;
+      max-width: 520px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* 页脚 */
+    footer {
+      border-top: 1px solid var(--border-subtle);
+      background: #050507;
+      padding: 40px 0;
+      font-size: 12px;
+      color: #666;
+    }
+
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 20px;
+    }
+
+    .footer-links a {
+      color: #777;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover {
+      color: #bbb;
+    }
+
+    /* 响应式适配 */
+    @media (max-width: 900px) {
+      .bento-card.col-8,
+      .bento-card.col-4,
+      .bento-card.col-6 {
+        grid-column: span 12;
+      }
+      .window-body {
+        grid-template-columns: 1fr;
+      }
+      .window-sidebar {
+        display: none;
+      }
+      .metrics-grid {
+        grid-template-columns: 1fr;
+      }
+      .canvas-stat-bar {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
 <body>
-    <canvas id="bg-canvas" class="bg-canvas"></canvas>
 
-    <header class="header">
-        <div class="header-inner">
-            <div class="header-title">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-                工具箱
-            </div>
-            <div class="header-actions">
-                <button class="theme-toggle-btn" id="themeToggle" aria-label="切换深色/浅色模式" title="切换深色/浅色模式">
-                    <span class="ios-dark-icon" aria-hidden="true"></span>
-                </button>
-                <button class="header-search-btn" id="searchToggle" aria-label="搜索工具" title="搜索工具 (Ctrl+K)">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                </button>
-            </div>
+  <!-- 顶部导航栏 -->
+  <nav id="navbar">
+    <div class="nav-inner">
+      <a href="#" class="nav-brand">
+        <svg width="20" height="20" viewBox="0 0 24 24">
+          <path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6zm2 0v12h12V6H6zm3 3h6v2H9V9zm0 4h6v2H9v-2z"/>
+        </svg>
+        <span>PC-Tool.cn</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="home.html">进入工具主页</a></li>
+        <li><a href="#features">设计哲学</a></li>
+        <li><a href="#specs">性能指标</a></li>
+        <li><a href="https://github.com/Team-YM/pc-tool" target="_blank" rel="noopener noreferrer">GitHub 仓库</a></li>
+      </ul>
+      <a href="home.html" class="nav-cta">
+        立即使用
+      </a>
+    </div>
+  </nav>
+
+  <!-- HERO 区域 -->
+  <section class="hero-section" id="overview">
+    <div class="pill-badge" id="heroBadge">
+      <span class="dot"></span>
+      <span>100% 开源 · 免安装 · Web 原生运行</span>
+    </div>
+
+    <h1 class="hero-title" id="heroTitle">
+      <span class="reveal-wrap"><span class="reveal-inner gradient-text">浏览器里的</span></span><br>
+      <span class="reveal-wrap"><span class="reveal-inner shimmer-text" style="color: #fff;">全能极客工作台。</span></span>
+    </h1>
+
+    <p class="hero-subtitle" id="heroSubtitle">
+      无需下载任何安装包。基于现代 Web 技术与浏览器原生算力，打开即用，隐私全本地处理，代码完全开源。
+    </p>
+
+    <div class="hero-actions" id="heroActions">
+      <a href="home.html" class="btn-primary">
+        <span>立即进入在线工具</span>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      </a>
+      <a href="https://github.com/Team-YM/pc-tool" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="display: inline-flex; align-items: center; gap: 8px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+        </svg>
+        <span>GitHub 源码</span>
+      </a>
+    </div>
+
+    <!-- 苹果风格产品模型透视视窗 (Web App 界面模拟) -->
+    <div class="hero-mockup-wrapper" id="mockupWrapper">
+      <div class="mockup-window" id="mockupWindow">
+        <div class="window-header">
+          <div class="traffic-lights">
+            <span class="traffic-red"></span>
+            <span class="traffic-yellow"></span>
+            <span class="traffic-green"></span>
+          </div>
+          <div class="window-title">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="#666"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+            pc-tool.cn — Web Browser Edition
+          </div>
         </div>
-    </header>
-
-    <main class="main-container">
-        <section class="hero">
-            <h1 id="heroTitle">
-                免费工具<span>，高效生活</span>
-                <span class="hero-title-gold" id="heroTitleGold" aria-hidden="true">免费工具，高效生活</span>
-            </h1>
-            <p><strong>为您精心打磨的在线工具集合，每一个功能都为效率而生，完全免费。</strong></p>
-        </section>
-
-        <section class="notice">
-            <div class="notice-title">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-                公告通知
+        <div class="window-body">
+          <aside class="window-sidebar">
+            <div class="sidebar-category">Web Tools</div>
+            <div class="sidebar-item active">
+              <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+              开发常用转换
             </div>
-            <div class="notice-content">
-                <p>为人民服务 不收一分钱 只为爱发电</p>
-                <p>有问题和建议联系QQ交流群：1121812272</p>
-                <p>站长邮箱：fish@cutefish.online</p>
-                <p>域名邮箱：feedback@pc-tool.cn</p>
-                <p><strong><a href="notice.html" style="color:#818cf8;text-underline-offset:4px;">点击跳转更新公告</a></strong></p>
-                <p><strong><a href="https://cutefish.online/pc-tool-donate/" style="color:#818cf8;text-underline-offset:4px;">为我们捐款</a></strong></p>
+            <div class="sidebar-item">
+              <svg viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+              图片 / 媒体处理
             </div>
-        </section>
+            <div class="sidebar-item">
+              <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+              文本与加解密
+            </div>
+            <div class="sidebar-category" style="margin-top: 14px;">Open Source</div>
+            <div class="sidebar-item">
+              <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+              开源社区贡献
+            </div>
+          </aside>
+          <div class="window-content">
+            <div class="canvas-stat-bar">
+              <div class="stat-card-mini">
+                <div class="stat-label">运行模式</div>
+                <div class="stat-num">Pure Web <span>纯前端</span></div>
+              </div>
+              <div class="stat-card-mini">
+                <div class="stat-label">数据安全</div>
+                <div class="stat-num">0 <span>无服务器上传</span></div>
+              </div>
+              <div class="stat-card-mini">
+                <div class="stat-label">开源状态</div>
+                <div class="stat-num">GitHub <span>公开源码</span></div>
+              </div>
+            </div>
 
-        <!-- 制作者博客 -->
-        <section class="creators-section">
-            <div class="creators-title">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                制作者 Blog
+            <div class="canvas-hero-card">
+              <div>
+                <div style="font-size: 12px; color: #2997ff; font-weight: 700; margin-bottom: 4px;">WEB CLIENT ENGINE</div>
+                <div style="font-size: 20px; font-weight: 700; color: #fff;">浏览器内高速计算，零数据外流</div>
+                <div style="font-size: 13px; color: #86868b; margin-top: 4px;">所有计算逻辑均在浏览器沙箱本地完成，无需等待服务端排队。</div>
+              </div>
+              <div class="canvas-radar-box">
+                <div class="radar-circle"></div>
+                <div class="radar-core">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                </div>
+              </div>
             </div>
-            <div class="creators-grid">
-                <a href="https://blog.pc-tool.cn/" target="_blank" class="creator-card">
-                    <img src="https://blog.pc-tool.cn/avatar.jpg" alt="cute-Fish" class="creator-avatar">
-                    <div class="creator-meta">
-                        <div class="creator-name-row">
-                            <span class="creator-name">cute-Fish</span>
-                            <span class="creator-badge">开发者</span>
-                        </div>
-                        <div class="creator-desc">生活总比游戏更有趣 · 主pc-tool.cn开发</div>
-                    </div>
-                    <svg class="creator-arrow" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-                </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-                <a href="https://blog.pc-tool.cn/blog-qiamao.html" target="_blank" class="creator-card">
-                    <img src="https://blog.pc-tool.cn/qiamao-avatar.jpg" alt="qiamao" class="creator-avatar">
-                    <div class="creator-meta">
-                        <div class="creator-name-row">
-                            <span class="creator-name">qiamao</span>
-                            <span class="creator-badge">开发者</span>
-                        </div>
-                        <div class="creator-desc">同pc-tool.cn开发 · 柚子厨，java大手子，agent大手子，区，qiamao</div>
-                    </div>
-                    <svg class="creator-arrow" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-                </a>
-            </div>
-        </section>
+  <!-- 苹果风格滚动叙事展厅 (PINNED SCENE) -->
+  <section class="pinned-story-section" id="storySection">
+    <div class="pinned-container" id="pinnedContainer">
+      <div class="story-backdrop-blur"></div>
 
-        <div class="search-bar" id="searchBar">
-            <div class="search-input-wrap">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input type="text" class="search-input" id="searchInput" placeholder="搜索工具..." autocomplete="off">
-                <button class="search-clear" id="searchClear" aria-label="清除">&#x2715;</button>
+      <!-- Slide 1: 架构革新 -->
+      <div class="story-slide active-slide" id="slide1">
+        <div class="story-tag">开箱即用 · 纯粹在线</div>
+        <h2 class="story-heading gradient-text">无需安装。<br><span class="shimmer-text">有浏览器即有一切。</span></h2>
+        <p class="story-desc">
+          打破传统臃肿工具的下载、安装、更新链条。打开网页即刻投入生产，跨操作系统自由运行。
+        </p>
+        <div class="spec-badge-row">
+          <div class="spec-pill">免安装绿色访问</div>
+          <div class="spec-pill">现代 Web 标准构建</div>
+          <div class="spec-pill">完全开源免费</div>
+        </div>
+      </div>
+
+      <!-- Slide 2: 动效与触觉 -->
+      <div class="story-slide" id="slide2">
+        <div class="story-tag">安全与隐私</div>
+        <h2 class="story-heading gradient-text">本地优先计算。<br><span style="color: #2997ff;">数据绝不离开设备。</span></h2>
+        <p class="story-desc">
+          所有文件转换、密码生成、编码解析均基于浏览器客户端内存完成，不向云端传输任何用户隐私数据。
+        </p>
+        <div class="spec-badge-row">
+          <div class="spec-pill">WebAssembly 硬件加速</div>
+          <div class="spec-pill">零服务端数据留存</div>
+          <div class="spec-pill">离线 PWA 支持</div>
+        </div>
+      </div>
+
+      <!-- Slide 3: 极客级赋能 -->
+      <div class="story-slide" id="slide3">
+        <div class="story-tag">开源共建</div>
+        <h2 class="story-heading gradient-text">代码全透明。<br><span class="shimmer-text">源于社区，归于极客。</span></h2>
+        <p class="story-desc">
+          完全在 GitHub 上公开源代码。代码接受全球开发者审计与共建，人人皆可拓展属于自己的小工具。
+        </p>
+        <div class="spec-badge-row">
+          <div class="spec-pill">GitHub 持续集成</div>
+          <div class="spec-pill">社区模块化扩展</div>
+          <div class="spec-pill">源码完全公开</div>
+        </div>
+      </div>
+
+      <!-- 苹果底栏指示器 -->
+      <div class="story-timeline-nav">
+        <div class="timeline-dot active" id="dot1"></div>
+        <div class="timeline-dot" id="dot2"></div>
+        <div class="timeline-dot" id="dot3"></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- BENTO GRID 功能特性板块 -->
+  <section class="bento-section" id="features">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-eyebrow">全维掌控</div>
+        <h2 class="section-title gradient-text">每一项细节，皆自成巅峰。</h2>
+      </div>
+
+      <div class="bento-grid">
+        <!-- 卡片 1 (宽) -->
+        <div class="bento-card col-8">
+          <div class="bento-glow"></div>
+          <div>
+            <div class="bento-card-title">瞬时在线工作舱</div>
+            <p class="bento-card-desc">
+              从代码格式化、加解密到多媒体处理，所有工具模块整合于一体。零跳出体验，随叫随到。
+            </p>
+          </div>
+          <div class="bento-preview-box">
+            <div style="font-size: 13px; color: #86868b; margin-bottom: 8px;">一键直通工具主页</div>
+            <div style="display: flex; align-items: center; gap: 12px; margin-top: 10px;">
+              <a href="home.html" style="background: rgba(41, 151, 255, 0.2); color: #2997ff; border: 1px solid rgba(41, 151, 255, 0.4); padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none;">➔ 打开 home.html</a>
+              <span style="font-size: 13px; color: #86868b;">无需任何登录或安装步骤</span>
             </div>
+          </div>
         </div>
 
-        <!-- 快捷分类导航栏 (无emoji，按类别快速定位) -->
-        <nav class="category-quick-nav" id="categoryQuickNav" aria-label="工具分类导航">
-            <button class="quick-nav-btn active" data-target="all">全部</button>
-            <button class="quick-nav-btn" data-target="cat-image">图像处理</button>
-            <button class="quick-nav-btn" data-target="cat-audio">音频处理</button>
-            <button class="quick-nav-btn" data-target="cat-video">视频处理</button>
-            <button class="quick-nav-btn" data-target="cat-doc">文档/PDF</button>
-            <button class="quick-nav-btn" data-target="cat-dev">开发工具</button>
-            <button class="quick-nav-btn" data-target="cat-net">网络工具</button>
-            <button class="quick-nav-btn" data-target="cat-calc">计算换算</button>
-            <button class="quick-nav-btn" data-target="cat-life">生活效率</button>
-            <button class="quick-nav-btn" data-target="cat-hardware">硬件测试</button>
-        </nav>
-
-        <!-- 分类排列结构：类别1 -> 按钮组 / 类别2 -> 按钮组 ... -->
-        <div class="category-sections" id="categorySections">
-            <div class="search-empty" id="searchEmpty">没有找到匹配的工具...</div>
+        <!-- 卡片 2 -->
+        <div class="bento-card col-4">
+          <div>
+            <div class="bento-card-title">为人民服务 · 为爱发电</div>
+            <p class="bento-card-desc">
+              不收一分钱，绝无强制收费。秉持纯粹极客初心，打造免费无套路的 Web 好工具。
+            </p>
+          </div>
+          <div style="margin-top: 26px; text-align: center;">
+            <div style="font-size: 42px; font-weight: 800; color: #2997ff; letter-spacing: -0.02em;">¥0.00</div>
+            <div style="font-size: 13px; color: var(--text-sub); margin-top: 6px; font-weight: 500;">永久免费 · 纯粹为爱发电</div>
+          </div>
         </div>
 
-        <section class="grid" id="originalGrid" style="display: none;">
-            <a href="./tool/qrcode.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><path d="M7 7h.01"/><path d="M17 7h.01"/><path d="M7 17h.01"/><path d="M17 17h.01"/><path d="M12 12h.01"/></svg></div><div class="card-title">二维码生成器</div><div class="card-line"></div></div></a>
-            <a href="./tool/qrcode-decode.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><path d="M7 7h.01"/><path d="M17 7h.01"/><path d="M17 17h.01"/><path d="M7 17h.01"/><circle cx="12" cy="12" r="3"/></svg></div><div class="card-title">二维码解析</div><div class="card-line"></div></div></a>
-            <a href="./tool/image-convert.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><div class="card-title">图片批量转格式</div><div class="card-line"></div></div></a>
-            <a href="./tool/image-crop.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="8.5" y1="3" x2="8.5" y2="21"/><line x1="15.5" y1="3" x2="15.5" y2="21"/><line x1="3" y1="8.5" x2="21" y2="8.5"/><line x1="3" y1="15.5" x2="21" y2="15.5"/></svg></div><div class="card-title">图片裁剪</div><div class="card-line"></div></div></a>
-            <a href="./tool/id-photo.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="9" r="3"/><path d="M8 17c1-2 7-2 8 0"/></svg></div><div class="card-title">证件照制作</div><div class="card-line"></div></div></a>
-            <a href="./tool/ico-generator.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M8 8h8v8H8z"/><path d="M8 3v5M16 3v5M8 16v5M16 16v5"/></svg></div><div class="card-title">ICO / 图标生成</div><div class="card-line"></div></div></a>
-            <a href="./tool/image-stitch.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></div><div class="card-title">图片拼接</div><div class="card-line"></div></div></a>
-            <a href="./tool/image-gif.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><circle cx="8" cy="10" r="1.5"/><circle cx="16" cy="10" r="1.5"/><circle cx="12" cy="12" r="1.5"/><polyline points="6 16 9 13 11 15 14 12 18 16"/></svg></div><div class="card-title">多图合成GIF</div><div class="card-line"></div></div></a>
-            <a href="./tool/image-watermark.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></div><div class="card-title">图片加水印</div><div class="card-line"></div></div></a>
-            <a href="./tool/image-rotate.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></div><div class="card-title">图片旋转/翻转</div><div class="card-line"></div></div></a>
-            <a href="./tool/image-enhance.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"/><path d="m19 16 .8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8L19 16z"/></svg></div><div class="card-title">AI图片变清晰</div><div class="card-line"></div></div></a>
-            <a href="./tool/image-filter.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div><div class="card-title">图片调色/滤镜</div><div class="card-line"></div></div></a>
-            <a href="./tool/photo-dpi.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><div class="card-title">图片DPI转换</div><div class="card-line"></div></div></a>
-            <a href="./tool/word-pdf-convert.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div><div class="card-title">Word与PDF互转</div><div class="card-line"></div></div></a>
-            <a href="./tool/csv-excel-convert.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/></svg></div><div class="card-title">CSV与Excel互转</div><div class="card-line"></div></div></a>
-            <a href="./tool/audio-ogg.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div><div class="card-title">音频转ogg格式</div><div class="card-line"></div></div></a>
-            <a href="./tool/audio-convert.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg></div><div class="card-title">音频转格式</div><div class="card-line"></div></div></a>
-            <a href="./tool/audio-compress.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg></div><div class="card-title">音频压缩</div><div class="card-line"></div></div></a>
-            <a href="./tool/video-to-audio.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div><div class="card-title">视频提取音频</div><div class="card-line"></div></div></a>
-            <a href="./tool/video-convert.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><path d="m17 8 4 4-4 4"/><path d="m7 8-4 4 4 4"/></svg></div><div class="card-title">视频转格式</div><div class="card-line"></div></div></a>
-            <a href="./redirect.html?target=http://unlock.music.hi.cn/" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div><div class="card-title">音乐解析(第三方)</div><div class="card-line"></div></div></a>
-            <a href="./tool/metronome.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 22 22 2 22"/><line x1="12" y1="6" x2="12" y2="14"/><circle cx="12" cy="16" r="1.5"/></svg></div><div class="card-title">节拍器（BPM）</div><div class="card-line"></div></div></a>
-            <a href="./tool/image-compress.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg></div><div class="card-title">图片压缩</div><div class="card-line"></div></div></a>
-            <a href="./tool/image-base64.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg></div><div class="card-title">图片转Base64</div><div class="card-line"></div></div></a>
-            <a href="./tool/image-base64-decode.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 7 20 4 4 4 4 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="20" x2="12" y2="4"/></svg></div><div class="card-title">Base64转图片</div><div class="card-line"></div></div></a>
-            <a href="./tool/base64-text.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/><path d="m15 14 3 3-3 3"/><path d="m9 14-3 3 3 3"/></svg></div><div class="card-title">Base64编解码</div><div class="card-line"></div></div></a>
-            <a href="./tool/json-format.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div><div class="card-title">JSON格式化与校验</div><div class="card-line"></div></div></a>
-            <a href="./tool/jwt-decode.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h8M8 17h5"/></svg></div><div class="card-title">JWT在线解码器</div><div class="card-line"></div></div></a>
-            <a href="./tool/code-format.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="12" y1="2" x2="12" y2="22" stroke-dasharray="2 2"/></svg></div><div class="card-title">代码格式化工具</div><div class="card-line"></div></div></a>
-            <a href="./tool/text-diff.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M4 19h16M7 5v14M17 5v14"/><path d="m10 9 4 3-4 3"/></svg></div><div class="card-title">文本对比 Diff</div><div class="card-line"></div></div></a>
-            <a href="./tool/text-case.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19 10 5l6 14M6.5 14h7"/><path d="M15 19h5M17.5 5v14"/></svg></div><div class="card-title">大小写与命名风格转换</div><div class="card-line"></div></div></a>
-            <a href="./tool/text-clean.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg></div><div class="card-title">文本整理工具</div><div class="card-line"></div></div></a>
-            <a href="./tool/word-count.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></div><div class="card-title">字数统计</div><div class="card-line"></div></div></a>
-            <a href="./tool/chinese-convert.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M7 12h10M12 7v10M8 17l8-10"/></svg></div><div class="card-title">简繁转换与中文拼音</div><div class="card-line"></div></div></a>
-            <a href="./tool/markdown-editor.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M10 9H7v6h3M14 9v6M10 12h4"/></svg></div><div class="card-title">Markdown编辑器</div><div class="card-line"></div></div></a>
-            <a href="./tool/url-codec.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div><div class="card-title">URL编码/解码</div><div class="card-line"></div></div></a>
-            <a href="./tool/timestamp.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div class="card-title">时间戳转换器</div><div class="card-line"></div></div></a>
-            <a href="./tool/regex-tester.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div><div class="card-title">正则表达式测试</div><div class="card-line"></div></div></a>
-            <a href="./tool/password-uuid.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><div class="card-title">随机密码/UUID生成</div><div class="card-line"></div></div></a>
-            <a href="./tool/radix-convert.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9z"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg></div><div class="card-title">多进制转换器</div><div class="card-line"></div></div></a>
-            <a href="./tool/hash-crypto.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><div class="card-title">哈希加解密(MD5/SHA)</div><div class="card-line"></div></div></a>
-            <a href="./tool/unicode-convert.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div><div class="card-title">Unicode字符转换</div><div class="card-line"></div></div></a>
-            <a href="./tool/html-entity.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="12" y1="2" x2="12" y2="22" stroke-dasharray="2 2"/></svg></div><div class="card-title">HTML实体编解码</div><div class="card-line"></div></div></a>
-            <a href="./tool/color-convert.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10"/><path d="M12 2a15.3 15.3 0 0 0-4 10 15.3 15.3 0 0 0 4 10"/></svg></div><div class="card-title">颜色格式转换</div><div class="card-line"></div></div></a>
-            <a href="./tool/cut-image.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div><div class="card-title">图片抠图</div><div class="card-line"></div></div></a>
-            <a href="./tool/video-comp.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></div><div class="card-title">视频压缩</div><div class="card-line"></div></div></a>
-            <a href="./tool/vrc-url.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div><div class="card-title">B站视频转URL</div><div class="card-line"></div></div></a>
-            <a href="./redirect.html?target=https://snapany.com/zh" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg></div><div class="card-title">视频解析(第三方)</div><div class="card-line"></div></div></a>
-            <a href="./tool/video-to-gif.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><circle cx="8" cy="10" r="1.5"/><circle cx="16" cy="10" r="1.5"/><polyline points="6 16 9 13 11 15 14 12 18 16"/></svg></div><div class="card-title">视频转GIF</div><div class="card-line"></div></div></a>
-            <a href="./tool/video-clip.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div><div class="card-title">视频截取片段</div><div class="card-line"></div></div></a>
-            <a href="./tool/video-reverse.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 7 8 12 1 17 1 7"/><rect x="9" y="5" width="15" height="14" rx="2" ry="2"/><polyline points="13 14 10 12 13 10"/></svg></div><div class="card-title">视频倒放</div><div class="card-line"></div></div></a>
-            <a href="./tool/video-screenshot.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div><div class="card-title">视频截图/取帧</div><div class="card-line"></div></div></a>
-            <a href="./tool/video-merge.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 10l5 5-5 5"/><path d="M4 4v7a4 4 0 0 0 4 4h12"/></svg></div><div class="card-title">视频合并</div><div class="card-line"></div></div></a>
-            <a href="./tool/video-watermark.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div><div class="card-title">视频加水印</div><div class="card-line"></div></div></a>
-            <a href="./tool/video-speed.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/><path d="M4.93 4.93l4.24 4.24"/></svg></div><div class="card-title">视频变速</div><div class="card-line"></div></div></a>
-            <a href="./tool/video-delogo.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20H7L3 16C2 15 2 13 3 12L13 2L22 11L20 20Z"/><path d="M17 17L7 7"/></svg></div><div class="card-title">视频去水印</div><div class="card-line"></div></div></a>
-            <a href="./tool/video-cover.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><div class="card-title">视频转壁纸封面</div><div class="card-line"></div></div></a>
-
-            <a href="./tool/audio-clip.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div><div class="card-title">音频截取</div><div class="card-line"></div></div></a>
-            <a href="./tool/audio-visualizer.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><path d="M8 7v10"/><path d="M16 7v10"/><path d="M4 11v2"/><path d="M20 11v2"/></svg></div><div class="card-title">音视频波形可视化</div><div class="card-line"></div></div></a>
-            <a href="./tool/audio-bpm.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/><path d="M2 12h3l2-4 3 8 2-4h4"/></svg></div><div class="card-title">音频BPM识别</div><div class="card-line"></div></div></a>
-            <a href="./tool/audio-merge.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5"/><path d="M18 2l4 4-4 4"/><path d="M11 13h8"/></svg></div><div class="card-title">音频合并</div><div class="card-line"></div></div></a>
-            <a href="./tool/audio-reverse.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18V5l-12 2v13"/><circle cx="18" cy="18" r="3"/><circle cx="6" cy="16" r="3"/><polyline points="10 9 7 11 10 13"/></svg></div><div class="card-title">音频倒放</div><div class="card-line"></div></div></a>
-            <a href="./tool/audio-speed.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/><path d="M4.93 4.93l4.24 4.24"/></svg></div><div class="card-title">音频变速</div><div class="card-line"></div></div></a>
-            <a href="./tool/audio-pitch.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></div><div class="card-title">音频变调</div><div class="card-line"></div></div></a>
-            <a href="./tool/text-to-speech.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8"/><path d="M8 13h6"/></svg></div><div class="card-title">文字转语音 TTS</div><div class="card-line"></div></div></a>
-            <a href="./tool/speech-to-text.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg></div><div class="card-title">语音转文字 ASR</div><div class="card-line"></div></div></a>
-            <a href="./tool/pdf-merge.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg></div><div class="card-title">PDF合并</div><div class="card-line"></div></div></a>
-            <a href="./tool/pdf-split.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/></svg></div><div class="card-title">PDF拆分</div><div class="card-line"></div></div></a>
-            <a href="./tool/pdf-compress.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h6m0 0v6m0-6L3 21m17-11h-6m0 0V4m0 6l7-7"/></svg></div><div class="card-title">PDF压缩</div><div class="card-line"></div></div></a>
-            <a href="./tool/pdf-to-img.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><div class="card-title">PDF转图片</div><div class="card-line"></div></div></a>
-            <a href="./tool/img-to-pdf.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><circle cx="10" cy="13" r="1.5"/><polyline points="16 17 13 14 9 18"/></svg></div><div class="card-title">图片转PDF</div><div class="card-line"></div></div></a>
-            <a href="./tool/pdf-crypto.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><div class="card-title">PDF加解密</div><div class="card-line"></div></div></a>
-            <a href="./tool/pdf-extract-text.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div><div class="card-title">PDF提取文字</div><div class="card-line"></div></div></a>
-
-            <!-- 图片进阶工具 -->
-            <a href="./tool/image-color-picker.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a7 7 0 0 0-7 7c0 4.5 7 13 7 13s7-8.5 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg></div><div class="card-title">图片取色器</div><div class="card-line"></div></div></a>
-            <a href="./tool/image-invert.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20z"/></svg></div><div class="card-title">图片黑白/反色</div><div class="card-line"></div></div></a>
-            <a href="./tool/gif-compress.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h3m-3 4h2m-2 4h3"/><path d="M14 8h3v8h-3"/></svg></div><div class="card-title">GIF压缩</div><div class="card-line"></div></div></a>
-            <a href="./tool/image-watermark-remove.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/></svg></div><div class="card-title">图片去水印</div><div class="card-line"></div></div></a>
-            <a href="./tool/image-to-svg.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></div><div class="card-title">图片转SVG矢量图</div><div class="card-line"></div></div></a>
-            <a href="./tool/image-grid-split.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg></div><div class="card-title">九宫格切图/拼图</div><div class="card-line"></div></div></a>
-            <a href="./tool/image-mosaic.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></div><div class="card-title">图片马赛克/模糊</div><div class="card-line"></div></div></a>
-            <a href="./tool/photo-to-sketch.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/></svg></div><div class="card-title">照片转手绘素描</div><div class="card-line"></div></div></a>
-            <a href="./tool/image-exif.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></div><div class="card-title">图片EXIF查看与抹除</div><div class="card-line"></div></div></a>
-            <a href="./tool/color-palette.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/><path d="M12 2a10 10 0 0 0 0 20 2 2 0 0 0 0-4 2 2 0 0 1 0-4 4 4 0 0 1 0 8"/></svg></div><div class="card-title">配色方案生成器</div><div class="card-line"></div></div></a>
-
-            <!-- 网络 / 运维工具 -->
-            <a href="./tool/short-url.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div><div class="card-title">短链接生成</div><div class="card-line"></div></div></a>
-            <a href="./tool/ua-parser.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div><div class="card-title">User-Agent解析</div><div class="card-line"></div></div></a>
-            <a href="./tool/http-status.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div class="card-title">HTTP状态码查询</div><div class="card-line"></div></div></a>
-            <a href="./tool/site-ping.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div><div class="card-title">网站测速/Ping</div><div class="card-line"></div></div></a>
-            <a href="./tool/ssl-checker.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><div class="card-title">SSL证书查询</div><div class="card-line"></div></div></a>
-            <a href="./tool/port-scan.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div><div class="card-title">常见端口扫描探测</div><div class="card-line"></div></div></a>
-
-            <!-- 生活 / 计算工具 -->
-            <a href="./tool/date-calc.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><div class="card-title">日期计算器</div><div class="card-line"></div></div></a>
-            <a href="./tool/unit-convert.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h20"/><path d="M20 12l-4-4"/><path d="M4 12l4 4"/></svg></div><div class="card-title">单位换算器</div><div class="card-line"></div></div></a>
-            <a href="./tool/bmi-calc.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div><div class="card-title">BMI体质指数计算</div><div class="card-line"></div></div></a>
-            <a href="./tool/loan-calc.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><div class="card-title">房贷/复利计算器</div><div class="card-line"></div></div></a>
-            <a href="./tool/currency-calc.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><line x1="12" y1="6" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="18"/></svg></div><div class="card-title">实时汇率换算</div><div class="card-line"></div></div></a>
-            <a href="./tool/scientific-calc.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="16" y1="14" x2="16" y2="18"/><path d="M8 10h.01"/><path d="M12 10h.01"/><path d="M16 10h.01"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/></svg></div><div class="card-title">科学计算器</div><div class="card-line"></div></div></a>
-            <a href="./tool/function-graph.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="20" x2="21" y2="20"/><line x1="4" y1="3" x2="4" y2="21"/><path d="M4 16c4-8 8 2 12-6 2-4 3-5 5-6"/></svg></div><div class="card-title">函数图像可视化</div><div class="card-line"></div></div></a>
-            <a href="./tool/lunar-weather.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/><circle cx="12" cy="12" r="3"/></svg></div><div class="card-title">今日黄历与天气</div><div class="card-line"></div></div></a>
-
-            <!-- 其他实用工具 -->
-            <a href="./tool/barcode-gen.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="5" x2="3" y2="19"/><line x1="7" y1="5" x2="7" y2="19"/><line x1="11" y1="5" x2="11" y2="19"/><line x1="15" y1="5" x2="15" y2="19"/><line x1="19" y1="5" x2="19" y2="19"/><line x1="21" y1="5" x2="21" y2="19"/></svg></div><div class="card-title">条形码生成器</div><div class="card-line"></div></div></a>
-            <a href="./tool/lucky-wheel.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2v20"/><path d="M2 12h20"/><circle cx="12" cy="12" r="2"/></svg></div><div class="card-title">幸运抽签大转盘</div><div class="card-line"></div></div></a>
-            <a href="./tool/pomodoro-timer.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div class="card-title">专注番茄钟</div><div class="card-line"></div></div></a>
-            <a href="./tool/morse-code.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/><line x1="2" y1="18" x2="22" y2="18"/></svg></div><div class="card-title">摩斯密码发报机</div><div class="card-line"></div></div></a>
-            <a href="./tool/countdown-timer.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><polyline points="12 9 12 13 15 15"/><path d="M9 3h6"/><path d="M12 3v2"/></svg></div><div class="card-title">倒计时器</div><div class="card-line"></div></div></a>
-            <a href="./tool/random-number.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="m8 8 3 3-3 3"/><path d="M13 16h3"/></svg></div><div class="card-title">随机数生成器</div><div class="card-line"></div></div></a>
-            <a href="./tool/typing-test.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="6" y1="8" x2="6.01" y2="8"/><line x1="10" y1="8" x2="10.01" y2="8"/><line x1="14" y1="8" x2="14.01" y2="8"/><line x1="18" y1="8" x2="18.01" y2="8"/><path d="M7 15h6"/></svg></div><div class="card-title">打字速度测试</div><div class="card-line"></div></div></a>
-            <a href="./tool/file-hash.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg></div><div class="card-title">文件哈希计算</div><div class="card-line"></div></div></a>
-            <a href="./tool/screen-test.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><circle cx="12" cy="10" r="3"/></svg></div><div class="card-title">屏幕坏点检测</div><div class="card-line"></div></div></a>
-            <a href="./tool/keyboard-test.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="6" y1="8" x2="6.01" y2="8"/><line x1="10" y1="8" x2="10.01" y2="8"/><line x1="14" y1="8" x2="14.01" y2="8"/><line x1="18" y1="8" x2="18.01" y2="8"/><line x1="6" y1="12" x2="6.01" y2="12"/><line x1="10" y1="12" x2="10.01" y2="12"/><line x1="14" y1="12" x2="14.01" y2="12"/><line x1="18" y1="12" x2="18.01" y2="12"/><line x1="7" y1="16" x2="17" y2="16"/></svg></div><div class="card-title">键盘按键测试</div><div class="card-line"></div></div></a>
-            <a href="./tool/cps-gamepad-test.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="15" y1="13" x2="15.01" y2="13"/><line x1="18" y1="11" x2="18.01" y2="11"/><rect x="2" y="6" width="20" height="12" rx="2"/></svg></div><div class="card-title">鼠标连点与手柄测试</div><div class="card-line"></div></div></a>
-            <a href="./redirect.html?target=https%3A%2F%2Fwww.arealme.com%2Freaction-test%2Fcn%2F" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div><div class="card-title">反应速度测试(第三方)</div><div class="card-line"></div></div></a>
-            <a href="./tool/password-generator.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg></div><div class="card-title">随机密码生成器</div><div class="card-line"></div></div></a>
-            <a href="./tool/domain-ip.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div><div class="card-title">域名/IP归属查询</div><div class="card-line"></div></div></a>
-            <div class="card" style="cursor: default; opacity: 0.65;" onclick="event.preventDefault();"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div class="card-title">敬请期待...</div><div class="card-line"></div></div></div>
-            <div class="search-empty" id="searchEmpty">没有找到匹配的工具...</div>
-        </section>
-    </main>
-
-    <footer class="footer">
-        <div class="footer-content">
-            <div>面对大众 自制或收集一些有用的在线工具</div>
-            <div class="footer-info">
-                <span>如果您有什么需要的功能或意见请联系我</span>
-                <div class="footer-divider"></div>
-                <span>QQ交流群：1121812272</span>
+        <!-- 卡片 3 -->
+        <div class="bento-card col-4">
+          <div>
+            <div class="bento-card-title">交流群与站长联系</div>
+            <p class="bento-card-desc">
+              有任何功能建议或遇到了 bug，随时欢迎进群吐槽交流。
+            </p>
+          </div>
+          <div style="margin-top: 18px; padding: 14px 16px; background: #16161b; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); font-size: 13px; display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="color: var(--text-muted);">QQ交流群</span>
+              <span style="color: #2997ff; font-weight: 700; font-family: monospace;">1121812272</span>
             </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="color: var(--text-muted);">域名邮箱</span>
+              <a href="mailto:feedback@pc-tool.cn" style="color: #fff; text-decoration: none; font-size: 12px;">feedback@pc-tool.cn</a>
+            </div>
+          </div>
         </div>
-    </footer>
 
-    <script>
-        const canvas = document.getElementById('bg-canvas');
-        const ctx = canvas.getContext('2d');
-        const heroTitle = document.getElementById('heroTitle');
-        const heroTitleGold = document.getElementById('heroTitleGold');
-        let width, height;
+        <!-- 卡片 4 (宽) -->
+        <div class="bento-card col-8">
+          <div class="bento-glow" style="background: radial-gradient(circle, rgba(162, 89, 255, 0.15) 0%, transparent 70%);"></div>
+          <div>
+            <div class="bento-card-title">极端轻量 · 极速瞬启</div>
+            <p class="bento-card-desc">
+              零多余依赖，依托浏览器原生算力与纯前端纯粹实现。告别传统桌面软件的内存占用与资源开销，启动仅需毫秒级响应。
+            </p>
+          </div>
+          <div class="bento-preview-box" style="display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <div style="font-size: 12px; color: #86868b;">首屏冷启动</div>
+              <div style="font-size: 22px; font-weight: 700; color: #fff;">0.2s</div>
+            </div>
+            <div style="width: 1px; height: 36px; background: rgba(255,255,255,0.1);"></div>
+            <div>
+              <div style="font-size: 12px; color: #86868b;">本地内存占用</div>
+              <div style="font-size: 22px; font-weight: 700; color: #27c93f;">&lt; 15MB</div>
+            </div>
+            <div style="width: 1px; height: 36px; background: rgba(255,255,255,0.1);"></div>
+            <div>
+              <div style="font-size: 12px; color: #86868b;">计算延迟</div>
+              <div style="font-size: 22px; font-weight: 700; color: #2997ff;">0 ms</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-        // 像 TRAE 官网一样的网格像素参数
-        const GRID_SIZE = 9;   // 稍小网格间距，颗粒度更细腻
-        const PIXEL_SIZE = 5;  // 方块像素大小
+  <!-- 震撼数据对比度 (METRICS) -->
+  <section class="metrics-section" id="specs">
+    <div class="container">
+      <div class="metrics-grid">
+        <div class="metric-box">
+          <div class="metric-value counter-num">0 ms</div>
+          <div class="metric-label">安装等待时间</div>
+          <div class="metric-sub">输入网址即可秒级进入工具界面，没有任何前置下载流程。</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-value counter-num">100%</div>
+          <div class="metric-label">GitHub 开源透明</div>
+          <div class="metric-sub">核心算法与前端代码完全开放，接受全球极客共同审查与推进。</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-value counter-num">0 B</div>
+          <div class="metric-label">云端数据保留</div>
+          <div class="metric-sub">坚持 Client-Side 本地运算原则，你的数据仅在你的浏览器中处理。</div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-        let cols = 0, rows = 0;
-        let mouseX = -9999, mouseY = -9999;
-        let time = 0;
+  <!-- CTA 旗舰版体验区 -->
+  <section class="cta-section" id="download">
+    <div class="container">
+      <div class="cta-card">
+        <h2 class="cta-title gradient-text">
+          体验纯粹开源的<br>现代 Web 工具矩阵。
+        </h2>
+        <p class="cta-desc">
+          立即访问 pc-tool.cn 或前往 GitHub 为我们点亮一颗 Star，与全球开发者一起打造更好用的 Web 工具箱。
+        </p>
+        <div style="display: flex; justify-content: center; gap: 16px; flex-wrap: wrap;">
+          <a href="home.html" class="btn-primary" style="padding: 15px 36px; font-size: 16px;">
+            <span>立即开启工具箱 (home.html)</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </a>
+          <a href="https://github.com/Team-YM/pc-tool" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="padding: 15px 30px; font-size: 16px; display: inline-flex; align-items: center; gap: 8px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+            </svg>
+            <span>GitHub 仓库</span>
+          </a>
+        </div>
+        <div style="font-size: 13px; color: #888; margin-top: 24px; line-height: 1.8;">
+          <div>为人民服务 · 不收一分钱 · 只为爱发电</div>
+          <div style="color: #666; font-size: 12px; margin-top: 4px;">
+            QQ交流群：<span style="color: #2997ff;">1121812272</span> ｜ 站长邮箱：<a href="mailto:fish@cutefish.online" style="color: #888;">fish@cutefish.online</a> ｜ 域名邮箱：<a href="mailto:feedback@pc-tool.cn" style="color: #888;">feedback@pc-tool.cn</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-        window.addEventListener('mousemove', (e) => {
-            mouseX = e.clientX;
-            mouseY = e.clientY + window.scrollY;
+  <!-- 页脚 -->
+  <footer>
+    <div class="container footer-inner">
+      <div>
+        <div style="font-weight: 600; color: #eee; margin-bottom: 6px;">为人民服务 · 不收一分钱 · 只为爱发电</div>
+        <div>© 2026 PC-Tool.cn · 站长邮箱: <a href="mailto:fish@cutefish.online" style="color: #aaa; text-decoration: none;">fish@cutefish.online</a> · 域名邮箱: <a href="mailto:feedback@pc-tool.cn" style="color: #aaa; text-decoration: none;">feedback@pc-tool.cn</a></div>
+      </div>
+      <div class="footer-links">
+        <a href="home.html">在线工具</a>
+        <a href="https://github.com/Team-YM/pc-tool" target="_blank" rel="noopener noreferrer">GitHub 仓库</a>
+        <a href="https://qm.qq.com/cgi-bin/qm/qr?k=&jump_from=webapi" target="_blank" rel="noopener noreferrer" style="color: #2997ff;">QQ交流群: 1121812272</a>
+        <a href="https://github.com/Team-YM/pc-tool/issues" target="_blank" rel="noopener noreferrer">提交反馈</a>
+      </div>
+    </div>
+  </footer>
 
-            // 大字“免费工具，高效生活”探照灯暗金色光晕跟随
-            if (heroTitle && heroTitleGold) {
-                const rect = heroTitle.getBoundingClientRect();
-                const relX = e.clientX - rect.left;
-                const relY = e.clientY - rect.top;
+  <!-- GSAP 动效编排脚本 -->
+  <script>
+    // 注册 GSAP ScrollTrigger 插件
+    gsap.registerPlugin(ScrollTrigger);
 
-                // 距离大字矩形区域的范围判断（超出一定圆形感应距离平滑隐藏）
-                const triggerDistance = 180;
-                const dx = Math.max(rect.left - e.clientX, 0, e.clientX - rect.right);
-                const dy = Math.max(rect.top - e.clientY, 0, e.clientY - rect.bottom);
-                const dist = Math.sqrt(dx * dx + dy * dy);
+    window.addEventListener("DOMContentLoaded", () => {
+      // 苹果核心缓动
+      const appleEase = "cubic-bezier(0.16, 1, 0.3, 1)";
+      const appleImpact = "cubic-bezier(0.2, 0, 0, 1)";
 
-                if (dist < triggerDistance) {
-                    heroTitleGold.style.setProperty('--mouse-x', `${relX}px`);
-                    heroTitleGold.style.setProperty('--mouse-y', `${relY}px`);
-                    heroTitleGold.style.opacity = '1';
-                } else {
-                    heroTitleGold.style.opacity = '0';
-                }
-            }
+      // 1. HERO 首屏入场交响动画 (Apple Stagger & Mask Reveal)
+      const heroTl = gsap.timeline({ defaults: { ease: appleEase } });
+
+      heroTl
+        .from("#heroBadge", { y: -20, opacity: 0, duration: 0.8, ease: appleEase })
+        .from(".reveal-inner", {
+          y: "115%",
+          opacity: 0,
+          stagger: 0.12,
+          duration: 1.2,
+          ease: appleEase
+        }, "-=0.5")
+        .from("#heroSubtitle", { y: 24, opacity: 0, duration: 1 }, "-=0.8")
+        .from("#heroActions", { y: 20, opacity: 0, duration: 0.9 }, "-=0.7")
+        .from("#mockupWindow", {
+          scale: 0.9,
+          y: 70,
+          opacity: 0,
+          duration: 1.4,
+          ease: appleEase
+        }, "-=0.8");
+
+      // 2. HERO 产品透视视窗随滚动展开 (Scrub 3D 深度推进)
+      gsap.to("#mockupWindow", {
+        scrollTrigger: {
+          trigger: "#overview",
+          start: "top top",
+          end: "bottom center",
+          scrub: 1.4
+        },
+        rotateX: 4,
+        scale: 1.04,
+        y: -30,
+        boxShadow: "0 60px 140px -20px rgba(0, 0, 0, 0.98), 0 0 90px rgba(41, 151, 255, 0.25)"
+      });
+
+      // 鼠标在视窗区域移动时的精细 3D 悬浮反光反馈 (Apple Spatial Tilt)
+      const mockupWrapper = document.getElementById("mockupWrapper");
+      const mockupWindow = document.getElementById("mockupWindow");
+      if (mockupWrapper && mockupWindow) {
+        mockupWrapper.addEventListener("mousemove", (e) => {
+          const rect = mockupWrapper.getBoundingClientRect();
+          const x = (e.clientX - rect.left) / rect.width - 0.5;
+          const y = (e.clientY - rect.top) / rect.height - 0.5;
+          gsap.to(mockupWindow, {
+            rotateY: x * 6,
+            rotateX: -y * 6,
+            duration: 0.6,
+            ease: "power2.out"
+          });
         });
-        window.addEventListener('mouseleave', () => {
-            mouseX = -9999;
-            mouseY = -9999;
-            if (heroTitleGold) heroTitleGold.style.opacity = '0';
+        mockupWrapper.addEventListener("mouseleave", () => {
+          gsap.to(mockupWindow, {
+            rotateY: 0,
+            rotateX: 0,
+            duration: 0.8,
+            ease: appleEase
+          });
         });
+      }
 
-        // 快速哈希与多频噪声
-        function hash(x, y) {
-            let n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453123;
-            return n - Math.floor(n);
+      // 3. 苹果经典 PINNED 序列滚动动画 (三阶段叙事过渡 + 动态景深)
+      const storyTimeline = gsap.timeline({
+        scrollTrigger: {
+          trigger: "#storySection",
+          start: "top top",
+          end: "+=2800",
+          pin: true,
+          scrub: 1.2
         }
+      });
 
-        function noise2D(x, y) {
-            let i = Math.floor(x), j = Math.floor(y);
-            let fx = x - i, fy = y - j;
-            let u = fx * fx * (3.0 - 2.0 * fx);
-            let v = fy * fy * (3.0 - 2.0 * fy);
-            return (
-                hash(i, j) * (1 - u) * (1 - v) +
-                hash(i + 1, j) * u * (1 - v) +
-                hash(i, j + 1) * (1 - u) * v +
-                hash(i + 1, j + 1) * u * v
-            );
-        }
+      // Slide 1 出场 -> Slide 2 入场
+      storyTimeline
+        .to("#slide1", { opacity: 0, y: -50, scale: 0.94, filter: "blur(8px)", duration: 1 })
+        .call(() => {
+          document.getElementById("dot1")?.classList.remove("active");
+          document.getElementById("dot2")?.classList.add("active");
+          document.getElementById("dot3")?.classList.remove("active");
+        })
+        .to("#slide2", { opacity: 1, y: 0, scale: 1, filter: "blur(0px)", duration: 1 }, "-=0.4")
+        // Slide 2 出场 -> Slide 3 入场
+        .to("#slide2", { opacity: 0, y: -50, scale: 0.94, filter: "blur(8px)", duration: 1 }, "+=0.8")
+        .call(() => {
+          document.getElementById("dot1")?.classList.remove("active");
+          document.getElementById("dot2")?.classList.remove("active");
+          document.getElementById("dot3")?.classList.add("active");
+        })
+        .to("#slide3", { opacity: 1, y: 0, scale: 1, filter: "blur(0px)", duration: 1 }, "-=0.4")
+        .to({}, { duration: 0.8 }); // 终点停留
 
-        // 分形布朗运动 FBM：模拟复杂波浪与风暴
-        function fbm(x, y, octaves = 4) {
-            let v = 0.0, a = 0.53;
-            let shiftX = 100.0, shiftY = 100.0;
-            for (let i = 0; i < octaves; i++) {
-                v += a * noise2D(x, y);
-                x = x * 2.1 + shiftX;
-                y = y * 2.1 + shiftY;
-                a *= 0.48;
-            }
-            return v;
-        }
+      // 4. Bento Grid 卡片优雅上浮入场 (精准触发)
+      gsap.from(".bento-card", {
+        scrollTrigger: {
+          trigger: "#features",
+          start: "top 80%",
+          toggleActions: "play none none none"
+        },
+        opacity: 0,
+        y: 40,
+        stagger: 0.12,
+        duration: 0.9,
+        ease: appleEase,
+        clearProps: "transform,opacity"
+      });
 
-        // Domain Warping 区域扭曲算法（模拟汹涌大海、漩涡与混乱撕裂感）
-        function oceanStormWarp(x, y, t) {
-            // 第一层大浪扰动
-            const qx = fbm(x + t * 0.4, y + t * 0.25, 3);
-            const qy = fbm(x + 5.2 - t * 0.3, y + 1.3 + t * 0.35, 3);
-
-            // 第二层漩涡与撕裂湍流
-            const rx = fbm(x + 4.0 * qx + 1.7 - t * 0.2, y + 4.0 * qy + 9.2 + t * 0.3, 3);
-            const ry = fbm(x + 4.0 * qx + 8.3 + t * 0.25, y + 4.0 * qy + 2.8 - t * 0.15, 3);
-
-            // 尖锐的浪峰（波涛汹涌的锯齿浪）
-            const storm = fbm(x + 3.5 * rx, y + 3.5 * ry, 4);
-            const sharpWave = Math.abs(storm * 2.0 - 1.0); // 锐化波谷波峰
-            return 1.0 - sharpWave;
-        }
-
-        function resize() {
-            width = window.innerWidth;
-            height = Math.max(document.documentElement.scrollHeight, window.innerHeight);
-            canvas.width = width;
-            canvas.height = height;
-            cols = Math.ceil(width / GRID_SIZE);
-            rows = Math.ceil(height / GRID_SIZE);
-        }
-        window.addEventListener('resize', resize);
-        const ro = new ResizeObserver(() => resize());
-        ro.observe(document.body);
-        resize();
-
-        function animate() {
-            time += 0.009; // 增强流动演化速度
-            ctx.clearRect(0, 0, width, height);
-
-            const scrollY = window.scrollY;
-            const viewTop = scrollY;
-            const viewBottom = scrollY + window.innerHeight;
-
-            // 限制噪点只在页面上方区域展示（高度约在顶部 700px 内），向下渐隐淡出，不干扰下方的卡片按钮文字
-            const maxEffectY = 750;
-            const fadeStartY = 350;
-
-            const startRow = Math.max(0, Math.floor((viewTop - 80) / GRID_SIZE));
-            const endRow = Math.min(rows, Math.ceil((Math.min(viewBottom + 80, maxEffectY)) / GRID_SIZE));
-
-            for (let r = startRow; r < endRow; r++) {
-                const py = r * GRID_SIZE;
-                if (py > maxEffectY) continue;
-
-                // 垂直渐变衰减：顶部清晰展现，越往卡片区域越淡，直到完全消失
-                let verticalFade = 1.0;
-                if (py > fadeStartY) {
-                    verticalFade = 1.0 - (py - fadeStartY) / (maxEffectY - fadeStartY);
-                    verticalFade = Math.max(0, Math.min(1, verticalFade));
-                }
-
-                const ny = r * 0.022;
-
-                for (let c = 0; c < cols; c++) {
-                    const px = c * GRID_SIZE;
-                    const nx = c * 0.022;
-
-                    // 1. 区域扭曲汹涌波浪
-                    const waveVal = oceanStormWarp(nx, ny, time);
-
-                    // 2. 局部剧烈噪点破碎与随机泡沫 (Foam / Spray)
-                    const speckle = hash(c + Math.floor(time * 8.0), r + Math.floor(time * 5.0));
-                    const chaoticDensity = noise2D(nx * 3.5 + time * 0.6, ny * 3.5 - time * 0.4);
-
-                    // 动态撕裂阈值：使浪潮边缘极其参差不齐、形状不规则
-                    const threshold = 0.44 + chaoticDensity * 0.22;
-                    if (waveVal < threshold) {
-                        // 浪花外围飞溅的零星独立噪点
-                        if (speckle > 0.982 && waveVal > threshold - 0.12) {
-                            const spAlpha = (0.15 + speckle * 0.25) * verticalFade;
-                            if (spAlpha > 0.02) {
-                                ctx.fillStyle = `rgba(160, 170, 185, ${spAlpha})`;
-                                ctx.fillRect(px, py, PIXEL_SIZE - 1, PIXEL_SIZE - 1);
-                            }
-                        }
-                        continue;
-                    }
-
-                    // 基础亮度
-                    let intensity = (waveVal - threshold) / (1.0 - threshold);
-                    intensity = Math.pow(intensity, 1.4);
-
-                    // 鼠标交互：激起狂暴的浪花与漩涡
-                    const mdx = px - mouseX;
-                    const mdy = py - mouseY;
-                    const mdist = Math.sqrt(mdx * mdx + mdy * mdy);
-                    let mouseBonus = 0;
-                    if (mdist < 220) {
-                        const mNorm = 1 - mdist / 220;
-                        mouseBonus = (mNorm * 0.75 + speckle * mNorm * 0.3) * verticalFade;
-                    }
-
-                    let alpha = (intensity * 0.75 + mouseBonus) * verticalFade;
-                    if (alpha > 0.9) alpha = 0.9;
-                    if (alpha < 0.03) continue;
-
-                    // 动态像素破碎感
-                    if (speckle < 0.12 && intensity < 0.7 && mouseBonus === 0) continue;
-
-                    // 颜色分级
-                    const isCrest = waveVal > (threshold + 0.22) || (mouseBonus > 0.3);
-                    const isSpray = speckle > 0.88;
-
-                    if (isCrest && (isSpray || speckle > 0.45)) {
-                        ctx.fillStyle = `rgba(52, 211, 153, ${Math.min(0.9, alpha * 1.25)})`;
-                    } else if (isCrest && speckle > 0.25) {
-                        ctx.fillStyle = `rgba(225, 235, 245, ${alpha * 0.8})`;
-                    } else if (waveVal > threshold + 0.1) {
-                        ctx.fillStyle = `rgba(90, 145, 135, ${alpha * 0.5})`;
-                    } else {
-                        ctx.fillStyle = `rgba(110, 115, 130, ${alpha * 0.35})`;
-                    }
-
-                    const pSize = (speckle > 0.85 && isCrest) ? PIXEL_SIZE + 1 : PIXEL_SIZE;
-                    ctx.fillRect(px, py, pSize, pSize);
-                }
-            }
-
-            requestAnimationFrame(animate);
-        }
-        animate();
-
-        document.querySelectorAll('.card').forEach(card => {
-            const inner = card.querySelector('.card-inner');
-            card.addEventListener('mousemove', (e) => {
-                const rect = card.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                const w = rect.width;
-                const h = rect.height;
-                const px = (x - w / 2) / (w / 2);
-                const py = (y - h / 2) / (h / 2);
-                const rotateX = -py * 10;
-                const rotateY = px * 10;
-                inner.style.setProperty('--glare-x', (x / w * 100) + '%');
-                inner.style.setProperty('--glare-y', (y / h * 100) + '%');
-                inner.style.transform = `perspective(900px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.01)`;
+      // 鼠标移入 Bento 卡片时微光位置智能跟踪
+      document.querySelectorAll(".bento-card").forEach(card => {
+        card.addEventListener("mousemove", (e) => {
+          const rect = card.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          const glow = card.querySelector(".bento-glow");
+          if (glow) {
+            gsap.to(glow, {
+              x: x - rect.width / 2,
+              y: y - rect.height / 2,
+              duration: 0.5,
+              ease: "power2.out"
             });
-            card.addEventListener('mouseleave', () => {
-                inner.style.transform = '';
-            });
+          }
         });
+      });
 
-        // ==================== 分类与搜索功能 ====================
-        (function() {
-            var searchToggle = document.getElementById('searchToggle');
-            var searchInput = document.getElementById('searchInput');
-            var searchClear = document.getElementById('searchClear');
-            var searchEmpty = document.getElementById('searchEmpty');
-            var categoryQuickNav = document.getElementById('categoryQuickNav');
-            var quickNavButtons = categoryQuickNav ? categoryQuickNav.querySelectorAll('.quick-nav-btn') : [];
-            var categorySections = document.getElementById('categorySections');
-            var originalGrid = document.getElementById('originalGrid');
-            var cards = originalGrid ? originalGrid.querySelectorAll('.card') : [];
+      // 5. 性能数据滚动入场
+      gsap.from(".metric-box", {
+        scrollTrigger: {
+          trigger: "#specs",
+          start: "top 85%",
+          toggleActions: "play none none none"
+        },
+        y: 40,
+        opacity: 0,
+        stagger: 0.15,
+        duration: 0.9,
+        ease: appleEase,
+        clearProps: "transform,opacity"
+      });
 
-            // 分类定义元数据（纯文字，无emoji）
-            var categoryList = [
-                { id: 'cat-image', key: 'image', name: '图像处理' },
-                { id: 'cat-audio', key: 'audio', name: '音频处理' },
-                { id: 'cat-video', key: 'video', name: '视频处理' },
-                { id: 'cat-doc', key: 'doc', name: '文档与PDF' },
-                { id: 'cat-dev', key: 'dev', name: '开发工具' },
-                { id: 'cat-net', key: 'net', name: '网络工具' },
-                { id: 'cat-calc', key: 'calc', name: '计算换算' },
-                { id: 'cat-life', key: 'life', name: '生活效率' },
-                { id: 'cat-hardware', key: 'hardware', name: '硬件测试' }
-            ];
-
-            // 依据工具链接特征自动识别分类字典映射
-            var toolCategoryMap = {
-                // 图像处理
-                'qrcode': 'dev',
-                'qrcode-decode': 'dev',
-                'image-convert': 'image',
-                'image-crop': 'image',
-                'image-stitch': 'image',
-                'image-gif': 'image',
-                'image-watermark': 'image',
-                'image-rotate': 'image',
-                'image-filter': 'image',
-                'image-enhance': 'image',
-                'photo-dpi': 'image',
-                'image-compress': 'image',
-                'image-base64': 'image',
-                'image-base64-decode': 'image',
-                'cut-image': 'image',
-                'image-color-picker': 'image',
-                'image-invert': 'image',
-                'gif-compress': 'image',
-                'image-watermark-remove': 'image',
-                'image-to-svg': 'image',
-                'image-grid-split': 'image',
-                'image-mosaic': 'image',
-                'photo-to-sketch': 'image',
-                'image-exif': 'image',
-                'color-palette': 'image',
-
-                // 音频处理
-                'audio-ogg': 'audio',
-                'audio-convert': 'audio',
-                'audio-compress': 'audio',
-                'audio-clip': 'audio',
-                'audio-merge': 'audio',
-                'audio-reverse': 'audio',
-                'audio-speed': 'audio',
-                'audio-pitch': 'audio',
-                'text-to-speech': 'audio',
-                'speech-to-text': 'audio',
-                'metronome': 'audio',
-                'music.hi.cn': 'audio',
-
-                // 视频处理
-                'video-to-audio': 'video',
-                'video-convert': 'video',
-                'video-comp': 'video',
-                'video-to-gif': 'video',
-                'video-clip': 'video',
-                'video-reverse': 'video',
-                'video-screenshot': 'video',
-                'video-merge': 'video',
-                'video-watermark': 'video',
-                'video-speed': 'video',
-                'video-delogo': 'video',
-                'video-cover': 'video',
-                'vrc-url': 'net',
-                'snapany': 'video',
-
-                // 文档与PDF
-                'word-pdf-convert': 'doc',
-                'csv-excel-convert': 'doc',
-                'pdf-merge': 'doc',
-                'pdf-split': 'doc',
-                'pdf-compress': 'doc',
-                'pdf-to-img': 'doc',
-                'img-to-pdf': 'doc',
-                'pdf-crypto': 'doc',
-                'pdf-extract-text': 'doc',
-
-                // 开发者工具
-                'base64-text': 'dev',
-                'json-format': 'dev',
-                'url-codec': 'dev',
-                'timestamp': 'dev',
-                'regex-tester': 'dev',
-                'password-uuid': 'dev',
-                'radix-convert': 'dev',
-                'hash-crypto': 'dev',
-                'unicode-convert': 'dev',
-                'jwt-decode': 'dev',
-                'code-format': 'dev',
-                'text-diff': 'dev',
-                'text-case': 'dev',
-                'text-clean': 'dev',
-                'word-count': 'dev',
-                'chinese-convert': 'dev',
-                'markdown-editor': 'dev',
-                'html-entity': 'dev',
-                'file-hash': 'dev',
-                'barcode-gen': 'dev',
-
-                // 网络工具
-                'vrc-url': 'net',
-                'short-url': 'net',
-                'ua-parser': 'net',
-                'http-status': 'net',
-                'site-ping': 'net',
-                'ssl-checker': 'net',
-                'port-scan': 'net',
-                'domain-ip': 'net',
-
-                // 计算换算
-                'color-convert': 'calc',
-                'date-calc': 'calc',
-                'unit-convert': 'calc',
-                'bmi-calc': 'calc',
-                'loan-calc': 'calc',
-                'currency-calc': 'calc',
-                'scientific-calc': 'calc',
-                'function-graph': 'calc',
-
-                // 生活效率
-                'lunar-weather': 'life',
-                'lucky-wheel': 'life',
-                'pomodoro-timer': 'life',
-                'morse-code': 'life',
-                'countdown-timer': 'life',
-                'random-number': 'life',
-                'typing-test': 'life',
-
-                // 硬件测试
-                'screen-test': 'hardware',
-                'keyboard-test': 'hardware',
-                'cps-gamepad-test': 'hardware',
-                'reaction-test': 'hardware',
-                'password-generator': 'dev'
-            };
-
-            // 创建各分类的容器与网格
-            var groupElements = {};
-            categoryList.forEach(function(cat) {
-                var groupSection = document.createElement('section');
-                groupSection.className = 'category-group';
-                groupSection.id = cat.id;
-
-                var header = document.createElement('div');
-                header.className = 'category-group-header';
-
-                var title = document.createElement('h2');
-                title.className = 'category-title';
-                title.textContent = cat.name;
-
-                var countBadge = document.createElement('span');
-                countBadge.className = 'category-count';
-                countBadge.textContent = '0 项';
-
-                header.appendChild(title);
-                header.appendChild(countBadge);
-
-                var grid = document.createElement('div');
-                grid.className = 'grid';
-
-                groupSection.appendChild(header);
-                groupSection.appendChild(grid);
-                categorySections.insertBefore(groupSection, searchEmpty);
-
-                groupElements[cat.key] = {
-                    section: groupSection,
-                    grid: grid,
-                    badge: countBadge,
-                    count: 0
-                };
-            });
-
-            // 将卡片分发到对应的分类容器中，形成：
-            // 类别1
-            // 按钮1 按钮2 按钮3...
-            // 类别2
-            // 按钮1 按钮2 按钮3...
-            cards.forEach(function(card) {
-                var href = card.getAttribute('href') || '';
-                var assignedCat = 'dev';
-                for (var key in toolCategoryMap) {
-                    if (href.indexOf(key) !== -1) {
-                        assignedCat = toolCategoryMap[key];
-                        break;
-                    }
-                }
-                if (!href) return; // 占位卡片不排入常规类别
-
-                card.dataset.category = assignedCat;
-                if (groupElements[assignedCat]) {
-                    groupElements[assignedCat].grid.appendChild(card);
-                    groupElements[assignedCat].count++;
-                }
-            });
-
-            // 更新每个分类标题旁的工具数量
-            categoryList.forEach(function(cat) {
-                if (groupElements[cat.key]) {
-                    groupElements[cat.key].badge.textContent = groupElements[cat.key].count + ' 项';
-                }
-            });
-
-            // 搜索过滤与分类显隐控制
-            function filterTools() {
-                var query = searchInput.value.trim().toLowerCase();
-                var anyVisibleTotal = false;
-
-                if (query) {
-                    searchClear.style.display = 'flex';
-                } else {
-                    searchClear.style.display = 'none';
-                }
-
-                categoryList.forEach(function(cat) {
-                    var group = groupElements[cat.key];
-                    if (!group) return;
-
-                    var groupCards = group.grid.querySelectorAll('.card');
-                    var visibleInGroup = 0;
-
-                    groupCards.forEach(function(card) {
-                        var title = card.querySelector('.card-title');
-                        var titleText = title ? title.textContent.toLowerCase() : '';
-                        var matches = !query || titleText.includes(query);
-
-                        if (matches) {
-                            card.classList.remove('search-hidden');
-                            visibleInGroup++;
-                        } else {
-                            card.classList.add('search-hidden');
-                        }
-                    });
-
-                    // 若该分类下无匹配项，则收起整组（包含类别标题和网格）
-                    if (visibleInGroup === 0) {
-                        group.section.classList.add('group-hidden');
-                    } else {
-                        group.section.classList.remove('group-hidden');
-                        anyVisibleTotal = true;
-                    }
-                });
-
-                if (!anyVisibleTotal) {
-                    searchEmpty.classList.add('show');
-                } else {
-                    searchEmpty.classList.remove('show');
-                }
-            }
-
-            // 快捷定位锚点点击平滑滚动
-            quickNavButtons.forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    quickNavButtons.forEach(function(b) { b.classList.remove('active'); });
-                    btn.classList.add('active');
-
-                    var targetId = btn.dataset.target;
-                    if (targetId === 'all') {
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                    } else {
-                        var el = document.getElementById(targetId);
-                        if (el) {
-                            var yOffset = -90; // 留出顶部间距
-                            var y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
-                            window.scrollTo({ top: y, behavior: 'smooth' });
-                        }
-                    }
-                });
-            });
-
-            searchToggle.addEventListener('click', function() {
-                searchInput.focus();
-                searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            });
-
-            searchClear.addEventListener('click', function() {
-                searchInput.value = '';
-                searchClear.style.display = 'none';
-                searchInput.focus();
-                filterTools();
-            });
-
-            searchInput.addEventListener('input', filterTools);
-
-            // 主题切换逻辑
-            var themeToggleBtn = document.getElementById('themeToggle');
-            function applyTheme(theme) {
-                if (theme === 'light') {
-                    document.body.classList.add('light-theme');
-                    document.documentElement.classList.add('light-theme');
-                    localStorage.setItem('pctool_theme', 'light');
-                } else {
-                    document.body.classList.remove('light-theme');
-                    document.documentElement.classList.remove('light-theme');
-                    localStorage.setItem('pctool_theme', 'dark');
-                }
-            }
-
-            // 初始化主题（默认黑色，已存浅色则应用浅色）
-            var currentTheme = localStorage.getItem('pctool_theme') || 'dark';
-            applyTheme(currentTheme);
-
-            if (themeToggleBtn) {
-                themeToggleBtn.addEventListener('click', function() {
-                    var isLight = document.body.classList.contains('light-theme');
-                    applyTheme(isLight ? 'dark' : 'light');
-                });
-            }
-
-            // Ctrl+K 快捷键定位搜索
-            document.addEventListener('keydown', function(e) {
-                if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-                    e.preventDefault();
-                    searchInput.focus();
-                    searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-            });
-        })();
-    </script>
+      // 6. 导航栏动态背景变化
+      ScrollTrigger.create({
+        start: "top -80",
+        end: 99999,
+        toggleClass: { className: "nav-scrolled", targets: "#navbar" }
+      });
+    });
+  </script>
 </body>
 </html>
