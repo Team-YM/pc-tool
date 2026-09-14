@@ -1,2446 +1,500 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <script>
-        (function() {
-            var ua = navigator.userAgent || navigator.vendor || window.opera;
-            var isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|webOS/i.test(ua);
-            var isTablet = /iPad|Android(?!.*Mobile)|Tablet|PlayBook|Silk/i.test(ua) || (/(?:Macintosh|Windows)/i.test(ua) && 'ontouchend' in document && window.innerWidth <= 1024);
-            if (!isMobile && !isTablet) {
-                window.location.replace('./index.html');
-            }
-            // 立即应用浅色/深色主题防白屏闪烁
-            try {
-                if (localStorage.getItem('pctool_theme') === 'light') {
-                    document.documentElement.classList.add('light-theme');
-                }
-            } catch (e) {}
-        })();
-    </script>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>工具箱 | PC-TOOL</title>
-    <link rel="icon" type="image/png" href="favicon.png">
-    <!-- OGP 社交分享标签 (QQ/微信/Telegram 等) -->
-    <meta property="og:title" content="工具箱 | PC-TOOL">
-    <meta property="og:description" content="免费在线工具集合——图片转换、视频压缩、音频转格式、图片抠图……每一个功能都为效率而生，完全免费，为人民服务！">
-    <meta property="og:image" content="https://pc-tool.cn/avatar.jpg">
-    <meta property="og:url" content="https://www.pc-tool.cn/">
-    <meta property="og:type" content="website">
-    <meta property="og:site_name" content="PC-TOOL">
-    <meta property="og:locale" content="zh_CN">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        }
-
-        html {
-            scroll-behavior: smooth;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        body {
-            background: #09090b;
-            color: #f4f4f5;
-            line-height: 1.6;
-            -webkit-font-smoothing: antialiased;
-            min-height: 100vh;
-            min-height: 100dvh;
-            padding-top: env(safe-area-inset-top, 0px);
-            padding-bottom: env(safe-area-inset-bottom, 0px);
-            transition: background-color 0.5s ease, color 0.5s ease;
-        }
-
-        .header, .header-search-btn, .theme-toggle-btn, .search-input-wrap, .quick-nav-btn,
-        .creator-item, .notice, .tool-item, .footer {
-            transition: background-color 0.5s ease, border-color 0.5s ease, color 0.5s ease, box-shadow 0.5s ease;
-        }
-
-        /* ==================== 浮动背景光球 ==================== */
-        .bg-orb {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(80px);
-            pointer-events: none;
-            z-index: 0;
-            opacity: 0.5;
-            will-change: transform;
-        }
-
-        .bg-orb--1 {
-            width: 260px;
-            height: 260px;
-            background: rgba(99, 102, 241, 0.15);
-            top: -8%;
-            left: -15%;
-            animation: orbFloat1 12s ease-in-out infinite;
-        }
-
-        .bg-orb--2 {
-            width: 200px;
-            height: 200px;
-            background: rgba(16, 185, 129, 0.12);
-            top: 55%;
-            right: -10%;
-            animation: orbFloat2 14s ease-in-out infinite;
-        }
-
-        .bg-orb--3 {
-            width: 180px;
-            height: 180px;
-            background: rgba(139, 92, 246, 0.1);
-            bottom: -8%;
-            left: 30%;
-            animation: orbFloat3 16s ease-in-out infinite;
-        }
-
-        .bg-orb--4 {
-            width: 220px;
-            height: 220px;
-            background: rgba(236, 72, 153, 0.08);
-            top: 30%;
-            left: 50%;
-            animation: orbFloat4 18s ease-in-out infinite;
-        }
-
-        @keyframes orbFloat1 {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            25%      { transform: translate(30px, 30px) scale(1.08); }
-            50%      { transform: translate(-10px, 50px) scale(0.94); }
-            75%      { transform: translate(-25px, -10px) scale(1.04); }
-        }
-
-        @keyframes orbFloat2 {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            25%      { transform: translate(-35px, -20px) scale(1.06); }
-            50%      { transform: translate(15px, -40px) scale(0.92); }
-            75%      { transform: translate(20px, 15px) scale(1.05); }
-        }
-
-        @keyframes orbFloat3 {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            33%      { transform: translate(25px, -35px) scale(1.1); }
-            66%      { transform: translate(-20px, -15px) scale(0.9); }
-        }
-
-        @keyframes orbFloat4 {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            30%      { transform: translate(-25px, 20px) scale(1.07); }
-            60%      { transform: translate(20px, 30px) scale(0.93); }
-            90%      { transform: translate(-15px, -25px) scale(1.05); }
-        }
-
-        /* ==================== 头部 ==================== */
-        .header {
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            padding: 12px 16px 10px;
-            padding-top: calc(12px + env(safe-area-inset-top, 0px));
-            background: rgba(9, 9, 11, 0.82);
-            backdrop-filter: blur(24px) saturate(180%);
-            -webkit-backdrop-filter: blur(24px) saturate(180%);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-        }
-
-        .header-inner {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .header-brand {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .header-logo {
-            width: 34px;
-            height: 34px;
-            border-radius: 10px;
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(16, 185, 129, 0.2));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .header-logo svg {
-            width: 17px;
-            height: 17px;
-            color: #a5b4fc;
-        }
-
-        .header-title {
-            font-size: 17px;
-            font-weight: 700;
-            letter-spacing: -0.01em;
-            color: #e4e4e7;
-        }
-
-        .header-search-btn {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            background: rgba(255, 255, 255, 0.04);
-            color: #a1a1aa;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            -webkit-tap-highlight-color: transparent;
-            flex-shrink: 0;
-        }
-
-        .header-search-btn:active {
-            background: rgba(255, 255, 255, 0.1);
-            color: #e4e4e7;
-            transform: scale(0.94);
-        }
-
-        .header-search-btn svg {
-            width: 18px;
-            height: 18px;
-        }
-
-        /* ==================== 搜索栏 ==================== */
-        .search-bar {
-            margin-bottom: 14px;
-        }
-
-        .search-input-wrap {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: rgba(24, 24, 27, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 12px;
-            padding: 11px 14px;
-            transition: border-color 0.2s;
-        }
-
-        .search-input-wrap:focus-within {
-            border-color: rgba(129, 140, 248, 0.4);
-        }
-
-        .search-input-wrap svg {
-            width: 17px;
-            height: 17px;
-            color: #71717a;
-            flex-shrink: 0;
-        }
-
-        .search-input {
-            flex: 1;
-            background: none;
-            border: none;
-            outline: none;
-            color: #e4e4e7;
-            font-size: 0.9375rem;
-            min-width: 0;
-        }
-
-        .search-input::placeholder {
-            color: #52525b;
-        }
-
-        .search-clear {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            border: none;
-            background: rgba(255, 255, 255, 0.06);
-            color: #71717a;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            flex-shrink: 0;
-            font-size: 16px;
-            line-height: 1;
-            transition: all 0.15s;
-        }
-
-        .search-clear:active {
-            background: rgba(255, 255, 255, 0.14);
-            color: #e4e4e7;
-        }
-
-        /* 搜索结果为空 */
-        .search-empty {
-            display: none;
-            text-align: center;
-            padding: 40px 16px;
-            color: #52525b;
-            font-size: 0.9375rem;
-        }
-
-        .search-empty.show {
-            display: block;
-        }
-
-        /* 隐藏不匹配的工具项 */
-        .tool-item.search-hidden {
-            display: none !important;
-        }
-
-        /* 分类分组区域与标题 (移动端，纯文字，无emoji) */
-        .category-sections {
-            display: flex;
-            flex-direction: column;
-            gap: 28px;
-        }
-
-        .category-group {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .category-group.group-hidden {
-            display: none !important;
-        }
-
-        .category-group-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 4px 2px 8px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-        }
-
-        .category-title {
-            font-size: 1.0625rem;
-            font-weight: 600;
-            color: #f4f4f5;
-            letter-spacing: -0.01em;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .category-title::before {
-            content: '';
-            display: inline-block;
-            width: 3px;
-            height: 15px;
-            background: linear-gradient(180deg, #6366f1, #38bdf8);
-            border-radius: 2px;
-        }
-
-        .category-count {
-            font-size: 0.75rem;
-            font-weight: 500;
-            color: #71717a;
-            background: rgba(255, 255, 255, 0.05);
-            padding: 1px 7px;
-            border-radius: 999px;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-        }
-
-        /* 移动端横向滑动快捷锚点栏 (无emoji) */
-        .category-quick-nav {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            overflow-x: auto;
-            padding: 4px 0 16px;
-            margin-bottom: 8px;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
-        }
-
-        .category-quick-nav::-webkit-scrollbar {
-            display: none;
-        }
-
-        .quick-nav-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 6px 13px;
-            border-radius: 9999px;
-            font-size: 0.8125rem;
-            font-weight: 500;
-            color: #a1a1aa;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            white-space: nowrap;
-            flex-shrink: 0;
-            transition: all 0.2s ease;
-            -webkit-tap-highlight-color: transparent;
-            cursor: pointer;
-        }
-
-        .quick-nav-btn:active {
-            transform: scale(0.95);
-        }
-
-        .quick-nav-btn.active {
-            color: #ffffff;
-            background: rgba(99, 102, 241, 0.25);
-            border-color: rgba(129, 140, 248, 0.5);
-        }
-
-        /* ==================== 主容器 ==================== */
-        .main-container {
-            position: relative;
-            z-index: 1;
-            padding: 8px 16px 32px;
-        }
-
-        /* ==================== 滚动显示动画 ==================== */
-        .scroll-reveal {
-            opacity: 0.6;
-            transform: scale(0.88);
-            transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1),
-                        transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .scroll-reveal.revealed {
-            opacity: 1;
-            transform: scale(1);
-        }
-
-        /* ==================== Hero ==================== */
-        .hero {
-            padding: 20px 4px 28px;
-        }
-
-        .hero h1 {
-            font-size: 2rem;
-            font-weight: 800;
-            letter-spacing: -0.03em;
-            line-height: 1.2;
-            margin-bottom: 8px;
-        }
-
-        .hero h1 .accent {
-            background: linear-gradient(135deg, #818cf8, #34d399);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .hero p {
-            color: #a1a1aa;
-            font-size: 0.9375rem;
-            font-weight: 400;
-            line-height: 1.5;
-        }
-
-        /* ==================== 公告 ==================== */
-        .notice {
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(16, 185, 129, 0.04));
-            border: 1px solid rgba(99, 102, 241, 0.12);
-            border-radius: 16px;
-            padding: 16px 18px;
-            margin-bottom: 24px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .notice::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 3px;
-            height: 100%;
-            background: linear-gradient(to bottom, #818cf8, #34d399);
-            border-radius: 0 3px 3px 0;
-        }
-
-        .notice-title {
-            font-size: 0.6875rem;
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            color: #a5b4fc;
-            font-weight: 700;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .notice-dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: #818cf8;
-            animation: pulse 2s ease-in-out infinite;
-        }
-
-        .notice-content p {
-            color: #d4d4d8;
-            font-size: 0.875rem;
-            line-height: 1.6;
-        }
-
-        .notice-content p strong {
-            color: #e4e4e7;
-        }
-
-        /* ==================== 制作者 Blog ==================== */
-        .creators-section {
-            margin-bottom: 20px;
-        }
-
-        .creators-title {
-            font-size: 0.6875rem;
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            color: #a5b4fc;
-            font-weight: 700;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .creators-list {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .creator-item {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            padding: 14px 16px;
-            border-radius: 16px;
-            background: rgba(24, 24, 27, 0.55);
-            border: 1px solid rgba(255, 255, 255, 0.07);
-            text-decoration: none;
-            color: inherit;
-            transition: all 0.18s ease;
-            position: relative;
-            overflow: hidden;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .creator-item:active {
-            background: rgba(39, 39, 42, 0.85);
-            border-color: rgba(255, 255, 255, 0.15);
-            transform: scale(0.98);
-        }
-
-        .creator-avatar {
-            width: 46px;
-            height: 46px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid rgba(255, 255, 255, 0.15);
-            flex-shrink: 0;
-        }
-
-        .creator-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .creator-name-row {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-bottom: 2px;
-        }
-
-        .creator-name {
-            font-size: 0.9375rem;
-            font-weight: 600;
-            color: #f4f4f5;
-        }
-
-        .creator-badge {
-            font-size: 0.6875rem;
-            padding: 1px 6px;
-            border-radius: 9999px;
-            background: rgba(129, 140, 248, 0.15);
-            color: #a5b4fc;
-            border: 1px solid rgba(129, 140, 248, 0.3);
-        }
-
-        .creator-desc {
-            font-size: 0.75rem;
-            color: #71717a;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .creator-arrow {
-            color: #52525b;
-            flex-shrink: 0;
-        }
-
-        /* ==================== 工具列表 ==================== */
-        .tool-list {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .tool-item {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            padding: 15px 16px;
-            border-radius: 16px;
-            background: rgba(24, 24, 27, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            text-decoration: none;
-            color: inherit;
-            transition: all 0.18s ease;
-            position: relative;
-            overflow: hidden;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .tool-item:active {
-            background: rgba(39, 39, 42, 0.8);
-            border-color: rgba(255, 255, 255, 0.12);
-            transform: scale(0.98);
-        }
-
-        .tool-item::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(circle at var(--tap-x, 50%) var(--tap-y, 50%), rgba(255,255,255,0.06), transparent 70%);
-            opacity: 0;
-            transition: opacity 0.3s;
-            pointer-events: none;
-        }
-
-        .tool-item:active::after {
-            opacity: 1;
-        }
-
-        .tool-icon {
-            width: 42px;
-            height: 42px;
-            border-radius: 13px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            color: #fff;
-        }
-
-        .tool-icon svg {
-            width: 19px;
-            height: 19px;
-        }
-
-        .icon-blue   { background: rgba(59, 130, 246, 0.2);  color: #93bbfd; }
-        .icon-green  { background: rgba(16, 185, 129, 0.2);  color: #6ee7b7; }
-        .icon-purple { background: rgba(139, 92, 246, 0.2);  color: #c4b5fd; }
-        .icon-amber  { background: rgba(245, 158, 11, 0.2);  color: #fcd34d; }
-        .icon-rose   { background: rgba(244, 63, 94, 0.2);   color: #fda4af; }
-        .icon-cyan   { background: rgba(6, 182, 212, 0.2);   color: #67e8f9; }
-        .icon-teal   { background: rgba(20, 184, 166, 0.2);  color: #5eead4; }
-        .icon-orange { background: rgba(249, 115, 22, 0.2);  color: #fdba74; }
-        .icon-pink   { background: rgba(236, 72, 153, 0.2);  color: #f9a8d4; }
-        .icon-indigo { background: rgba(99, 102, 241, 0.2);  color: #a5b4fc; }
-        .icon-yellow { background: rgba(234, 179, 8, 0.2);   color: #fde047; }
-        .icon-red    { background: rgba(239, 68, 68, 0.2);   color: #fca5a5; }
-
-        .tool-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .tool-name {
-            font-size: 0.9375rem;
-            font-weight: 600;
-            color: #e4e4e7;
-            margin-bottom: 2px;
-        }
-
-        .tool-desc {
-            font-size: 0.75rem;
-            color: #71717a;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .tool-arrow {
-            flex-shrink: 0;
-            color: #3f3f46;
-            transition: transform 0.2s, color 0.2s;
-        }
-
-        .tool-item:active .tool-arrow {
-            transform: translateX(3px);
-            color: #71717a;
-        }
-
-        /* ==================== 分割标题 ==================== */
-        .section-title {
-            font-size: 0.6875rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: #52525b;
-            font-weight: 600;
-            margin-bottom: 12px;
-            padding-left: 4px;
-        }
-
-        /* ==================== 底部 ==================== */
-        .footer {
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            padding: 28px 16px 32px;
-            padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
-            text-align: center;
-            color: #71717a;
-            font-size: 0.8125rem;
-            line-height: 1.8;
-            position: relative;
-            z-index: 1;
-        }
-
-        .footer-brand {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            color: #a1a1aa;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-
-        .footer-divider {
-            display: inline-block;
-            width: 3px;
-            height: 3px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.1);
-            margin: 0 8px;
-            vertical-align: middle;
-        }
-
-        /* ==================== 动画 ==================== */
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50%      { opacity: 0.4; }
-        }
-
-        @keyframes shimmer {
-            0%   { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
-        }
-
-        /* ==================== 涟漪效果 ==================== */
-        .ripple {
-            position: absolute;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.12);
-            transform: scale(0);
-            animation: rippleAnim 0.6s ease-out forwards;
-            pointer-events: none;
-        }
-
-        @keyframes rippleAnim {
-            to { transform: scale(4); opacity: 0; }
-        }
-
-        /* ==================== iOS 控制中心风格切换按钮 (移动端) ==================== */
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .theme-toggle-btn {
-            position: relative;
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            background: rgba(255, 255, 255, 0.04);
-            color: #f4f4f5;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            outline: none;
-            overflow: hidden;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-            transition: all 0.2s ease;
-            flex-shrink: 0;
-        }
-
-        .theme-toggle-btn:active {
-            background: rgba(255, 255, 255, 0.1);
-            transform: scale(0.92);
-        }
-
-        /* iOS 深色模式控制图标 */
-        .ios-dark-icon {
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            box-sizing: border-box;
-            border: 2px solid #ffffff;
-            background: linear-gradient(to right, #ffffff 50%, transparent 50%);
-            box-shadow: 0 0 6px rgba(255, 255, 255, 0.25);
-            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
-        }
-
-        body.light-theme .ios-dark-icon {
-            border-color: #1f2937;
-            background: linear-gradient(to right, transparent 50%, #1f2937 50%);
-            transform: rotate(180deg);
-            box-shadow: 0 0 6px rgba(0, 0, 0, 0.15);
-        }
-
-        /* ==================== 浅色模式全局色调覆盖 (移动端) ==================== */
-        body.light-theme {
-            background-color: #f4f6fb;
-            color: #1f2937;
-        }
-
-        body.light-theme .bg-orb--1 {
-            background: rgba(99, 102, 241, 0.1);
-        }
-
-        body.light-theme .bg-orb--2 {
-            background: rgba(16, 185, 129, 0.08);
-        }
-
-        body.light-theme .bg-orb--3 {
-            background: rgba(139, 92, 246, 0.07);
-        }
-
-        body.light-theme .bg-orb--4 {
-            background: rgba(236, 72, 153, 0.05);
-        }
-
-        body.light-theme .header {
-            background: rgba(255, 255, 255, 0.85);
-            border-bottom-color: rgba(0, 0, 0, 0.08);
-        }
-
-        body.light-theme .header-title {
-            color: #111827;
-        }
-
-        body.light-theme .header-search-btn,
-        body.light-theme .theme-toggle-btn {
-            border-color: rgba(0, 0, 0, 0.1);
-            background: rgba(0, 0, 0, 0.04);
-            color: #4b5563;
-        }
-
-        body.light-theme .header-search-btn:active,
-        body.light-theme .theme-toggle-btn:active {
-            background: rgba(0, 0, 0, 0.08);
-            color: #111827;
-        }
-
-        body.light-theme .hero h1 {
-            color: #111827;
-        }
-
-        body.light-theme .hero p {
-            color: #4b5563;
-        }
-
-        body.light-theme .notice {
-            background: rgba(255, 255, 255, 0.8);
-            border-color: rgba(0, 0, 0, 0.08);
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
-        }
-
-        body.light-theme .notice-title {
-            color: #6366f1;
-        }
-
-        body.light-theme .notice-content p {
-            color: #374151;
-        }
-
-        body.light-theme .notice-content a {
-            color: #4f46e5;
-        }
-
-        body.light-theme .creators-title,
-        body.light-theme .section-title {
-            color: #6b7280;
-        }
-
-        body.light-theme .creator-item {
-            background: rgba(255, 255, 255, 0.8);
-            border-color: rgba(0, 0, 0, 0.08);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-        }
-
-        body.light-theme .creator-item:active {
-            background: rgba(255, 255, 255, 0.95);
-        }
-
-        body.light-theme .creator-name {
-            color: #111827;
-        }
-
-        body.light-theme .creator-desc {
-            color: #6b7280;
-        }
-
-        body.light-theme .creator-arrow {
-            color: #9ca3af;
-        }
-
-        body.light-theme .creator-avatar {
-            border-color: rgba(0, 0, 0, 0.1);
-        }
-
-        body.light-theme .search-input-wrap {
-            background: rgba(255, 255, 255, 0.85);
-            border-color: rgba(0, 0, 0, 0.1);
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
-        }
-
-        body.light-theme .search-input {
-            color: #111827;
-        }
-
-        body.light-theme .search-input::placeholder {
-            color: #9ca3af;
-        }
-
-        body.light-theme .search-clear {
-            background: rgba(0, 0, 0, 0.06);
-            color: #6b7280;
-        }
-
-        body.light-theme .quick-nav-btn {
-            color: #4b5563;
-            background: rgba(255, 255, 255, 0.75);
-            border-color: rgba(0, 0, 0, 0.08);
-        }
-
-        body.light-theme .quick-nav-btn:active {
-            background: #ffffff;
-        }
-
-        body.light-theme .quick-nav-btn.active {
-            color: #4f46e5;
-            background: rgba(99, 102, 241, 0.12);
-            border-color: rgba(99, 102, 241, 0.35);
-        }
-
-        body.light-theme .category-title {
-            color: #111827;
-        }
-
-        body.light-theme .category-count {
-            color: #6b7280;
-            background: rgba(0, 0, 0, 0.04);
-            border-color: rgba(0, 0, 0, 0.08);
-        }
-
-        body.light-theme .tool-item {
-            background: rgba(255, 255, 255, 0.78);
-            border-color: rgba(0, 0, 0, 0.08);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-        }
-
-        body.light-theme .tool-item:active {
-            background: rgba(255, 255, 255, 0.95);
-            border-color: rgba(99, 102, 241, 0.3);
-        }
-
-        body.light-theme .tool-name {
-            color: #111827;
-        }
-
-        body.light-theme .tool-desc {
-            color: #6b7280;
-        }
-
-        body.light-theme .tool-arrow {
-            color: #9ca3af;
-        }
-
-        body.light-theme .footer {
-            border-top-color: rgba(0, 0, 0, 0.08);
-            color: #6b7280;
-        }
-
-        body.light-theme .footer-brand {
-            color: #374151;
-        }
-
-        body.light-theme .footer-divider {
-            background: rgba(0, 0, 0, 0.15);
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <script>
+    (function() {
+      var ua = navigator.userAgent || navigator.vendor || window.opera;
+      var isMobile = /Mobi|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|webOS/i.test(ua);
+      var isSmallScreen = window.innerWidth <= 768;
+      // 如果不是手机端或小屏触控设备，回跳到电脑版 index.html
+      if (!isMobile && !isSmallScreen) {
+        window.location.replace('./index.html');
+      }
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>PC-Tool — 移动端极客工作台</title>
+  <meta name="description" content="PC-Tool.cn 专为移动端打造的极速流体体验，免安装、纯前端运行、完全开源的现代 Web 工具箱。" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="favicon.png" />
+
+  <!-- Google Fonts: Inter & SF Pro / Noto -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #000000;
+      --bg-surface: #0e0e11;
+      --bg-card: rgba(22, 22, 27, 0.75);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-bright: rgba(255, 255, 255, 0.18);
+      --text-main: #f5f5f7;
+      --text-muted: #86868b;
+      --text-sub: #a1a1a6;
+      --accent: #2997ff;
+      --apple-ease: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Plus Jakarta Sans", "Noto Sans SC", sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding-bottom: calc(40px + env(safe-area-inset-bottom));
+      line-height: 1.45;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* 顶部导航 (极简 iOS 磨砂顶栏) */
+    .mobile-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: 54px;
+      padding: 0 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: #fff;
+    }
+
+    .brand img {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+    }
+
+    .brand-name {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .header-link {
+      color: var(--text-muted);
+      font-size: 13px;
+      text-decoration: none;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 5px 12px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 980px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    /* 主视口 Hero 区域 */
+    .mobile-hero {
+      padding: 36px 20px 24px 20px;
+      text-align: left;
+      position: relative;
+    }
+
+    .mobile-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      background: rgba(41, 151, 255, 0.1);
+      border: 1px solid rgba(41, 151, 255, 0.25);
+      border-radius: 980px;
+      font-size: 12px;
+      color: #2997ff;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      background: #2997ff;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #2997ff;
+    }
+
+    .hero-title {
+      font-size: 34px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1.15;
+      margin-bottom: 12px;
+      background: linear-gradient(180deg, #ffffff 30%, #a1a1a6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-desc {
+      font-size: 15px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn-main {
+      flex: 1;
+      height: 48px;
+      background: #0071e3;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border-radius: 14px;
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      box-shadow: 0 4px 20px rgba(0, 113, 227, 0.4);
+      transition: transform 0.15s ease;
+    }
+
+    .btn-main:active {
+      transform: scale(0.97);
+    }
+
+    .btn-gh {
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      color: #fff;
+      text-decoration: none;
+      transition: transform 0.15s ease;
+    }
+
+    .btn-gh:active {
+      transform: scale(0.95);
+    }
+
+    /* 快捷功能卡片列表 (极佳触控面积与物理动效) */
+    .section-header {
+      padding: 24px 20px 14px 20px;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .section-more {
+      font-size: 13px;
+      color: #2997ff;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    /* 宣传宣传优势卡片 (流体质感展示) */
+    .promo-section {
+      padding: 0 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .promo-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 20px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s var(--apple-ease), border-color 0.2s ease;
+    }
+
+    .promo-card:active {
+      transform: scale(0.98);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .promo-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .promo-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 6px;
+      letter-spacing: -0.01em;
+    }
+
+    .promo-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.55;
+    }
+
+    .promo-card::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      pointer-events: none;
+      filter: blur(40px);
+      opacity: 0.15;
+    }
+
+    .promo-blue::after {
+      background: #2997ff;
+    }
+
+    .promo-purple::after {
+      background: #a259ff;
+    }
+
+    .promo-green::after {
+      background: #30d158;
+    }
+
+    .promo-orange::after {
+      background: #ff9f0a;
+    }
+
+    /* 移动端核心优势横幅 */
+    .specs-banner {
+      margin: 28px 16px 10px 16px;
+      background: linear-gradient(145deg, rgba(20, 20, 24, 0.8) 0%, rgba(12, 12, 16, 0.9) 100%);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 20px;
+      display: flex;
+      justify-content: space-around;
+      text-align: center;
+    }
+
+    .spec-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .spec-val {
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .spec-lbl {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* 底部操作与交流群 */
+    .community-box {
+      margin: 20px 16px;
+      padding: 18px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .comm-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--text-sub);
+      padding: 6px 0;
+    }
+
+    .comm-tag {
+      color: #fff;
+      font-weight: 600;
+      user-select: all;
+    }
+
+    .desktop-switch-btn {
+      margin: 24px 16px 8px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      height: 44px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-sub);
+      font-size: 13px;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .desktop-switch-btn:active {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .footer-note {
+      text-align: center;
+      color: #55555c;
+      font-size: 12px;
+      margin-top: 14px;
+    }
+  </style>
 </head>
 <body>
-    <div class="bg-orb bg-orb--1"></div>
-    <div class="bg-orb bg-orb--2"></div>
-    <div class="bg-orb bg-orb--3"></div>
-    <div class="bg-orb bg-orb--4"></div>
 
-    <header class="header">
-        <div class="header-inner">
-            <div class="header-brand">
-                <div class="header-logo">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-                </div>
-                <span class="header-title">工具箱</span>
-            </div>
-            <div class="header-actions">
-                <button class="theme-toggle-btn" id="themeToggle" aria-label="切换深色/浅色模式" title="切换深色/浅色模式">
-                    <span class="ios-dark-icon" aria-hidden="true"></span>
-                </button>
-                <button class="header-search-btn" id="searchToggle" aria-label="搜索工具">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                </button>
-            </div>
-        </div>
-    </header>
+  <!-- 顶部栏 -->
+  <header class="mobile-header">
+    <a href="mobile.html" class="brand">
+      <img src="favicon.png" alt="PC-Tool Logo" />
+      <span class="brand-name">PC-TOOL</span>
+    </a>
+    <a href="home.html" class="header-link">
+      <span>完整工具箱</span>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="9 18 15 12 9 6"></polyline>
+      </svg>
+    </a>
+  </header>
+
+  <!-- Hero 视口 -->
+  <section class="mobile-hero">
+    <div class="mobile-badge">
+      <span class="badge-dot"></span>
+      <span>移动适配版 · 免安装打开即用</span>
+    </div>
+    <h1 class="hero-title">
+      掌上轻量<br>极客工作台。
+    </h1>
+    <p class="hero-desc">
+      无需占用手机存储空间。所有图像、音频、PDF 与转换全部在浏览器本地完成，纯开源、保护隐私。
+    </p>
+
+    <div class="hero-actions">
+      <a href="home.html" class="btn-main">
+        <span>立即进入工具箱</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      </a>
+      <a href="https://github.com/Team-YM/pc-tool" target="_blank" rel="noopener noreferrer" class="btn-gh" aria-label="GitHub">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+        </svg>
+      </a>
+    </div>
+  </section>
+
+  <!-- 性能三项 -->
+  <div class="specs-banner">
+    <div class="spec-item">
+      <div class="spec-val">0 B</div>
+      <div class="spec-lbl">无需下载APP</div>
+    </div>
+    <div class="spec-item">
+      <div class="spec-val" style="color: #27c93f;">100%</div>
+      <div class="spec-lbl">本地隐私计算</div>
+    </div>
+    <div class="spec-item">
+      <div class="spec-val" style="color: #2997ff;">0 广告</div>
+      <div class="spec-lbl">开源纯净体验</div>
+    </div>
+  </div>
+
+  <!-- 宣传优势版块 -->
+  <div class="section-header">
+    <div class="section-title">核心优势 · 为什么选择我们</div>
+    <a href="home.html" class="section-more">全部工具 &gt;</a>
+  </div>
+
+  <div class="promo-section">
+    <!-- 优势卡片 1 -->
+    <div class="promo-card promo-blue">
+      <span class="promo-badge" style="color: #2997ff;">100% 纯前端运行</span>
+      <div class="promo-title">零数据上传 · 极致隐私安全</div>
+      <div class="promo-desc">所有图片压缩、格式转换、PDF 处理及加密运算均直接在手机浏览器本地内存执行，无需担心任何敏感文件泄露。</div>
+    </div>
+
+    <!-- 优势卡片 2 -->
+    <div class="promo-card promo-purple">
+      <span class="promo-badge" style="color: #a259ff;">极客体验 · 免安装</span>
+      <div class="promo-title">不占 1B 存储 · 即开即用</div>
+      <div class="promo-desc">告别动辄数百兆的臃肿 App 与广告弹窗。收藏网页或添加至手机主屏幕，随时获得媲美原生应用的高性能工具体验。</div>
+    </div>
+
+    <!-- 优势卡片 3 -->
+    <div class="promo-card promo-green">
+      <span class="promo-badge" style="color: #30d158;">开放自由</span>
+      <div class="promo-title">完全开源 · 永久纯净无广告</div>
+      <div class="promo-desc">代码完全托管在 GitHub，没有会员收费墙，没有诱导分享，坚持以纯粹的技术追求为全网开发者和用户服务。</div>
+    </div>
+
+    <!-- 优势卡片 4 -->
+    <div class="promo-card promo-orange">
+      <span class="promo-badge" style="color: #ff9f0a;">全能生态</span>
+      <div class="promo-title">涵盖 50+ 专业极客工具</div>
+      <div class="promo-desc">图像处理、文字音频、开发辅助、网络探测等数十种日常高频与专业需求全覆盖，一个站点搞定一切。</div>
+    </div>
+  </div>
+
+  <!-- 交流群与联系方式 -->
+  <div class="community-box">
+    <div class="comm-row">
+      <span>QQ 交流群</span>
+      <span class="comm-tag">1121812272</span>
+    </div>
+    <div class="comm-row">
+      <span>站长邮箱</span>
+      <span class="comm-tag" style="font-size: 12px;">fish@cutefish.online</span>
+    </div>
+    <div class="comm-row">
+      <span>官方域名邮箱</span>
+      <span class="comm-tag" style="font-size: 12px;">feedback@pc-tool.cn</span>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    © PC-TOOL · 面对大众 · 为人民服务
+  </div>
 
-    <main class="main-container">
-        <section class="hero scroll-reveal revealed">
-            <h1>免费<span class="accent">工具</span><br>高效生活</h1>
-            <p>为您精心打磨的在线工具集合，每一个功能都为效率而生，完全免费。</p>
-        </section>
-
-        <section class="notice scroll-reveal">
-            <div class="notice-title">
-                <span class="notice-dot"></span>公告通知
-            </div>
-            <div class="notice-content">
-                <p>为人民服务 不收一分钱 只为爱发电</p>
-                <p>有问题和建议联系QQ交流群：1121812272</p>
-                <p>站长邮箱：fish@cutefish.online</p>
-                <p>域名邮箱：feedback@pc-tool.cn</p>
-                <p><strong><a href="notice.html" style="color:#a5b4fc;text-underline-offset:4px;">点击跳转更新公告</a></strong></p>
-                <p><strong><a href="https://cutefish.online/pc-tool-donate/" style="color:#818cf8;text-underline-offset:4px;">为我们捐款</a></strong></p>
-            </div>
-        </section>
-
-        <!-- 制作者 Blog -->
-        <section class="creators-section scroll-reveal">
-            <div class="creators-title">
-                <span class="notice-dot"></span>制作者 Blog
-            </div>
-            <div class="creators-list">
-                <a href="https://blog.pc-tool.cn/" target="_blank" class="creator-item">
-                    <img src="https://blog.pc-tool.cn/avatar.jpg" alt="cute-Fish" class="creator-avatar">
-                    <div class="creator-info">
-                        <div class="creator-name-row">
-                            <span class="creator-name">cute-Fish</span>
-                            <span class="creator-badge">开发者</span>
-                        </div>
-                        <div class="creator-desc">生活总比游戏更有趣 · 主pc-tool.cn开发</div>
-                    </div>
-                    <div class="creator-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-                </a>
-
-                <a href="https://blog.pc-tool.cn/blog-qiamao.html" target="_blank" class="creator-item">
-                    <img src="https://blog.pc-tool.cn/qiamao-avatar.jpg" alt="qiamao" class="creator-avatar">
-                    <div class="creator-info">
-                        <div class="creator-name-row">
-                            <span class="creator-name">qiamao</span>
-                            <span class="creator-badge">开发者</span>
-                        </div>
-                        <div class="creator-desc">同pc-tool.cn开发 · 有马加奈厨</div>
-                    </div>
-                    <div class="creator-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-                </a>
-            </div>
-        </section>
-
-        <div class="section-title scroll-reveal">全部工具</div>
-
-        <div class="search-bar" id="searchBar">
-            <div class="search-input-wrap">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input type="text" class="search-input" id="searchInput" placeholder="搜索工具..." autocomplete="off">
-                <button class="search-clear" id="searchClear" aria-label="清除">&#x2715;</button>
-            </div>
-        </div>
-
-        <!-- 移动端横向滑动快捷锚点栏 (纯文字，无emoji) -->
-        <nav class="category-quick-nav" id="categoryQuickNav" aria-label="工具分类导航">
-            <button class="quick-nav-btn active" data-target="all">全部</button>
-            <button class="quick-nav-btn" data-target="m-cat-image">图像处理</button>
-            <button class="quick-nav-btn" data-target="m-cat-audio">音频处理</button>
-            <button class="quick-nav-btn" data-target="m-cat-video">视频处理</button>
-            <button class="quick-nav-btn" data-target="m-cat-doc">文档/PDF</button>
-            <button class="quick-nav-btn" data-target="m-cat-dev">开发工具</button>
-            <button class="quick-nav-btn" data-target="m-cat-net">网络工具</button>
-            <button class="quick-nav-btn" data-target="m-cat-calc">计算换算</button>
-            <button class="quick-nav-btn" data-target="m-cat-life">生活效率</button>
-            <button class="quick-nav-btn" data-target="m-cat-hardware">硬件测试</button>
-        </nav>
-
-        <!-- 分类排列结构：类别1 -> 列表项 / 类别2 -> 列表项 ... -->
-        <div class="category-sections" id="categorySections">
-            <div class="search-empty" id="searchEmpty">没有找到匹配的工具...</div>
-        </div>
-
-        <div class="tool-list" id="toolList" style="display: none;">
-            <a href="./tool/qrcode.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-cyan"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><path d="M7 7h.01"/><path d="M17 7h.01"/><path d="M7 17h.01"/><path d="M17 17h.01"/><path d="M12 12h.01"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">二维码生成器</div>
-                    <div class="tool-desc">输入文字/链接生成二维码</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/qrcode-decode.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-yellow"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><path d="M7 7h.01"/><path d="M17 7h.01"/><path d="M17 17h.01"/><path d="M7 17h.01"/><circle cx="12" cy="12" r="3"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">二维码解析</div>
-                    <div class="tool-desc">上传二维码图片读出内容</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/image-convert.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-blue"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">图片批量转格式</div>
-                    <div class="tool-desc">PNG / JPG / WebP 批量互转</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/image-crop.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-green"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="8.5" y1="3" x2="8.5" y2="21"/><line x1="15.5" y1="3" x2="15.5" y2="21"/><line x1="3" y1="8.5" x2="21" y2="8.5"/><line x1="3" y1="15.5" x2="21" y2="15.5"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">图片裁剪</div>
-                    <div class="tool-desc">自由裁剪，支持常见比例预设</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/id-photo.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-blue"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="9" r="3"/><path d="M8 17c1-2 7-2 8 0"/></svg></div>
-                <div class="tool-info"><div class="tool-name">证件照制作</div><div class="tool-desc">换底色、规格裁剪、排版打印</div></div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-            <a href="./tool/ico-generator.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-purple"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M8 8h8v8H8z"/><path d="M8 3v5M16 3v5M8 16v5M16 16v5"/></svg></div>
-                <div class="tool-info"><div class="tool-name">ICO / 图标生成</div><div class="tool-desc">生成多尺寸标准 ICO 图标</div></div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-            <a href="./tool/image-stitch.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-cyan"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">图片拼接</div>
-                    <div class="tool-desc">多张图片横向或纵向拼接</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/image-gif.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-teal"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><circle cx="8" cy="10" r="1.5"/><circle cx="16" cy="10" r="1.5"/><circle cx="12" cy="12" r="1.5"/><polyline points="6 16 9 13 11 15 14 12 18 16"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">多图合成GIF</div>
-                    <div class="tool-desc">多图合成动画GIF，可调帧率</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/image-watermark.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-green"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">图片加水印</div>
-                    <div class="tool-desc">文字/图片/平铺水印</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/image-rotate.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-cyan"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">图片旋转/翻转</div>
-                    <div class="tool-desc">90°旋转、水平/垂直翻转</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/image-filter.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-rose"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">图片调色/滤镜</div>
-                    <div class="tool-desc">亮度、对比度、饱和度等调节</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/photo-dpi.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-green"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">图片DPI转换</div>
-                    <div class="tool-desc">调整图片DPI分辨率</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/word-pdf-convert.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-green"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">Word与PDF互转</div>
-                    <div class="tool-desc">Word转PDF / PDF转Word</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/csv-excel-convert.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-cyan"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">CSV与Excel互转</div>
-                    <div class="tool-desc">CSV转Excel / Excel转CSV带预览</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/audio-ogg.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-amber"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">音频转OGG</div>
-                    <div class="tool-desc">MP3 / WAV 等转 OGG 格式</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/audio-convert.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-orange"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">音频转格式</div>
-                    <div class="tool-desc">多格式音频互转</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/audio-compress.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-yellow"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">音频压缩</div>
-                    <div class="tool-desc">压缩音频文件体积</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/video-to-audio.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-pink"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">视频提取音频</div>
-                    <div class="tool-desc">从视频中分离导出音频</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/video-convert.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-indigo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><path d="m17 8 4 4-4 4"/><path d="m7 8-4 4 4 4"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">视频转格式</div>
-                    <div class="tool-desc">视频转换为WebM格式</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./redirect.html?target=http://unlock.music.hi.cn/" target="_blank" class="tool-item">
-                <div class="tool-icon icon-red"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">音乐解析(第三方)</div>
-                    <div class="tool-desc">第三方音频解锁服务</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/metronome.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-indigo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 22 22 2 22"/><line x1="12" y1="6" x2="12" y2="14"/><circle cx="12" cy="16" r="1.5"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">节拍器（BPM）</div>
-                    <div class="tool-desc">精准节拍，支持键盘空格快捷启停</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/image-compress.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-teal"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">图片压缩</div>
-                    <div class="tool-desc">无损/有损压缩图片体积</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/image-base64.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-indigo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">图片转Base64</div>
-                    <div class="tool-desc">拖入图片直接出Base64字符串</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/image-base64-decode.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-purple"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 7 20 4 4 4 4 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="20" x2="12" y2="4"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">Base64转图片</div>
-                    <div class="tool-desc">粘贴Base64字符串还原图片</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/base64-text.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-blue"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/><path d="m15 14 3 3-3 3"/><path d="m9 14-3 3 3 3"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">Base64编解码</div>
-                    <div class="tool-desc">文本与Base64双向编码解码</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/json-format.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-green"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">JSON格式化与校验</div>
-                    <div class="tool-desc">缩进排版、压缩、语法定位</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/jwt-decode.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-purple"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h8M8 17h5"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">JWT在线解码器</div>
-                    <div class="tool-desc">解析令牌结构与有效期状态</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/code-format.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-cyan"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="12" y1="2" x2="12" y2="22" stroke-dasharray="2 2"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">代码格式化工具</div>
-                    <div class="tool-desc">JS/HTML/CSS/XML美化与压缩</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/text-diff.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-cyan"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M4 19h16M7 5v14M17 5v14"/><path d="m10 9 4 3-4 3"/></svg></div>
-                <div class="tool-info"><div class="tool-name">文本对比 Diff</div><div class="tool-desc">逐行查看文本差异</div></div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-            <a href="./tool/text-case.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-green"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19 10 5l6 14M6.5 14h7"/><path d="M15 19h5M17.5 5v14"/></svg></div>
-                <div class="tool-info"><div class="tool-name">大小写与命名风格转换</div><div class="tool-desc">转换常见英文命名格式</div></div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-            <a href="./tool/text-clean.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-yellow"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg></div>
-                <div class="tool-info"><div class="tool-name">文本整理工具</div><div class="tool-desc">去重、排序、去空行、添加行号</div></div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-            <a href="./tool/word-count.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-blue"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></div>
-                <div class="tool-info"><div class="tool-name">字数统计</div><div class="tool-desc">实时统计字符、单词、行数与字节</div></div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-            <a href="./tool/chinese-convert.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-purple"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M7 12h10M12 7v10M8 17l8-10"/></svg></div>
-                <div class="tool-info"><div class="tool-name">简繁转换与中文拼音</div><div class="tool-desc">简体繁体互转与拼音标注</div></div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-            <a href="./tool/markdown-editor.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-blue"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M10 9H7v6h3M14 9v6M10 12h4"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">Markdown编辑器</div>
-                    <div class="tool-desc">实时预览渲染与HTML导出</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/url-codec.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-cyan"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">URL编码/解码</div>
-                    <div class="tool-desc">URI/URI组件标准编码还原</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/timestamp.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-amber"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">时间戳转换器</div>
-                    <div class="tool-desc">秒/毫秒与日期双向换算</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/regex-tester.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-violet"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">正则表达式测试</div>
-                    <div class="tool-desc">实时高亮匹配与捕获组明细</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/password-uuid.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-teal"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">随机密码/UUID生成</div>
-                    <div class="tool-desc">强密码生成、UUID/GUID生成</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/radix-convert.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-orange"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9z"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">多进制转换器</div>
-                    <div class="tool-desc">2~36任意进制无溢出换算</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/hash-crypto.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-emerald"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">哈希加密(MD5/SHA)</div>
-                    <div class="tool-desc">MD5/SHA1/256/512快速计算</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/unicode-convert.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-indigo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">Unicode字符转换</div>
-                    <div class="tool-desc">\uXXXX/&#xXXXX;与文本互转</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/html-entity.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-purple"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="12" y1="2" x2="12" y2="22" stroke-dasharray="2 2"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">HTML实体编解码</div>
-                    <div class="tool-desc">命名实体/数字实体转换还原</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/color-convert.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-pink"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10"/><path d="M12 2a15.3 15.3 0 0 0-4 10 15.3 15.3 0 0 0 4 10"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">颜色格式转换</div>
-                    <div class="tool-desc">HEX ↔ RGB ↔ HSL + 调色板</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/cut-image.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-rose"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">图片抠图</div>
-                    <div class="tool-desc">智能去除图片背景</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/video-comp.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-indigo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">视频压缩</div>
-                    <div class="tool-desc">压缩视频文件体积</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/vrc-url.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-pink"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">B站视频转URL</div>
-                    <div class="tool-desc">提取B站视频直链</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./redirect.html?target=https://snapany.com/zh" target="_blank" class="tool-item">
-                <div class="tool-icon icon-yellow"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">视频解析(第三方)</div>
-                    <div class="tool-desc">第三方视频解析服务</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/video-to-gif.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-teal"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><circle cx="8" cy="10" r="1.5"/><circle cx="16" cy="10" r="1.5"/><polyline points="6 16 9 13 11 15 14 12 18 16"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">视频转GIF</div>
-                    <div class="tool-desc">视频转换为GIF动图</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/video-clip.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-indigo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">视频截取片段</div>
-                    <div class="tool-desc">设起止时间截取视频片段</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/video-reverse.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-indigo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 7 8 12 1 17 1 7"/><rect x="9" y="5" width="15" height="14" rx="2" ry="2"/><polyline points="13 14 10 12 13 10"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">视频倒放</div>
-                    <div class="tool-desc">将视频和音频画面进行倒放处理</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/video-screenshot.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-blue"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">视频截图/取帧</div>
-                    <div class="tool-desc">播放到某一帧导出为图片</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/video-merge.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-teal"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">视频合并</div>
-                    <div class="tool-desc">多视频拼接与音频无缝合并</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/video-watermark.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-orange"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/><path d="M4 15l2-4 3 2 4-5 2 3"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">视频加水印</div>
-                    <div class="tool-desc">添加文字或图片角标水印</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/video-speed.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-indigo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">视频变速</div>
-                    <div class="tool-desc">0.25x~4x 快放慢放且保调</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/video-delogo.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-purple"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/><circle cx="8.5" cy="12" r="2.5"/><line x1="5" y1="12" x2="12" y2="12"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">视频去水印</div>
-                    <div class="tool-desc">框选区域模糊/马赛克遮盖消除</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/video-cover.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-pink"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">视频转壁纸封面</div>
-                    <div class="tool-desc">截取桌面/手机壁纸与视频封面</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/audio-clip.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-purple"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">音频截取</div>
-                    <div class="tool-desc">设起止时间裁剪音频片段</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-            
-            <a href="./tool/audio-bpm.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-indigo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/><path d="M2 12h3l2-4 3 8 2-4h4"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">音频BPM识别</div>
-                    <div class="tool-desc">智能识别歌曲BPM速度与节拍</div>
-                </div>
-
-            <a href="./tool/audio-merge.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-amber"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5"/><path d="M18 2l4 4-4 4"/><path d="M11 13h8"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">音频合并</div>
-                    <div class="tool-desc">多段音频首尾拼接</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/audio-reverse.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-amber"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18V5l-12 2v13"/><circle cx="18" cy="18" r="3"/><circle cx="6" cy="16" r="3"/><polyline points="10 9 7 11 10 13"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">音频倒放</div>
-                    <div class="tool-desc">将音频文件进行倒放处理</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/audio-speed.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-cyan"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/><path d="M4.93 4.93l4.24 4.24"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">音频变速</div>
-                    <div class="tool-desc">0.25x至4.0x音频快放与慢放，保调支持</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/audio-pitch.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-purple"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">音频变调</div>
-                    <div class="tool-desc">升降半音、男女声变调与时长保持</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/text-to-speech.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-blue"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8"/><path d="M8 13h6"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">文字转语音 TTS</div>
-                    <div class="tool-desc">文本一键朗读合成并导出音频</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/speech-to-text.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-rose"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">语音转文字 ASR</div>
-                    <div class="tool-desc">麦克风语音实时听写与转文字</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/pdf-merge.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-green"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">PDF合并</div>
-                    <div class="tool-desc">多PDF合并成一个</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/pdf-split.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-blue"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">PDF拆分</div>
-                    <div class="tool-desc">按页拆分或提取指定页面</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/pdf-compress.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-teal"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h6m0 0v6m0-6L3 21m17-11h-6m0 0V4m0 6l7-7"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">PDF压缩</div>
-                    <div class="tool-desc">纯前端压缩紧凑减小文件大小</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/pdf-to-img.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-purple"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">PDF转图片</div>
-                    <div class="tool-desc">PDF各页高清导出PNG/JPG并打包</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/img-to-pdf.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-indigo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><circle cx="10" cy="13" r="1.5"/><polyline points="16 17 13 14 9 18"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">图片转PDF</div>
-                    <div class="tool-desc">多张图片合并生成PDF文档</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/pdf-crypto.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-amber"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">PDF加解密</div>
-                    <div class="tool-desc">设置密码保护或移除密码解密</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/pdf-extract-text.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-rose"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">PDF提取文字</div>
-                    <div class="tool-desc">提取PDF文本内容并复制或导出TXT</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <!-- 图片工具进阶 -->
-            <a href="./tool/image-color-picker.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-cyan"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a7 7 0 0 0-7 7c0 4.5 7 13 7 13s7-8.5 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">图片取色器</div>
-                    <div class="tool-desc">高精度拾色与主要调色板提取</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/image-invert.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-purple"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20z"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">图片黑白/反色</div>
-                    <div class="tool-desc">底片效果反色、高对比黑白</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/gif-compress.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-amber"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h3m-3 4h2m-2 4h3"/><path d="M14 8h3v8h-3"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">GIF压缩</div>
-                    <div class="tool-desc">GIF动图逐帧抽帧与尺寸体积压缩</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/image-watermark-remove.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-rose"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">图片去水印</div>
-                    <div class="tool-desc">局部涂抹擦除与邻域扩散修复</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/image-to-svg.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-teal"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">图片转SVG矢量图</div>
-                    <div class="tool-desc">位图提取轮廓路径转无损矢量SVG</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/image-grid-split.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-blue"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">九宫格切图/拼图</div>
-                    <div class="tool-desc">社交平台朋友圈微博9格切图打包</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/image-mosaic.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-orange"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">图片马赛克/模糊</div>
-                    <div class="tool-desc">涂抹打码、隐私保护与高斯模糊</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/photo-to-sketch.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-indigo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">照片转手绘素描</div>
-                    <div class="tool-desc">铅笔素描黑白画与线条边缘提取</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/image-exif.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-teal"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">图片EXIF查看与抹除</div>
-                    <div class="tool-desc">查看相机参数与GPS并抹除导出</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/color-palette.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-rose"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/><path d="M12 2a10 10 0 0 0 0 20 2 2 0 0 0 0-4 2 2 0 0 1 0-4 4 4 0 0 1 0 8"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">配色方案生成器</div>
-                    <div class="tool-desc">色轮谐调配色与CSS变量导出</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <!-- 网络 / 运维工具 -->
-            <a href="./tool/short-url.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-teal"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">短链接生成</div>
-                    <div class="tool-desc">长网址快速缩短与直达还原</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/ua-parser.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-blue"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">User-Agent解析</div>
-                    <div class="tool-desc">浏览器内核、操作系统与设备解析</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/http-status.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-yellow"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">HTTP状态码查询</div>
-                    <div class="tool-desc">1xx~5xx状态码含义、场景与速查</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/site-ping.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-green"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">网站测速/Ping</div>
-                    <div class="tool-desc">浏览器客户端网络延迟测速与状态</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/ssl-checker.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-purple"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">SSL证书查询</div>
-                    <div class="tool-desc">HTTPS证书有效期与颁发机构检测</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/port-scan.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-rose"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">常见端口扫描探测</div>
-                    <div class="tool-desc">80/443/8080等常见服务端口连通性</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <!-- 生活 / 计算工具 -->
-            <a href="./tool/date-calc.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-cyan"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">日期计算器</div>
-                    <div class="tool-desc">天数推算、日期间隔与重要倒计时</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/unit-convert.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-amber"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h20"/><path d="M20 12l-4-4"/><path d="M4 12l4 4"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">单位换算器</div>
-                    <div class="tool-desc">长度、重量、面积、温度多合一</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/bmi-calc.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-rose"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">BMI体质指数计算</div>
-                    <div class="tool-desc">体脂与健康区间评估参考</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/loan-calc.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-green"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">房贷/复利计算器</div>
-                    <div class="tool-desc">等额本息/本金与投资利滚利明细</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/currency-calc.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-yellow"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><line x1="12" y1="6" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="18"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">实时汇率换算</div>
-                    <div class="tool-desc">全球主流币种实时外汇牌价对照</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/scientific-calc.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-indigo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="16" y1="14" x2="16" y2="18"/><path d="M8 10h.01"/><path d="M12 10h.01"/><path d="M16 10h.01"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">科学计算器</div>
-                    <div class="tool-desc">三角函数/反三角/对数/阶乘与历史记录</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/function-graph.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-cyan"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="20" x2="21" y2="20"/><line x1="4" y1="3" x2="4" y2="21"/><path d="M4 16c4-8 8 2 12-6 2-4 3-5 5-6"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">函数图像可视化</div>
-                    <div class="tool-desc">多初等与复合函数同屏对比与缩放</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/lunar-weather.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-blue"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/><circle cx="12" cy="12" r="3"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">今日黄历与天气</div>
-                    <div class="tool-desc">农历宜忌、干支节气与天气预报</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <!-- 其他实用工具 -->
-            <a href="./tool/barcode-gen.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-purple"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="5" x2="3" y2="19"/><line x1="7" y1="5" x2="7" y2="19"/><line x1="11" y1="5" x2="11" y2="19"/><line x1="15" y1="5" x2="15" y2="19"/><line x1="19" y1="5" x2="19" y2="19"/><line x1="21" y1="5" x2="21" y2="19"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">条形码生成器</div>
-                    <div class="tool-desc">Code128/EAN-13高清条码导出</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/lucky-wheel.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-pink"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2v20"/><path d="M2 12h20"/><circle cx="12" cy="12" r="2"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">幸运抽签大转盘</div>
-                    <div class="tool-desc">自定义奖项指针动画决策转盘</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/pomodoro-timer.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-rose"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">专注番茄钟</div>
-                    <div class="tool-desc">25分钟工作/5分钟休息专注时钟</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/morse-code.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-amber"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/><line x1="2" y1="18" x2="22" y2="18"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">摩斯密码发报机</div>
-                    <div class="tool-desc">中英摩斯电码互转与真实音频发报</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/countdown-timer.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-cyan"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><polyline points="12 9 12 13 15 15"/><path d="M9 3h6"/><path d="M12 3v2"/></svg></div>
-                <div class="tool-info"><div class="tool-name">倒计时器</div><div class="tool-desc">自定义时长的倒计时提醒工具</div></div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/random-number.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-indigo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="m8 8 3 3-3 3"/><path d="M13 16h3"/></svg></div>
-                <div class="tool-info"><div class="tool-name">随机数生成器</div><div class="tool-desc">生成范围内的随机整数或小数</div></div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/typing-test.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-green"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="6" y1="8" x2="6.01" y2="8"/><line x1="10" y1="8" x2="10.01" y2="8"/><line x1="14" y1="8" x2="14.01" y2="8"/><line x1="18" y1="8" x2="18.01" y2="8"/><path d="M7 15h6"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">打字速度测试</div>
-                    <div class="tool-desc">中英文打字WPM与正确率测试</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/file-hash.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-teal"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">文件哈希计算</div>
-                    <div class="tool-desc">计算文件 MD5 / SHA1 / SHA256</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/screen-test.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-emerald"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><circle cx="12" cy="10" r="3"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">屏幕坏点检测</div>
-                    <div class="tool-desc">全屏纯色自助检测坏点亮点</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/keyboard-test.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-purple"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="6" y1="8" x2="6.01" y2="8"/><line x1="10" y1="8" x2="10.01" y2="8"/><line x1="14" y1="8" x2="14.01" y2="8"/><line x1="18" y1="8" x2="18.01" y2="8"/><line x1="6" y1="12" x2="6.01" y2="12"/><line x1="10" y1="12" x2="10.01" y2="12"/><line x1="14" y1="12" x2="14.01" y2="12"/><line x1="18" y1="12" x2="18.01" y2="12"/><line x1="7" y1="16" x2="17" y2="16"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">键盘按键测试</div>
-                    <div class="tool-desc">全键盘在线按键自检</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/cps-gamepad-test.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-indigo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="15" y1="13" x2="15.01" y2="13"/><line x1="18" y1="11" x2="18.01" y2="11"/><rect x="2" y="6" width="20" height="12" rx="2"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">鼠标连点与手柄测试</div>
-                    <div class="tool-desc">CPS测速曲线及手柄硬件测试</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./redirect.html?target=https%3A%2F%2Fwww.arealme.com%2Freaction-test%2Fcn%2F" target="_blank" class="tool-item">
-                <div class="tool-icon icon-amber"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">反应速度测试(第三方)</div>
-                    <div class="tool-desc">在线测试视觉反应毫秒数</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/password-generator.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-emerald"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">随机密码生成器</div>
-                    <div class="tool-desc">高强度本地随机密码与强度检测</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/domain-ip.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-blue"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">域名/IP归属查询</div>
-                    <div class="tool-desc">查询解析IP及物理地理位置</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <a href="./tool/image-enhance.html" target="_blank" class="tool-item">
-                <div class="tool-icon icon-blue"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">AI图片变清晰</div>
-                    <div class="tool-desc">离线AI图片变清晰</div>
-                </div>
-                <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-            </a>
-
-            <div class="tool-item" style="cursor: default; opacity: 0.65; pointer-events: none;">
-                <div class="tool-icon" style="background: rgba(255, 255, 255, 0.05); color: #71717a;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-                <div class="tool-info">
-                    <div class="tool-name">敬请期待...</div>
-                    <div class="tool-desc">更多实用工具持续开发中</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="search-empty" id="searchEmpty">没有找到匹配的工具...</div>
-    </main>
-
-    <footer class="footer scroll-reveal">
-        <div class="footer-brand">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-            PC-TOOL
-        </div>
-        <div style="margin-top:4px;">
-            面对大众 自制或收集一些有用的在线工具
-        </div>
-        <div style="margin-top:2px;">
-            意见或建议请联系我<span class="footer-divider"></span>QQ交流群：1121812272
-        </div>
-    </footer>
-
-    <script>
-        // 给所有工具条目加上滚动显示类
-        var toolItems = document.querySelectorAll('.tool-item');
-        toolItems.forEach(function(item) {
-            item.classList.add('scroll-reveal');
-        });
-
-        // 滚动显示/消失动画 (Intersection Observer)
-        var observer = new IntersectionObserver(function(entries) {
-            entries.forEach(function(entry) {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('revealed');
-                } else {
-                    entry.target.classList.remove('revealed');
-                }
-            });
-        }, {
-            threshold: 0.15,
-            rootMargin: '-20px 0px'
-        });
-
-        document.querySelectorAll('.scroll-reveal').forEach(function(el) {
-            observer.observe(el);
-        });
-
-        // 涟漪点击效果
-        document.querySelectorAll('.tool-item').forEach(function(item) {
-            item.addEventListener('pointerdown', function(e) {
-                var ripple = document.createElement('span');
-                ripple.className = 'ripple';
-                var rect = item.getBoundingClientRect();
-                var size = Math.max(rect.width, rect.height);
-                ripple.style.width = ripple.style.height = size + 'px';
-                ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
-                ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
-                item.appendChild(ripple);
-                ripple.addEventListener('animationend', function() {
-                    ripple.remove();
-                });
-            });
-        });
-
-        // ==================== 分类与搜索功能 ====================
-        (function() {
-            var searchToggle = document.getElementById('searchToggle');
-            var searchInput = document.getElementById('searchInput');
-            var searchClear = document.getElementById('searchClear');
-            var searchEmpty = document.getElementById('searchEmpty');
-            var categoryQuickNav = document.getElementById('categoryQuickNav');
-            var quickNavButtons = categoryQuickNav ? categoryQuickNav.querySelectorAll('.quick-nav-btn') : [];
-            var categorySections = document.getElementById('categorySections');
-            var toolList = document.getElementById('toolList');
-            var toolItems = toolList ? toolList.querySelectorAll('.tool-item') : [];
-
-            // 分类定义元数据（纯文字，无emoji）
-            var categoryList = [
-                { id: 'm-cat-image', key: 'image', name: '图像处理' },
-                { id: 'm-cat-audio', key: 'audio', name: '音频处理' },
-                { id: 'm-cat-video', key: 'video', name: '视频处理' },
-                { id: 'm-cat-doc', key: 'doc', name: '文档与PDF' },
-                { id: 'm-cat-dev', key: 'dev', name: '开发工具' },
-                { id: 'm-cat-net', key: 'net', name: '网络工具' },
-                { id: 'm-cat-calc', key: 'calc', name: '计算换算' },
-                { id: 'm-cat-life', key: 'life', name: '生活效率' },
-                { id: 'm-cat-hardware', key: 'hardware', name: '硬件测试' }
-            ];
-
-            // 依据工具链接特征自动识别分类字典映射
-            var toolCategoryMap = {
-                // 图像处理
-                'qrcode': 'dev',
-                'qrcode-decode': 'dev',
-                'image-convert': 'image',
-                'image-crop': 'image',
-                'image-stitch': 'image',
-                'image-gif': 'image',
-                'image-watermark': 'image',
-                'image-rotate': 'image',
-                'image-filter': 'image',
-                'image-enhance': 'image',
-                'photo-dpi': 'image',
-                'image-compress': 'image',
-                'image-base64': 'image',
-                'image-base64-decode': 'image',
-                'cut-image': 'image',
-                'image-color-picker': 'image',
-                'image-invert': 'image',
-                'gif-compress': 'image',
-                'image-watermark-remove': 'image',
-                'image-to-svg': 'image',
-                'image-grid-split': 'image',
-                'image-mosaic': 'image',
-                'photo-to-sketch': 'image',
-                'image-exif': 'image',
-                'color-palette': 'image',
-                'id-photo': 'image',
-                'ico-generator': 'image',
-
-                // 音频处理
-                'audio-ogg': 'audio',
-                'audio-convert': 'audio',
-                'audio-compress': 'audio',
-                'audio-clip': 'audio',
-                'audio-merge': 'audio',
-                'audio-reverse': 'audio',
-                'audio-speed': 'audio',
-                'audio-pitch': 'audio',
-                'text-to-speech': 'audio',
-                'speech-to-text': 'audio',
-                'metronome': 'audio',
-                'music.hi.cn': 'audio',
-
-                // 视频处理
-                'video-to-audio': 'video',
-                'video-convert': 'video',
-                'video-comp': 'video',
-                'video-to-gif': 'video',
-                'video-clip': 'video',
-                'video-reverse': 'video',
-                'video-screenshot': 'video',
-                'video-merge': 'video',
-                'video-watermark': 'video',
-                'video-speed': 'video',
-                'video-delogo': 'video',
-                'video-cover': 'video',
-                'vrc-url': 'net',
-                'snapany': 'video',
-
-                // 文档与PDF
-                'word-pdf-convert': 'doc',
-                'csv-excel-convert': 'doc',
-                'pdf-merge': 'doc',
-                'pdf-split': 'doc',
-                'pdf-compress': 'doc',
-                'pdf-to-img': 'doc',
-                'img-to-pdf': 'doc',
-                'pdf-crypto': 'doc',
-                'pdf-extract-text': 'doc',
-
-                // 开发者工具
-                'base64-text': 'dev',
-                'json-format': 'dev',
-                'url-codec': 'dev',
-                'timestamp': 'dev',
-                'regex-tester': 'dev',
-                'password-uuid': 'dev',
-                'radix-convert': 'dev',
-                'hash-crypto': 'dev',
-                'unicode-convert': 'dev',
-                'html-entity': 'dev',
-                'file-hash': 'dev',
-                'barcode-gen': 'dev',
-                'jwt-decode': 'dev',
-                'code-format': 'dev',
-                'text-diff': 'dev',
-                'text-case': 'dev',
-                'text-clean': 'dev',
-                'word-count': 'dev',
-                'chinese-convert': 'dev',
-                'markdown-editor': 'dev',
-
-                // 网络工具
-                'vrc-url': 'net',
-                'short-url': 'net',
-                'ua-parser': 'net',
-                'http-status': 'net',
-                'site-ping': 'net',
-                'ssl-checker': 'net',
-                'port-scan': 'net',
-                'domain-ip': 'net',
-
-                // 计算换算
-                'color-convert': 'calc',
-                'date-calc': 'calc',
-                'unit-convert': 'calc',
-                'bmi-calc': 'calc',
-                'loan-calc': 'calc',
-                'currency-calc': 'calc',
-                'scientific-calc': 'calc',
-                'function-graph': 'calc',
-
-                // 生活效率
-                'lunar-weather': 'life',
-                'lucky-wheel': 'life',
-                'pomodoro-timer': 'life',
-                'morse-code': 'life',
-                'countdown-timer': 'life',
-                'random-number': 'life',
-                'typing-test': 'life',
-
-                // 硬件测试
-                'screen-test': 'hardware',
-                'keyboard-test': 'hardware',
-                'cps-gamepad-test': 'hardware',
-                'reaction-test': 'hardware',
-                'password-generator': 'dev'
-            };
-
-            // 创建移动端各分类容器与列表
-            var groupElements = {};
-            categoryList.forEach(function(cat) {
-                var groupSection = document.createElement('section');
-                groupSection.className = 'category-group';
-                groupSection.id = cat.id;
-
-                var header = document.createElement('div');
-                header.className = 'category-group-header';
-
-                var title = document.createElement('h2');
-                title.className = 'category-title';
-                title.textContent = cat.name;
-
-                var countBadge = document.createElement('span');
-                countBadge.className = 'category-count';
-                countBadge.textContent = '0 项';
-
-                header.appendChild(title);
-                header.appendChild(countBadge);
-
-                var list = document.createElement('div');
-                list.className = 'tool-list';
-
-                groupSection.appendChild(header);
-                groupSection.appendChild(list);
-                categorySections.insertBefore(groupSection, searchEmpty);
-
-                groupElements[cat.key] = {
-                    section: groupSection,
-                    list: list,
-                    badge: countBadge,
-                    count: 0
-                };
-            });
-
-            // 分发每个移动端工具项到对应的分类组中
-            toolItems.forEach(function(item) {
-                var href = item.getAttribute('href') || '';
-                var assignedCat = 'dev';
-                for (var key in toolCategoryMap) {
-                    if (href.indexOf(key) !== -1) {
-                        assignedCat = toolCategoryMap[key];
-                        break;
-                    }
-                }
-                if (!href) return;
-
-                item.dataset.category = assignedCat;
-                if (groupElements[assignedCat]) {
-                    groupElements[assignedCat].list.appendChild(item);
-                    groupElements[assignedCat].count++;
-                }
-            });
-
-            // 更新分类数量
-            categoryList.forEach(function(cat) {
-                if (groupElements[cat.key]) {
-                    groupElements[cat.key].badge.textContent = groupElements[cat.key].count + ' 项';
-                }
-            });
-
-            // 搜索过滤
-            function filterTools() {
-                var query = searchInput.value.trim().toLowerCase();
-                var anyVisibleTotal = false;
-
-                if (query) {
-                    searchClear.style.display = 'flex';
-                } else {
-                    searchClear.style.display = 'none';
-                }
-
-                categoryList.forEach(function(cat) {
-                    var group = groupElements[cat.key];
-                    if (!group) return;
-
-                    var items = group.list.querySelectorAll('.tool-item');
-                    var visibleInGroup = 0;
-
-                    items.forEach(function(item) {
-                        var name = item.querySelector('.tool-name');
-                        var desc = item.querySelector('.tool-desc');
-                        var nameText = name ? name.textContent.toLowerCase() : '';
-                        var descText = desc ? desc.textContent.toLowerCase() : '';
-                        var matches = !query || nameText.includes(query) || descText.includes(query);
-
-                        if (matches) {
-                            item.classList.remove('search-hidden');
-                            visibleInGroup++;
-                        } else {
-                            item.classList.add('search-hidden');
-                        }
-                    });
-
-                    if (visibleInGroup === 0) {
-                        group.section.classList.add('group-hidden');
-                    } else {
-                        group.section.classList.remove('group-hidden');
-                        anyVisibleTotal = true;
-                    }
-                });
-
-                if (!anyVisibleTotal) {
-                    searchEmpty.classList.add('show');
-                } else {
-                    searchEmpty.classList.remove('show');
-                }
-            }
-
-            // 快捷定位锚点点击平滑滚动
-            quickNavButtons.forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    quickNavButtons.forEach(function(b) { b.classList.remove('active'); });
-                    btn.classList.add('active');
-
-                    var targetId = btn.dataset.target;
-                    if (targetId === 'all') {
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                    } else {
-                        var el = document.getElementById(targetId);
-                        if (el) {
-                            var yOffset = -70;
-                            var y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
-                            window.scrollTo({ top: y, behavior: 'smooth' });
-                        }
-                    }
-                });
-            });
-
-            searchToggle.addEventListener('click', function() {
-                searchInput.focus();
-                searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            });
-
-            searchClear.addEventListener('click', function() {
-                searchInput.value = '';
-                searchClear.style.display = 'none';
-                searchInput.focus();
-                filterTools();
-            });
-
-            searchInput.addEventListener('input', filterTools);
-
-            // 主题切换逻辑
-            var themeToggleBtn = document.getElementById('themeToggle');
-            function applyTheme(theme) {
-                if (theme === 'light') {
-                    document.body.classList.add('light-theme');
-                    document.documentElement.classList.add('light-theme');
-                    localStorage.setItem('pctool_theme', 'light');
-                } else {
-                    document.body.classList.remove('light-theme');
-                    document.documentElement.classList.remove('light-theme');
-                    localStorage.setItem('pctool_theme', 'dark');
-                }
-            }
-
-            var currentTheme = localStorage.getItem('pctool_theme') || 'dark';
-            applyTheme(currentTheme);
-
-            if (themeToggleBtn) {
-                themeToggleBtn.addEventListener('click', function() {
-                    var isLight = document.body.classList.contains('light-theme');
-                    applyTheme(isLight ? 'dark' : 'light');
-                });
-            }
-        })();
-    </script>
 </body>
 </html>
