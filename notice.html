@@ -1047,7 +1047,7 @@
             var STEP_DISTANCE = 430;
 
             function stepScroll(direction) {
-                // 如果正在连击，基于目标值继续累加，彻底告别卡顿延迟
+                // 如果正在连击，基于目标值继续累加，减少卡顿延迟
                 var basePos = (currentTargetScroll !== null) ? currentTargetScroll : trackWrap.scrollLeft;
                 smoothScrollTo(basePos + (direction * STEP_DISTANCE), 260);
             }
