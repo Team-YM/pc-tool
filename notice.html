@@ -490,7 +490,7 @@
     <canvas id="bg-canvas" class="bg-canvas"></canvas>
 
     <div class="top-nav">
-        <a href="index.html" class="back-link">
+        <a href="home.html" class="back-link" id="backToHomeLink">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
             返回首页
         </a>
@@ -1010,6 +1010,17 @@
                     document.documentElement.classList.add('light-theme');
                     if (document.body) document.body.classList.add('light-theme');
                     else document.addEventListener('DOMContentLoaded', function() { document.body.classList.add('light-theme'); });
+                }
+            } catch(e) {}
+
+            // 智能识别移动端/桌面端导向对应的 home
+            try {
+                var ua = navigator.userAgent || navigator.vendor || window.opera;
+                var isMobile = /Mobi|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|webOS/i.test(ua);
+                var isSmallScreen = window.innerWidth <= 768;
+                var link = document.getElementById('backToHomeLink');
+                if (link && (isMobile || isSmallScreen)) {
+                    link.setAttribute('href', 'home-mobile.html');
                 }
             } catch(e) {}
         })();
