@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII 字符艺术生成器 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .container {
+            max-width: 980px;
+            width: 100%;
+        }
+        .header-desc {
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #a1a1aa;
+        }
+        /* 模式切换 Tab */
+        .tab-nav {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 12px;
+        }
+        .tab-btn {
+            padding: 8px 18px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #a1a1aa;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tab-btn:hover {
+            color: #f4f4f5;
+            background: rgba(255, 255, 255, 0.08);
+        }
+        .tab-btn.active {
+            background: rgba(129, 140, 248, 0.2);
+            border-color: #818cf8;
+            color: #c7d2fe;
+            font-weight: 600;
+        }
+        body.light-theme .tab-btn {
+            background: rgba(0, 0, 0, 0.04);
+            border-color: rgba(0, 0, 0, 0.08);
+            color: #4b5563;
+        }
+        body.light-theme .tab-btn.active {
+            background: rgba(99, 102, 241, 0.12);
+            border-color: #6366f1;
+            color: #4f46e5;
+        }
+
+        .tab-panel {
+            display: none;
+            flex-direction: column;
+            gap: 18px;
+            text-align: left;
+        }
+        .tab-panel.active {
+            display: flex;
+        }
+
+        /* 统一控制器行 */
+        .ctrl-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 14px;
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 14px 18px;
+        }
+        body.light-theme .ctrl-row {
+            background: rgba(255, 255, 255, 0.85);
+            border-color: rgba(0, 0, 0, 0.08);
+        }
+
+        .ctrl-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #d4d4d8;
+        }
+        body.light-theme .ctrl-item {
+            color: #374151;
+        }
+
+        .select-ctrl, .input-text {
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #f4f4f5;
+            font-size: 13px;
+            outline: none;
+        }
+        body.light-theme .select-ctrl,
+        body.light-theme .input-text {
+            background: #fff;
+            border-color: rgba(0, 0, 0, 0.15);
+            color: #111827;
+        }
+
+        .input-text {
+            width: 100%;
+            font-family: inherit;
+        }
+
+        .slider-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .slider-wrap input[type="range"] {
+            width: 110px;
+            cursor: pointer;
+        }
+
+        /* 结果预览区 */
+        .output-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .output-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            color: #a1a1aa;
+        }
+        .output-box {
+            width: 100%;
+            height: 380px;
+            padding: 14px;
+            background: #0d0d10;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: #a5f3fc;
+            font-family: "Consolas", "Courier New", monospace;
+            font-size: 11px;
+            line-height: 1.1;
+            letter-spacing: 0px;
+            white-space: pre;
+            overflow: auto;
+            resize: vertical;
+            outline: none;
+            user-select: text;
+        }
+        body.light-theme .output-box {
+            background: #f8fafc;
+            border-color: rgba(0, 0, 0, 0.12);
+            color: #0f172a;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+    <a href="../home.html" class="back-link">← 返回首页</a>
+
+    <div class="container">
+        <h1>ASCII 字符艺术生成器</h1>
+        <p class="header-desc">纯前端客户端处理：支持将任意图片转换为精细字符画，或将文字转为经典命令行风格大字 Banner。</p>
+
+        <!-- 模式切换导航 -->
+        <div class="tab-nav">
+            <button class="tab-btn active" id="tabImgBtn">图片转字符画</button>
+            <button class="tab-btn" id="tabTextBtn">文字转 ASCII Banner</button>
+        </div>
+
+        <!-- 面板一：图片转字符画 -->
+        <div class="tab-panel active" id="panelImg">
+            <div class="upload-area" id="dropArea">
+                <input type="file" id="imageInput" accept="image/*" style="display: none;">
+                <p>点击选择图片，或直接拖拽图片至此区域</p>
+            </div>
+
+            <div class="ctrl-row">
+                <div class="ctrl-item">
+                    <span>字符密度：</span>
+                    <select id="charSetSelect" class="select-ctrl">
+                        <option value="standard">标准灰度 (@%#*+=-:. )</option>
+                        <option value="detailed">精细度级 ($@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\|()1{}[]?-_+~<>i!lI;:,"^`'. )</option>
+                        <option value="simple">极简高亮 (#+-. )</option>
+                        <option value="binary">二进制字符 (01 )</option>
+                        <option value="blocks">方块像素 (█▓▒░ )</option>
+                    </select>
+                </div>
+                <div class="ctrl-item slider-wrap">
+                    <span>输出宽度：</span>
+                    <input type="range" id="scaleSlider" min="30" max="180" value="90">
+                    <span id="scaleValText" style="font-family: monospace; width: 35px;">90列</span>
+                </div>
+                <div class="ctrl-item">
+                    <label style="cursor:pointer;"><input type="checkbox" id="invertCheck"> 反转黑白</label>
+                </div>
+            </div>
+
+            <div class="output-wrap">
+                <div class="output-header">
+                    <span>字符画结果预览</span>
+                    <div class="btn-group">
+                        <button class="btn" id="btnCopyImgAscii" style="padding:6px 14px; font-size:12px; margin:0;">复制文本</button>
+                        <button class="btn" id="btnDownloadImgAscii" style="padding:6px 14px; font-size:12px; margin:0;">下载 .txt</button>
+                    </div>
+                </div>
+                <textarea class="output-box" id="imgAsciiOutput" readonly placeholder="上传图片后在此处即刻渲染出字符画..."></textarea>
+            </div>
+        </div>
+
+        <!-- 面板二：文字转 ASCII Banner -->
+        <div class="tab-panel" id="panelText">
+            <div class="ctrl-row" style="flex-direction:column; align-items:stretch; gap:10px;">
+                <div class="ctrl-item" style="width: 100%;">
+                    <span>输入文字：</span>
+                    <input type="text" id="bannerTextInput" class="input-text" value="PC-TOOL" placeholder="输入英文字符或数字 (例如 PC-TOOL)...">
+                </div>
+                <div style="display:flex; gap:16px; flex-wrap:wrap;">
+                    <div class="ctrl-item">
+                        <span>字体样式：</span>
+                        <select id="bannerFontSelect" class="select-ctrl">
+                            <option value="block">立体粗体 (Block / 3D)</option>
+                            <option value="banner">经典横幅 (Banner)</option>
+                            <option value="lean">极简斜体 (Lean / Slant)</option>
+                            <option value="simple">点阵小字 (Simple Dot)</option>
+                        </select>
+                    </div>
+                    <div class="ctrl-item">
+                        <button class="btn" id="btnGenBanner" style="padding:6px 16px; font-size:12px; margin:0;">即刻生成</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="output-wrap">
+                <div class="output-header">
+                    <span>ASCII 大字 Banner 预览</span>
+                    <div class="btn-group">
+                        <button class="btn" id="btnCopyBanner" style="padding:6px 14px; font-size:12px; margin:0;">复制 Banner</button>
+                        <button class="btn" id="btnDownloadBanner" style="padding:6px 14px; font-size:12px; margin:0;">下载 .txt</button>
+                    </div>
+                </div>
+                <textarea class="output-box" id="bannerOutput" readonly placeholder="在此预览生成的字符大字..."></textarea>
+            </div>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        (function() {
+            // Tab 切换
+            var tabImgBtn = document.getElementById('tabImgBtn');
+            var tabTextBtn = document.getElementById('tabTextBtn');
+            var panelImg = document.getElementById('panelImg');
+            var panelText = document.getElementById('panelText');
+
+            tabImgBtn.onclick = function() {
+                tabImgBtn.classList.add('active');
+                tabTextBtn.classList.remove('active');
+                panelImg.classList.add('active');
+                panelText.classList.remove('active');
+            };
+
+            tabTextBtn.onclick = function() {
+                tabTextBtn.classList.add('active');
+                tabImgBtn.classList.remove('active');
+                panelText.classList.add('active');
+                panelImg.classList.remove('active');
+                if (!document.getElementById('bannerOutput').value) {
+                    renderBanner();
+                }
+            };
+
+            // ========== 图片转字符画逻辑 ==========
+            var dropArea = document.getElementById('dropArea');
+            var imageInput = document.getElementById('imageInput');
+            var charSetSelect = document.getElementById('charSetSelect');
+            var scaleSlider = document.getElementById('scaleSlider');
+            var scaleValText = document.getElementById('scaleValText');
+            var invertCheck = document.getElementById('invertCheck');
+            var imgAsciiOutput = document.getElementById('imgAsciiOutput');
+            var btnCopyImgAscii = document.getElementById('btnCopyImgAscii');
+            var btnDownloadImgAscii = document.getElementById('btnDownloadImgAscii');
+
+            var loadedImg = null;
+
+            var charSets = {
+                standard: "@%#*+=-:. ",
+                detailed: "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\\|()1{}[]?-_+~<>i!lI;:,\"^`'. ",
+                simple: "#+-. ",
+                binary: "01 ",
+                blocks: "█▓▒░ "
+            };
+
+            dropArea.onclick = function() { imageInput.click(); };
+            dropArea.ondragover = function(e) { e.preventDefault(); dropArea.style.borderColor = '#818cf8'; };
+            dropArea.ondragleave = function() { dropArea.style.borderColor = ''; };
+            dropArea.ondrop = function(e) {
+                e.preventDefault();
+                dropArea.style.borderColor = '';
+                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    processFile(e.dataTransfer.files[0]);
+                }
+            };
+            imageInput.onchange = function(e) {
+                if (e.target.files && e.target.files[0]) {
+                    processFile(e.target.files[0]);
+                }
+            };
+
+            function processFile(file) {
+                if (!file.type.startsWith('image/')) {
+                    if (typeof showToast === 'function') showToast('请选择有效的图片文件');
+                    return;
+                }
+                var reader = new FileReader();
+                reader.onload = function(evt) {
+                    var img = new Image();
+                    img.onload = function() {
+                        loadedImg = img;
+                        renderImageAscii();
+                    };
+                    img.src = evt.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+
+            scaleSlider.oninput = function() {
+                scaleValText.textContent = this.value + '列';
+                if (loadedImg) renderImageAscii();
+            };
+            charSetSelect.onchange = function() { if (loadedImg) renderImageAscii(); };
+            invertCheck.onchange = function() { if (loadedImg) renderImageAscii(); };
+
+            function renderImageAscii() {
+                if (!loadedImg) return;
+                var targetWidth = parseInt(scaleSlider.value, 10);
+                // 字符宽高比约为 1:2，因此垂直缩放乘以 0.5
+                var targetHeight = Math.round((loadedImg.height / loadedImg.width) * targetWidth * 0.52);
+
+                var tempCanvas = document.createElement('canvas');
+                tempCanvas.width = targetWidth;
+                tempCanvas.height = targetHeight;
+                var tempCtx = tempCanvas.getContext('2d');
+                tempCtx.drawImage(loadedImg, 0, 0, targetWidth, targetHeight);
+
+                var imgData = tempCtx.getImageData(0, 0, targetWidth, targetHeight).data;
+                var set = charSets[charSetSelect.value] || charSets.standard;
+                var isInverted = invertCheck.checked;
+                var result = [];
+
+                for (var y = 0; y < targetHeight; y++) {
+                    var row = '';
+                    for (var x = 0; x < targetWidth; x++) {
+                        var idx = (y * targetWidth + x) * 4;
+                        var r = imgData[idx];
+                        var g = imgData[idx + 1];
+                        var b = imgData[idx + 2];
+                        var a = imgData[idx + 3];
+
+                        if (a < 32) {
+                            row += ' ';
+                            continue;
+                        }
+
+                        // 心理学灰度亮度公式
+                        var brightness = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+                        if (isInverted) brightness = 1 - brightness;
+
+                        var charIdx = Math.floor(brightness * (set.length - 1));
+                        charIdx = Math.max(0, Math.min(set.length - 1, charIdx));
+                        row += set[charIdx];
+                    }
+                    result.push(row);
+                }
+
+                imgAsciiOutput.value = result.join('\n');
+            }
+
+            btnCopyImgAscii.onclick = function() {
+                if (!imgAsciiOutput.value) return;
+                navigator.clipboard.writeText(imgAsciiOutput.value).then(function() {
+                    if (typeof showToast === 'function') showToast('字符画已复制到剪贴板');
+                });
+            };
+
+            btnDownloadImgAscii.onclick = function() {
+                if (!imgAsciiOutput.value) return;
+                var blob = new Blob([imgAsciiOutput.value], { type: 'text/plain;charset=utf-8' });
+                var link = document.createElement('a');
+                link.download = 'ascii-art.txt';
+                link.href = URL.createObjectURL(blob);
+                link.click();
+            };
+
+            // ========== 文字转 ASCII Banner 逻辑 ==========
+            var bannerTextInput = document.getElementById('bannerTextInput');
+            var bannerFontSelect = document.getElementById('bannerFontSelect');
+            var btnGenBanner = document.getElementById('btnGenBanner');
+            var bannerOutput = document.getElementById('bannerOutput');
+            var btnCopyBanner = document.getElementById('btnCopyBanner');
+            var btnDownloadBanner = document.getElementById('btnDownloadBanner');
+
+            // 经典 Block 字体 5x5 点阵定义
+            var FONT_5X5 = {
+                'A': [" █ ", "█ █", "███", "█ █", "█ █"],
+                'B': ["██ ", "█ █", "██ ", "█ █", "██ "],
+                'C': [" ██", "█  ", "█  ", "█  ", " ██"],
+                'D': ["██ ", "█ █", "█ █", "█ █", "██ "],
+                'E': ["███", "█  ", "██ ", "█  ", "███"],
+                'F': ["███", "█  ", "██ ", "█  ", "█  "],
+                'G': [" ██", "█  ", "█ █", "█ █", " ██"],
+                'H': ["█ █", "█ █", "███", "█ █", "█ █"],
+                'I': ["███", " █ ", " █ ", " █ ", "███"],
+                'J': ["  █", "  █", "  █", "█ █", " █ "],
+                'K': ["█ █", "██ ", "█  ", "██ ", "█ █"],
+                'L': ["█  ", "█  ", "█  ", "█  ", "███"],
+                'M': ["█ █", "███", "█ █", "█ █", "█ █"],
+                'N': ["██ ", "█ █", "█ █", "█ █", "█ █"],
+                'O': [" █ ", "█ █", "█ █", "█ █", " █ "],
+                'P': ["██ ", "█ █", "██ ", "█  ", "█  "],
+                'Q': [" █ ", "█ █", "█ █", " ██", "  █"],
+                'R': ["██ ", "█ █", "██ ", "█ █", "█ █"],
+                'S': [" ██", "█  ", " █ ", "  █", "██ "],
+                'T': ["███", " █ ", " █ ", " █ ", " █ "],
+                'U': ["█ █", "█ █", "█ █", "█ █", " █ "],
+                'V': ["█ █", "█ █", "█ █", " █ ", " █ "],
+                'W': ["█ █", "█ █", "█ █", "███", "█ █"],
+                'X': ["█ █", " █ ", " █ ", " █ ", "█ █"],
+                'Y': ["█ █", " █ ", " █ ", " █ ", " █ "],
+                'Z': ["███", "  █", " █ ", "█  ", "███"],
+                '0': ["███", "█ █", "█ █", "█ █", "███"],
+                '1': [" █ ", "██ ", " █ ", " █ ", "███"],
+                '2': ["██ ", "  █", " █ ", "█  ", "███"],
+                '3': ["██ ", "  █", "██ ", "  █", "██ "],
+                '4': ["█ █", "█ █", "███", "  █", "  █"],
+                '5': ["███", "█  ", "██ ", "  █", "██ "],
+                '6': [" █ ", "█  ", "██ ", "█ █", " █ "],
+                '7': ["███", "  █", " █ ", " █ ", " █ "],
+                '8': [" █ ", "█ █", " █ ", "█ █", " █ "],
+                '9': [" █ ", "█ █", " ██", "  █", " █ "],
+                '-': ["   ", "   ", "███", "   ", "   "],
+                '.': ["   ", "   ", "   ", "   ", " █ "],
+                ':': ["   ", " █ ", "   ", " █ ", "   "],
+                '!': [" █ ", " █ ", " █ ", "   ", " █ "],
+                '?': ["██ ", "  █", " █ ", "   ", " █ "],
+                ' ': ["   ", "   ", "   ", "   ", "   "]
+            };
+
+            function renderBanner() {
+                var text = (bannerTextInput.value || 'PC-TOOL').toUpperCase();
+                var style = bannerFontSelect.value;
+                var lines = ["", "", "", "", ""];
+
+                for (var i = 0; i < text.length; i++) {
+                    var ch = text[i];
+                    var matrix = FONT_5X5[ch] || FONT_5X5[' '];
+                    for (var row = 0; row < 5; row++) {
+                        var slice = matrix[row];
+                        if (style === 'banner') {
+                            slice = slice.replace(/█/g, '#');
+                        } else if (style === 'lean') {
+                            slice = slice.replace(/█/g, '/');
+                        } else if (style === 'simple') {
+                            slice = slice.replace(/█/g, '*');
+                        }
+                        lines[row] += slice + "  ";
+                    }
+                }
+                bannerOutput.value = lines.join('\n');
+            }
+
+            btnGenBanner.onclick = renderBanner;
+            bannerTextInput.addEventListener('input', renderBanner);
+            bannerFontSelect.onchange = renderBanner;
+
+            btnCopyBanner.onclick = function() {
+                if (!bannerOutput.value) return;
+                navigator.clipboard.writeText(bannerOutput.value).then(function() {
+                    if (typeof showToast === 'function') showToast('Banner 已复制到剪贴板');
+                });
+            };
+
+            btnDownloadBanner.onclick = function() {
+                if (!bannerOutput.value) return;
+                var blob = new Blob([bannerOutput.value], { type: 'text/plain;charset=utf-8' });
+                var link = document.createElement('a');
+                link.download = 'ascii-banner.txt';
+                link.href = URL.createObjectURL(blob);
+                link.click();
+            };
+        })();
+    </script>
+</body>
+</html>

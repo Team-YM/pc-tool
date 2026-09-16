@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文字转拼音 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <link rel="stylesheet" href="common.css">
+    <script src="https://cdn.jsdelivr.net/npm/pinyin-pro@3.26.0/dist/index.js" onerror="window.pinyinLoadFailed=true"></script>
+    <style>
+        .container {
+            max-width: 920px;
+            width: 100%;
+        }
+        .header-desc {
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #a1a1aa;
+        }
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            text-align: left;
+        }
+        body.light-theme .toolbar {
+            background: rgba(255, 255, 255, 0.85);
+            border-color: rgba(0, 0, 0, 0.08);
+        }
+        .tool-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #d4d4d8;
+        }
+        body.light-theme .tool-item {
+            color: #374151;
+        }
+        .select-ctrl {
+            padding: 6px 10px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #f4f4f5;
+            border-radius: 6px;
+            font-size: 13px;
+            outline: none;
+        }
+        body.light-theme .select-ctrl {
+            background: #fff;
+            border-color: rgba(0, 0, 0, 0.15);
+            color: #111827;
+        }
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-left: auto;
+        }
+        .btn-small {
+            padding: 6px 14px;
+            font-size: 13px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #f4f4f5;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-small:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+        .btn-small.primary {
+            background: #4f46e5;
+            border-color: #6366f1;
+            color: #fff;
+        }
+        .btn-small.primary:hover {
+            background: #4338ca;
+        }
+        body.light-theme .btn-small {
+            background: rgba(0, 0, 0, 0.04);
+            border-color: rgba(0, 0, 0, 0.1);
+            color: #1f2937;
+        }
+        body.light-theme .btn-small.primary {
+            background: #4f46e5;
+            color: #fff;
+        }
+        .grid-editor {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .box-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            text-align: left;
+        }
+        .box-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: #a1a1aa;
+        }
+        .text-area {
+            width: 100%;
+            height: 260px;
+            padding: 14px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: #f4f4f5;
+            font: 14px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .text-area:focus {
+            border-color: rgba(129, 140, 248, 0.5);
+        }
+        body.light-theme .text-area {
+            background: rgba(255, 255, 255, 0.9);
+            border-color: rgba(0, 0, 0, 0.12);
+            color: #111827;
+        }
+        .notice-info {
+            font-size: 12px;
+            color: #fbbf24;
+            min-height: 18px;
+            margin-top: 8px;
+            text-align: left;
+        }
+        @media (max-width: 720px) {
+            .grid-editor {
+                grid-template-columns: 1fr;
+            }
+            .btn-group {
+                margin-left: 0;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+    <a href="../home.html" class="back-link">← 返回首页</a>
+
+    <div class="container">
+        <h1>文字转拼音</h1>
+        <p class="header-desc">支持汉字精准转换为拼音，提供声调符号、数字声调、无声调及首字母等多种专业标注模式。</p>
+
+        <div class="toolbar">
+            <div class="tool-item">
+                <span>声调格式：</span>
+                <select id="toneTypeSelect" class="select-ctrl">
+                    <option value="symbol" selected>声调符号 (zhōng wén)</option>
+                    <option value="num">数字声调 (zhong1 wen2)</option>
+                    <option value="none">无声调 (zhong wen)</option>
+                </select>
+            </div>
+
+            <div class="tool-item">
+                <span>输出模式：</span>
+                <select id="modeSelect" class="select-ctrl">
+                    <option value="pinyin" selected>标准拼音全拼</option>
+                    <option value="initial">仅首字母 (zw)</option>
+                </select>
+            </div>
+
+            <div class="tool-item">
+                <label style="cursor:pointer;"><input type="checkbox" id="vCheck"> ü 替换为 v</label>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn-small primary" id="btnConvert">执行转换</button>
+                <button class="btn-small" id="btnClear">清空</button>
+                <button class="btn-small" id="btnCopy">复制结果</button>
+            </div>
+        </div>
+
+        <div class="grid-editor">
+            <div class="box-wrap">
+                <div class="box-label">
+                    <span>输入中文文本</span>
+                    <span id="inCharCount">0 字</span>
+                </div>
+                <textarea id="textInput" class="text-area" placeholder="在此输入需要转换的中文文本...例如：生活远比游戏更有趣"></textarea>
+            </div>
+
+            <div class="box-wrap">
+                <div class="box-label">
+                    <span>转换结果</span>
+                    <span id="outCharCount">0 字符</span>
+                </div>
+                <textarea id="textOutput" class="text-area" readonly placeholder="拼音结果将在此显示..."></textarea>
+            </div>
+        </div>
+
+        <div class="notice-info" id="noticeInfo"></div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        (function() {
+            var textInput = document.getElementById('textInput');
+            var textOutput = document.getElementById('textOutput');
+            var toneTypeSelect = document.getElementById('toneTypeSelect');
+            var modeSelect = document.getElementById('modeSelect');
+            var vCheck = document.getElementById('vCheck');
+            var btnConvert = document.getElementById('btnConvert');
+            var btnClear = document.getElementById('btnClear');
+            var btnCopy = document.getElementById('btnCopy');
+            var inCharCount = document.getElementById('inCharCount');
+            var outCharCount = document.getElementById('outCharCount');
+            var noticeInfo = document.getElementById('noticeInfo');
+
+            // 基础常见拼音字典映射表（离线与CDN失效兜底方案）
+            var FALLBACK_MAP = {
+                '我':'wo', '们':'men', '这':'zhe', '个':'ge', '项':'xiang', '目':'mu',
+                '还':'hai', '能':'neng', '添':'tian', '加':'jia', '什':'shen', '么':'me',
+                '功':'gong', '能':'neng', '生':'sheng', '活':'huo', '远':'yuan', '比':'bi',
+                '游':'you', '戏':'xi', '更':'geng', '有':'you', '趣':'qu', '字':'zi',
+                '符':'fu', '艺':'yi', '术':'shu', '像':'xiang', '素':'su', '画':'hua',
+                '编':'bian', '辑':'ji', '器':'qi', '中':'zhong', '文':'wen', '拼':'pin',
+                '音':'yin', '开':'kai', '发':'fa', '工':'gong', '具':'ju', '箱':'xiang',
+                '你':'ni', '好':'hao', '谢':'xie', '在':'zai', '线':'xian', '高':'gao',
+                '效':'xiao', '网':'wang', '络':'luo', '计':'ji', '算':'suan', '代':'dai',
+                '码':'ma', '格':'ge', '式':'shi', '转':'zhuan', '换':'huan'
+            };
+
+            function convertText() {
+                var val = textInput.value;
+                if (!val) {
+                    textOutput.value = '';
+                    outCharCount.textContent = '0 字符';
+                    return;
+                }
+
+                var tone = toneTypeSelect.value;
+                var mode = modeSelect.value;
+                var useV = vCheck.checked;
+
+                var api = window.pinyinPro || window.pinyin;
+                if (api && typeof api.pinyin === 'function') {
+                    try {
+                        var options = {
+                            toneType: tone,
+                            pattern: mode === 'initial' ? 'first' : 'pinyin',
+                            v: useV,
+                            type: 'string',
+                            nonZh: 'consecutive'
+                        };
+                        var res = api.pinyin(val, options);
+                        textOutput.value = res;
+                        outCharCount.textContent = res.length + ' 字符';
+                        noticeInfo.textContent = '';
+                        return;
+                    } catch (e) {
+                        console.error('pinyin-pro 转换异常', e);
+                    }
+                }
+
+                // 兜底降级处理
+                noticeInfo.textContent = '提示：拼音核心库正在加载或网络受限，已自动启用常见字离线字典。';
+                var fallbackRes = '';
+                for (var i = 0; i < val.length; i++) {
+                    var ch = val[i];
+                    if (FALLBACK_MAP[ch]) {
+                        fallbackRes += (mode === 'initial' ? FALLBACK_MAP[ch][0] : FALLBACK_MAP[ch]) + ' ';
+                    } else {
+                        fallbackRes += ch;
+                    }
+                }
+                textOutput.value = fallbackRes.trim();
+                outCharCount.textContent = textOutput.value.length + ' 字符';
+            }
+
+            textInput.addEventListener('input', function() {
+                inCharCount.textContent = textInput.value.length + ' 字';
+                convertText();
+            });
+
+            toneTypeSelect.onchange = convertText;
+            modeSelect.onchange = convertText;
+            vCheck.onchange = convertText;
+            btnConvert.onclick = convertText;
+
+            btnClear.onclick = function() {
+                textInput.value = '';
+                textOutput.value = '';
+                inCharCount.textContent = '0 字';
+                outCharCount.textContent = '0 字符';
+                noticeInfo.textContent = '';
+            };
+
+            btnCopy.onclick = function() {
+                if (!textOutput.value) return;
+                navigator.clipboard.writeText(textOutput.value).then(function() {
+                    if (typeof showToast === 'function') showToast('拼音结果已复制');
+                });
+            };
+        })();
+    </script>
+</body>
+</html>
