@@ -490,7 +490,7 @@
     <canvas id="bg-canvas" class="bg-canvas"></canvas>
 
     <div class="top-nav">
-        <a href="home.html" class="back-link" id="backToHomeLink">
+        <a href="home.html" class="back-link" id="backToHomeLink" onclick="handleGoBack(event)">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
             返回首页
         </a>
@@ -1004,6 +1004,15 @@
     </div>
 
     <script>
+        function handleGoBack(e) {
+            if (e) e.preventDefault();
+            var ua = navigator.userAgent || navigator.vendor || window.opera;
+            var isMobile = /Mobi|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|webOS/i.test(ua);
+            var isSmallScreen = window.innerWidth <= 768;
+            var target = (isMobile || isSmallScreen) ? 'home-mobile.html' : 'home.html';
+            window.location.href = target;
+        }
+
         (function() {
             try {
                 if (localStorage.getItem('pctool_theme') === 'light') {
@@ -1019,8 +1028,8 @@
                 var isMobile = /Mobi|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|webOS/i.test(ua);
                 var isSmallScreen = window.innerWidth <= 768;
                 var link = document.getElementById('backToHomeLink');
-                if (link && (isMobile || isSmallScreen)) {
-                    link.setAttribute('href', 'home-mobile.html');
+                if (link) {
+                    link.setAttribute('href', (isMobile || isSmallScreen) ? 'home-mobile.html' : 'home.html');
                 }
             } catch(e) {}
         })();
