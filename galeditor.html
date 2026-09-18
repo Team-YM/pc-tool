@@ -1,0 +1,1843 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Galgame 剧本编辑器</title>
+<style>
+  * { box-sizing: border-box; }
+  :root {
+    --bg: #1e1e1e;
+    --bg2: #252526;
+    --bg3: #2d2d30;
+    --border: #3c3c3c;
+    --fg: #d4d4d4;
+    --fg2: #858585;
+    --accent: #569cd6;
+    --ok: #6a9955;
+    --warn: #ffcc00;
+    --err: #f48771;
+    --sel: #264f78;
+  }
+  html, body {
+    margin: 0; padding: 0;
+    height: 100%; overflow: hidden;
+    background: var(--bg); color: var(--fg);
+    font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+    font-size: 13px;
+  }
+  #app {
+    display: flex; flex-direction: column;
+    height: 100vh;
+  }
+
+  /* 顶部工具栏 */
+  .toolbar {
+    display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+    padding: 6px 10px;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .toolbar button {
+    padding: 5px 10px; font-size: 12px; cursor: pointer;
+    border: 1px solid var(--border); border-radius: 4px;
+    background: #333; color: var(--fg);
+  }
+  .toolbar button:hover { background: #444; }
+  .toolbar button:disabled { opacity: .4; cursor: not-allowed; }
+  .toolbar button.primary { background: #0e639c; border-color: #1177bb; }
+  .toolbar button.primary:hover { background: #1177bb; }
+  .toolbar button.danger { background: #6b2a2a; border-color: #8b3a3a; }
+  .toolbar button.danger:hover { background: #8b3a3a; }
+  .toolbar .sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
+  .toolbar .info { margin-left: auto; font-size: 12px; color: var(--fg2); }
+  .toolbar .info .ok { color: var(--ok); }
+  .toolbar .info .warn { color: var(--warn); }
+
+  /* 主区域 */
+  .main {
+    display: grid;
+    grid-template-columns: 320px 1fr 400px;
+    flex: 1;
+    overflow: hidden;
+  }
+  .main > div {
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    border-right: 1px solid var(--border);
+  }
+  .main > div:last-child { border-right: none; }
+
+  /* 左侧：对话列表 */
+  .panel-header {
+    padding: 6px 10px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    font-size: 12px; color: var(--fg2);
+    display: flex; align-items: center; gap: 6px;
+    flex-shrink: 0;
+  }
+  .panel-header input[type=text] {
+    flex: 1; padding: 4px 6px;
+    background: var(--bg); color: var(--fg);
+    border: 1px solid var(--border); border-radius: 3px;
+    font-size: 12px; outline: none;
+  }
+  .panel-header input[type=text]:focus { border-color: var(--accent); }
+  .panel-header button {
+    padding: 3px 8px; font-size: 12px; cursor: pointer;
+    background: #333; color: var(--fg);
+    border: 1px solid var(--border); border-radius: 3px;
+  }
+  .panel-header button:hover { background: #444; }
+
+  .list-box {
+    flex: 1; overflow-y: auto;
+    background: var(--bg);
+  }
+  .list-item {
+    padding: 5px 10px;
+    font-size: 12px;
+    border-bottom: 1px solid #2a2a2a;
+    cursor: pointer;
+    display: flex; gap: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .list-item:hover { background: var(--bg2); }
+  .list-item.selected { background: var(--sel); }
+  .list-item .id { color: var(--accent); width: 50px; flex-shrink: 0; text-align: right; }
+  .list-item .spk { color: var(--warn); width: 70px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; }
+  .list-item .txt { color: var(--fg2); overflow: hidden; text-overflow: ellipsis; }
+
+  /* 中间：编辑表单 */
+  .form-scroll {
+    flex: 1; overflow-y: auto; padding: 10px;
+  }
+  .field {
+    margin-bottom: 10px;
+  }
+  .field label {
+    display: block; font-size: 12px;
+    color: var(--fg2); margin-bottom: 3px;
+  }
+  .field input[type=text],
+  .field textarea {
+    width: 100%; padding: 5px 8px;
+    background: var(--bg2); color: var(--fg);
+    border: 1px solid var(--border); border-radius: 3px;
+    font-family: "Consolas", "Monaco", monospace; font-size: 12px;
+    outline: none;
+  }
+  .field input[type=text]:focus,
+  .field textarea:focus { border-color: var(--accent); }
+  .field textarea { resize: vertical; min-height: 80px; }
+  .field .with-btn { display: flex; gap: 4px; }
+  .field .with-btn input { flex: 1; }
+  .field .with-btn button {
+    padding: 5px 8px; font-size: 12px;
+    background: #333; color: var(--fg);
+    border: 1px solid var(--border); border-radius: 3px;
+    cursor: pointer; white-space: nowrap;
+  }
+  .field .with-btn button:hover { background: #444; }
+
+  .field-row { display: flex; gap: 8px; }
+  .field-row .field { flex: 1; }
+
+  .section {
+    border: 1px solid var(--border); border-radius: 4px;
+    padding: 8px; margin-bottom: 12px;
+    background: var(--bg2);
+  }
+  .section h3 {
+    font-size: 12px; margin: 0 0 8px;
+    color: var(--accent); font-weight: 600;
+  }
+
+  .options-row {
+    display: flex; gap: 6px; align-items: center;
+    margin-bottom: 6px;
+  }
+  .options-row label { font-size: 12px; color: var(--fg2); width: 50px; flex-shrink: 0; }
+  .options-row input { flex: 1; }
+  .options-row input.target { flex: 0 0 80px; }
+
+  .checkbox-row {
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 10px;
+  }
+  .checkbox-row input { cursor: pointer; }
+  .checkbox-row label { cursor: pointer; font-size: 12px; }
+
+  /* 右侧：预览 */
+  .preview-wrap {
+    flex: 1; overflow-y: auto;
+    padding: 10px;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  #previewCanvas {
+    background: #0d0d0d;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+  .preview-info {
+    margin-top: 8px; font-size: 12px; color: var(--fg2);
+    text-align: center;
+  }
+  .preview-info .zoom { color: var(--accent); }
+
+  /* 底部状态栏 */
+  .status-bar {
+    padding: 4px 10px;
+    background: var(--bg3);
+    border-top: 1px solid var(--border);
+    font-size: 12px; color: var(--fg2);
+    display: flex; justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .status-bar .left { color: var(--fg2); }
+  .status-bar .right { color: var(--accent); }
+
+  /* 弹窗 */
+  .modal {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.7);
+    display: none; align-items: center; justify-content: center;
+    z-index: 1000;
+  }
+  .modal.show { display: flex; }
+  .modal-box {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+    min-width: 400px; max-width: 600px;
+    max-height: 80vh; overflow-y: auto;
+  }
+  .modal-box h2 { margin: 0 0 12px; font-size: 16px; color: var(--accent); }
+  .modal-box .btn-row {
+    display: flex; justify-content: flex-end; gap: 8px;
+    margin-top: 16px;
+  }
+  .modal-box button {
+    padding: 6px 14px; font-size: 13px;
+    background: #333; color: var(--fg);
+    border: 1px solid var(--border); border-radius: 4px;
+    cursor: pointer;
+  }
+  .modal-box button.primary { background: #0e639c; border-color: #1177bb; }
+  .modal-box button:hover { background: #444; }
+  .modal-box button.primary:hover { background: #1177bb; }
+
+  /* 资源选择列表 */
+  .res-list {
+    max-height: 300px; overflow-y: auto;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 3px; margin-top: 8px;
+  }
+  .res-list .item {
+    padding: 4px 8px; font-size: 12px; cursor: pointer;
+    border-bottom: 1px solid #2a2a2a;
+  }
+  .res-list .item:hover { background: var(--bg2); }
+  .res-list .item.selected { background: var(--sel); }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 40px; left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--bg3); color: var(--fg);
+    padding: 8px 16px; border-radius: 4px;
+    border: 1px solid var(--border);
+    font-size: 13px;
+    opacity: 0; transition: all .3s;
+    z-index: 2000;
+  }
+  .toast.show {
+    opacity: 1; transform: translateX(-50%) translateY(0);
+  }
+
+  /* 响应式 */
+  @media (max-width: 1100px) {
+    .main { grid-template-columns: 250px 1fr 320px; }
+  }
+  @media (max-width: 800px) {
+    .main { grid-template-columns: 1fr; grid-template-rows: 200px 1fr 1fr; }
+    .main > div { border-right: none; border-bottom: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- 顶部工具栏 -->
+  <div class="toolbar">
+    <button id="btnImportScript">📂 导入剧本</button>
+    <button id="btnImportFolder" title="选择包含 bcgi/cimg/evig 的 common 文件夹">🖼️ 选择图片文件夹</button>
+    <span class="sep"></span>
+    <button id="btnPrev" title="Ctrl+A">◀ 上一个</button>
+    <button id="btnNext" title="Ctrl+D">下一个 ▶</button>
+    <span class="sep"></span>
+    <button id="btnSave" class="primary" title="Ctrl+S">💾 保存到内存</button>
+    <button id="btnExport" class="primary">📤 导出 scriptData*.txt</button>
+    <span class="sep"></span>
+    <button id="btnUndo" title="Ctrl+Z">↶ 撤销</button>
+    <button id="btnRedo" title="Ctrl+Y">↷ 重做</button>
+    <button id="btnCopyPrev" title="Ctrl+P">⤴ 复制上一页</button>
+    <span class="sep"></span>
+    <button id="btnClear" class="danger">🗑️ 清空</button>
+    <span class="info" id="toolbarInfo">就绪</span>
+  </div>
+
+  <!-- 主区域 -->
+  <div class="main">
+
+    <!-- 左：对话列表 -->
+    <div>
+      <div class="panel-header">
+        <input type="text" id="listSearch" placeholder="搜索 ID / 说话人 / 文本...">
+        <button id="btnListClear">✕</button>
+      </div>
+      <div class="list-box" id="listBox"></div>
+    </div>
+
+    <!-- 中：编辑表单 -->
+    <div>
+      <div class="panel-header">
+        <span id="editTitle">未选择对话</span>
+        <span style="margin-left:auto;font-size:11px;color:var(--fg2)">Ctrl+A/D 翻页 · Ctrl+S 保存</span>
+      </div>
+      <div class="form-scroll">
+        <div class="section">
+          <h3>基础字段</h3>
+
+          <div class="field">
+            <label>背景 (b)</label>
+            <div class="with-btn">
+              <input type="text" id="fBg">
+              <button data-prev="b" title="复制上一页">↑</button>
+              <button data-choose="bcgi">选择</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>立绘 (c)</label>
+            <div class="with-btn">
+              <input type="text" id="fChar">
+              <button data-prev="c" title="复制上一页">↑</button>
+              <button data-choose="cimg">选择</button>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label>人物</label>
+              <input type="text" id="fPerson">
+            </div>
+            <div class="field">
+              <label>服装</label>
+              <input type="text" id="fClothes">
+            </div>
+            <div class="field">
+              <label>姿势</label>
+              <input type="text" id="fPose">
+            </div>
+          </div>
+
+          <div class="field">
+            <div style="display:flex;gap:6px">
+              <button id="btnParseChar" style="flex:1;padding:5px;background:#333;color:var(--fg);border:1px solid var(--border);border-radius:3px;cursor:pointer">解析立绘名</button>
+              <button id="btnBuildChar" style="flex:1;padding:5px;background:#333;color:var(--fg);border:1px solid var(--border);border-radius:3px;cursor:pointer">拼接立绘名</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>CG (cg)</label>
+            <div class="with-btn">
+              <input type="text" id="fCg">
+              <button data-prev="cg" title="复制上一页">↑</button>
+              <button data-choose="evig">选择</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>说话人 (s)</label>
+            <input type="text" id="fSpeaker">
+          </div>
+
+          <div class="field">
+            <label>文本 (t)</label>
+            <textarea id="fText" rows="5"></textarea>
+          </div>
+
+          <div class="field">
+            <label>缩放模式 (z)  <span style="color:var(--fg2);font-weight:normal">0=无 1=小(0.8x) 2=大(1.2x)</span></label>
+            <select id="fZoom" style="width:100%;padding:5px;background:var(--bg2);color:var(--fg);border:1px solid var(--border);border-radius:3px">
+              <option value="0">0 - 无缩放</option>
+              <option value="1">1 - 小 (0.8x)</option>
+              <option value="2">2 - 大 (1.2x)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>选项设置</h3>
+          <div class="checkbox-row">
+            <input type="checkbox" id="fCo">
+            <label for="fCo">该页包含选项</label>
+          </div>
+
+          <div id="optionsBox">
+            <div class="options-row">
+              <label>选项1</label>
+              <input type="text" id="fC1">
+              <input type="number" class="target" id="fC1t" placeholder="跳转ID">
+            </div>
+            <div class="options-row">
+              <label>选项2</label>
+              <input type="text" id="fC2">
+              <input type="number" class="target" id="fC2t" placeholder="跳转ID">
+            </div>
+            <div class="options-row">
+              <label>选项3</label>
+              <input type="text" id="fC3">
+              <input type="number" class="target" id="fC3t" placeholder="跳转ID">
+            </div>
+            <div class="options-row">
+              <label>选项4</label>
+              <input type="text" id="fC4">
+              <input type="number" class="target" id="fC4t" placeholder="跳转ID">
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>操作</h3>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <button id="btnAdd" style="padding:5px 10px;background:#333;color:var(--fg);border:1px solid var(--border);border-radius:3px;cursor:pointer">＋ 添加对话</button>
+            <button id="btnInsert" style="padding:5px 10px;background:#333;color:var(--fg);border:1px solid var(--border);border-radius:3px;cursor:pointer">↳ 插入对话</button>
+            <button id="btnDelete" style="padding:5px 10px;background:#6b2a2a;color:var(--fg);border:1px solid #8b3a3a;border-radius:3px;cursor:pointer">✕ 删除对话</button>
+            <button id="btnOptimize" style="padding:5px 10px;background:#333;color:var(--fg);border:1px solid var(--border);border-radius:3px;cursor:pointer">✨ 优化储存</button>
+            <button id="btnBatchRename" style="padding:5px 10px;background:#333;color:var(--fg);border:1px solid var(--border);border-radius:3px;cursor:pointer">🔤 批量替换文本</button>
+            <button id="btnFixBg" style="padding:5px 10px;background:#333;color:var(--fg);border:1px solid var(--border);border-radius:3px;cursor:pointer">🔧 修复背景后缀</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右：预览 -->
+    <div>
+      <div class="panel-header">
+        <span>实时预览</span>
+        <button id="btnRefreshPreview" style="margin-left:auto">刷新</button>
+      </div>
+      <div class="preview-wrap">
+        <canvas id="previewCanvas" width="336" height="480"></canvas>
+        <div class="preview-info">
+          <div class="zoom" id="previewZoom">缩放: 0 (1.0x)</div>
+          <div id="previewStatus" style="margin-top:4px">预览就绪</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 状态栏 -->
+  <div class="status-bar">
+    <span class="left" id="statusLeft">未加载剧本</span>
+    <span class="right" id="statusRight"></span>
+  </div>
+</div>
+
+<!-- 模态框：资源选择 -->
+<div class="modal" id="modalRes">
+  <div class="modal-box" style="min-width:500px">
+    <h2 id="modalResTitle">选择资源</h2>
+    <input type="text" id="modalResSearch" placeholder="搜索..." style="width:100%;padding:5px 8px;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:3px;font-size:12px">
+    <div class="res-list" id="modalResList"></div>
+    <div class="btn-row">
+      <button id="modalResCancel">取消</button>
+      <button id="modalResOk" class="primary">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- 模态框：批量替换 -->
+<div class="modal" id="modalBatch">
+  <div class="modal-box">
+    <h2>批量替换文本</h2>
+    <div class="field">
+      <label>查找文本</label>
+      <input type="text" id="batchFind">
+    </div>
+    <div class="field">
+      <label>替换为</label>
+      <input type="text" id="batchReplace">
+    </div>
+    <div class="btn-row">
+      <button id="batchCancel">取消</button>
+      <button id="batchOk" class="primary">执行替换</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   Galgame 剧本编辑器 - 纯前端版本
+   ============================================================ */
+
+/* ============ 全局状态 ============ */
+const state = {
+  scriptData: {},          // { "1": {b,s,t,c,cg,z,co,c1,...}, ... }
+  currentId: 1,
+  totalDialogues: 0,
+  sortedIds: [],
+  filteredIds: [],
+
+  // 资源（用户选择的 File 对象）
+  resFolders: {
+    bcgi: new Map(),  // nameWithoutExt -> File
+    cimg: new Map(),
+    evig: new Map(),
+  },
+  resExt: {
+    bcgi: ['.jpg', '.jpeg', '.png', '.bmp', '.gif'],
+    cimg: ['.png', '.jpg', '.jpeg'],
+    evig: ['.png', '.jpg', '.jpeg', '.gif', '.bmp'],
+  },
+
+  // 撤销/重做
+  undoStack: [],
+  redoStack: [],
+  maxUndo: 50,
+  isRestoring: false,
+
+  // UI 状态
+  isDirty: false,
+  searchTerm: '',
+
+  // 图片缓存
+  imageCache: new Map(),
+};
+
+/* ============ DOM 引用 ============ */
+const $ = id => document.getElementById(id);
+
+const listBox        = $('listBox');
+const listSearch     = $('listSearch');
+const editTitle      = $('editTitle');
+
+const fBg        = $('fBg');
+const fChar      = $('fChar');
+const fPerson    = $('fPerson');
+const fClothes   = $('fClothes');
+const fPose      = $('fPose');
+const fCg        = $('fCg');
+const fSpeaker   = $('fSpeaker');
+const fText      = $('fText');
+const fZoom      = $('fZoom');
+const fCo        = $('fCo');
+const fC1        = $('fC1');  const fC1t = $('fC1t');
+const fC2        = $('fC2');  const fC2t = $('fC2t');
+const fC3        = $('fC3');  const fC3t = $('fC3t');
+const fC4        = $('fC4');  const fC4t = $('fC4t');
+
+const previewCanvas = $('previewCanvas');
+const previewZoom   = $('previewZoom');
+const previewStatus = $('previewStatus');
+
+const statusLeft  = $('statusLeft');
+const statusRight = $('statusRight');
+const toolbarInfo = $('toolbarInfo');
+
+const modalRes       = $('modalRes');
+const modalResTitle  = $('modalResTitle');
+const modalResSearch = $('modalResSearch');
+const modalResList   = $('modalResList');
+const modalBatch     = $('modalBatch');
+
+/* ============ UI 工具 ============ */
+let toastTimer = null;
+function toast(msg, ms = 2000) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), ms);
+}
+
+function setStatus(msg, color = 'var(--fg2)') {
+  statusLeft.textContent = msg;
+  statusLeft.style.color = color;
+}
+
+/* ============ 工具函数（从 Python 移植） ============ */
+
+function cleanText(text) {
+  if (!text) return "";
+  let t = text.replace(/\\n/g, "\n");
+  t = t.replace(/;/g, "");
+  const specialChars = ["%n", "；", "\\t", "\\r"];
+  for (const ch of specialChars) t = t.split(ch).join("");
+  return t.trim();
+}
+
+function formatSpeaker(speaker) {
+  if (!speaker) return "";
+  const s = speaker.trim();
+  if (s.startsWith('[') && s.endsWith(']')) return s;
+  if (s.includes('【') || s.includes('】')) return s;
+  return `【${s}】`;
+}
+
+/* ============ 剧本转换（复用之前的转换器逻辑） ============ */
+
+function findMatchingBracket(text, start) {
+  const len = text.length;
+  let pos = start, stack = 0, inString = false, escape = false;
+  while (pos < len) {
+    const ch = text[pos];
+    if (escape) escape = false;
+    else if (inString) {
+      if (ch === '\\') escape = true;
+      else if (ch === '"') inString = false;
+    } else {
+      if (ch === '"') inString = true;
+      else if (ch === '[') stack++;
+      else if (ch === ']') { stack--; if (stack === 0) return pos + 1; }
+    }
+    pos++;
+  }
+  return -1;
+}
+
+function extractTextFromEntry(entry) {
+  try {
+    if (Array.isArray(entry) && Array.isArray(entry[1]) && entry[1].length > 0) {
+      const inner = entry[1][0];
+      if (Array.isArray(inner) && inner.length >= 2) {
+        const raw = inner[1];
+        if (typeof raw === 'string') return cleanText(raw);
+      }
+    }
+  } catch (e) {}
+  return "";
+}
+
+function extractSpeakerFromEntry(entry) {
+  try {
+    if (Array.isArray(entry) && Array.isArray(entry[1]) && entry[1].length > 0) {
+      const inner = entry[1][0];
+      if (Array.isArray(inner) && inner.length >= 1) {
+        const s = inner[0];
+        if (typeof s === 'string' && s.trim()) return s;
+      }
+    }
+    if (Array.isArray(entry) && entry.length >= 1) {
+      const s = entry[0];
+      if (typeof s === 'string' && s.trim()) return s;
+    }
+  } catch (e) {}
+  return "";
+}
+
+function extractBackgroundAndBlur(entry) {
+  if (!Array.isArray(entry) || entry.length < 5) return { bg: "", blur: false };
+  const sceneData = entry[4];
+  if (!sceneData || typeof sceneData !== 'object') return { bg: "", blur: false };
+  const dataArray = sceneData.data;
+  if (!Array.isArray(dataArray)) return { bg: "", blur: false };
+  for (const item of dataArray) {
+    if (!Array.isArray(item) || item.length < 3) continue;
+    if (item[1] === "stage" && item[2] && typeof item[2] === 'object') {
+      const redraw = item[2].redraw;
+      if (redraw && typeof redraw === 'object') {
+        const imageFile = redraw.imageFile;
+        if (imageFile && typeof imageFile === 'object') {
+          let file = imageFile.file || "";
+          if (typeof file !== 'string') file = String(file);
+          if (file) {
+            if (file.includes('.')) file = file.split('.').slice(0, -1).join('.');
+            return { bg: file, blur: checkDoBoxBlur(imageFile) };
+          }
+        }
+      }
+    }
+  }
+  return { bg: "", blur: false };
+}
+
+function checkDoBoxBlur(obj) {
+  if (!obj) return false;
+  if (typeof obj === 'string') return obj.includes("doBoxBlur");
+  if (Array.isArray(obj)) return obj.some(checkDoBoxBlur);
+  if (typeof obj === 'object') return Object.values(obj).some(checkDoBoxBlur);
+  return false;
+}
+
+function extractCharacters(dataArray) {
+  if (!Array.isArray(dataArray)) return "";
+  const chars = [];
+  for (const item of dataArray) {
+    if (!Array.isArray(item) || item.length < 3) continue;
+    if (item[1] === "character" && item[2] && item[2].showmode === 3) {
+      const redraw = item[2].redraw;
+      if (redraw && typeof redraw === 'object') {
+        const imageFile = redraw.imageFile;
+        if (imageFile && typeof imageFile === 'object') {
+          let file = imageFile.file || "";
+          if (typeof file !== 'string') file = String(file);
+          if (file) {
+            const options = imageFile.options || {};
+            const parts = [];
+            if (options.dress) parts.push(`dress=${options.dress}`);
+            if (options.pose)  parts.push(`pose=${options.pose}`);
+            const query = parts.join("&");
+            chars.push(query ? `${file}?${query}` : file);
+          }
+        }
+      }
+    }
+  }
+  return chars.join(";");
+}
+
+function extractCharactersFromEntry(entry) {
+  if (!Array.isArray(entry) || entry.length < 5) return "";
+  const sceneData = entry[4];
+  if (!sceneData || typeof sceneData !== 'object') return "";
+  return extractCharacters(sceneData.data || []);
+}
+
+function extractCGFromEntry(entry) {
+  if (!Array.isArray(entry) || entry.length < 5) return "";
+  const sceneData = entry[4];
+  if (!sceneData || typeof sceneData !== 'object') return "";
+  const dataArray = sceneData.data;
+  if (!Array.isArray(dataArray)) return "";
+  const cgList = [];
+  for (const item of dataArray) {
+    if (!Array.isArray(item) || item.length < 3) continue;
+    if ((item[1] === "sdlayer" || item[1] === "event") && item[2] && typeof item[2] === 'object') {
+      const redraw = item[2].redraw;
+      if (redraw && typeof redraw === 'object') {
+        const imageFile = redraw.imageFile;
+        if (imageFile && typeof imageFile === 'object') {
+          let file = imageFile.file || "";
+          if (typeof file !== 'string') file = String(file);
+          if (file) {
+            if (file.includes('.')) file = file.split('.').slice(0, -1).join('.');
+            cgList.push(file);
+          }
+        }
+      }
+    }
+  }
+  return cgList.join(";");
+}
+
+/* ============ 立绘处理 ============ */
+
+function processCharacters(entries) {
+  const getRawSpeaker = spk => {
+    if (!spk) return "";
+    const m = spk.match(/【(.+?)】/);
+    return m ? m[1] : spk.trim();
+  };
+  const uniquePoses = s => {
+    if (!s) return s;
+    const seen = new Set();
+    return s.split(';').filter(p => !seen.has(p) && seen.add(p)).join(';');
+  };
+
+  const isRef = new Array(entries.length).fill(false);
+
+  for (let i = 0; i < entries.length; i++) {
+    const item = entries[i];
+    const spkFormatted = item.speaker || "";
+    if (!spkFormatted) continue;
+    const charStr = item.characters || "";
+    if (!charStr) continue;
+    let poses = charStr.split(';');
+    const originalLen = poses.length;
+    const seen = new Set();
+    poses = poses.filter(p => !seen.has(p) && seen.add(p));
+    const spkRaw = getRawSpeaker(spkFormatted);
+    const matched = poses.filter(p => p.startsWith(spkRaw + '.'));
+    if (matched.length) {
+      item.characters = matched[0];
+      if (originalLen > 1) isRef[i] = true;
+    } else {
+      item.characters = poses.join(';');
+    }
+  }
+
+  for (let i = 0; i < entries.length; i++) {
+    if (isRef[i]) continue;
+    const item = entries[i];
+    let charStr = item.characters || "";
+    if (!charStr) continue;
+    let poses = charStr.split(';');
+    const seen = new Set();
+    poses = poses.filter(p => !seen.has(p) && seen.add(p));
+    if (poses.length <= 1) { item.characters = poses.join(';'); continue; }
+    let refIdx = null;
+    for (let j = i - 1; j >= 0; j--) {
+      if (isRef[j]) { refIdx = j; break; }
+    }
+    if (refIdx !== null) {
+      const refRaw = getRawSpeaker(entries[refIdx].speaker || "");
+      const matched = poses.filter(p => p.startsWith(refRaw + '.'));
+      item.characters = matched.length ? matched[0] : poses[0];
+    } else {
+      item.characters = poses[0];
+    }
+  }
+
+  for (const item of entries) {
+    if (item.characters) item.characters = uniquePoses(item.characters);
+  }
+}
+
+/* ============ 从剧本数据解析 JSON 条目 ============ */
+
+function findAllScriptEntriesOrdered(inputData) {
+  if (!inputData) return [];
+  if (inputData.charCodeAt(0) === 0xFEFF) inputData = inputData.slice(1);
+
+  // 章节
+  const chapterRegex = /chapter.*?(\d+-\d+)/gi;
+  const chapterMatches = [];
+  let m;
+  while ((m = chapterRegex.exec(inputData)) !== null) {
+    chapterMatches.push({ pos: m.index, cs: m[1] });
+  }
+  const seen = new Set();
+  const uniqueChapters = [];
+  for (const cm of chapterMatches) {
+    if (!seen.has(cm.cs)) { seen.add(cm.cs); uniqueChapters.push(cm); }
+  }
+  uniqueChapters.sort((a, b) => a.pos - b.pos);
+
+  const patterns = [
+    { re: /\[null,\s*\[\[null,\s*"((?:[^"\\]|\\.)*)"/g, type: "no_speaker" },
+    { re: /\["((?:[^"\\]|\\.)*)",\s*\[\["((?:[^"\\]|\\.)*)",\s*"((?:[^"\\]|\\.)*)"/g, type: "inner_speaker" },
+    { re: /\["((?:[^"\\]|\\.)*)",\s*\[\[null,\s*"((?:[^"\\]|\\.)*)"/g, type: "outer_speaker" },
+  ];
+
+  let currentPos = 0;
+  const length = inputData.length;
+  const allItems = [];
+
+  while (currentPos < length) {
+    let earliestMatch = null;
+    let earliestPos = length;
+    let earliestPatternIdx = -1;
+    for (let i = 0; i < patterns.length; i++) {
+      patterns[i].re.lastIndex = currentPos;
+      const mm = patterns[i].re.exec(inputData);
+      if (mm && mm.index < earliestPos) {
+        earliestPos = mm.index;
+        earliestMatch = mm;
+        earliestPatternIdx = i;
+      }
+    }
+    if (!earliestMatch) break;
+    const startPos = earliestPos;
+    const endPos = findMatchingBracket(inputData, startPos);
+    if (endPos === -1) { currentPos = startPos + 1; continue; }
+    const entryStr = inputData.substring(startPos, endPos);
+    try {
+      const entry = JSON.parse(entryStr);
+      if (Array.isArray(entry) && entry.length >= 2) {
+        const text = extractTextFromEntry(entry);
+        if (text) {
+          const speakerRaw = extractSpeakerFromEntry(entry);
+          const { bg, blur } = extractBackgroundAndBlur(entry);
+          const characters = extractCharactersFromEntry(entry);
+          const cg = extractCGFromEntry(entry);
+          allItems.push({
+            pos: startPos,
+            item: {
+              speaker_raw: speakerRaw,
+              speaker: formatSpeaker(speakerRaw),
+              text, background: bg, blur,
+              characters, cg
+            }
+          });
+        }
+        if (entry.length >= 5 && entry[4] && typeof entry[4] === 'object') {
+          const nexts = entry[4].nexts;
+          if (Array.isArray(nexts)) {
+            for (const n of nexts) {
+              if (n && typeof n === 'object' && "target" in n) {
+                allItems.push({
+                  pos: endPos,
+                  item: {
+                    speaker_raw: `[${n.target}]`, speaker: `[${n.target}]`,
+                    text: "", background: "ecall", blur: false,
+                    characters: "", cg: ""
+                  }
+                });
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      const ptype = patterns[earliestPatternIdx].type;
+      let text = "";
+      if (ptype === "no_speaker") text = earliestMatch[1];
+      else if (ptype === "inner_speaker") text = earliestMatch[3];
+      else text = earliestMatch[2];
+      text = cleanText(text);
+      if (text) {
+        allItems.push({
+          pos: startPos,
+          item: {
+            speaker_raw: "", speaker: "", text,
+            background: "", blur: false, characters: "", cg: ""
+          }
+        });
+      }
+    }
+    currentPos = endPos;
+  }
+
+  allItems.sort((a, b) => a.pos - b.pos);
+
+  const finalEntries = [];
+  let chapIdx = 0;
+  for (const { pos, item } of allItems) {
+    while (chapIdx < uniqueChapters.length && uniqueChapters[chapIdx].pos < pos) {
+      const cs = uniqueChapters[chapIdx].cs;
+      finalEntries.push({
+        speaker_raw: `[CHAPTER${cs}]`, speaker: `[CHAPTER${cs}]`,
+        text: "", background: "ecall", blur: false, characters: "", cg: ""
+      });
+      chapIdx++;
+    }
+    finalEntries.push(item);
+  }
+  while (chapIdx < uniqueChapters.length) {
+    const cs = uniqueChapters[chapIdx].cs;
+    finalEntries.push({
+      speaker_raw: `[CHAPTER${cs}]`, speaker: `[CHAPTER${cs}]`,
+      text: "", background: "ecall", blur: false, characters: "", cg: ""
+    });
+    chapIdx++;
+  }
+
+  return finalEntries;
+}
+
+function convertToScriptData(entries) {
+  processCharacters(entries);
+  const result = {};
+  entries.forEach((it, i) => {
+    const d = {};
+    if (it.background) d.b = it.background;
+    if (it.speaker)    d.s = it.speaker;
+    if (it.text)       d.t = it.text;
+    if (it.characters) d.c = it.characters;
+    if (it.blur)       d.z = 2;
+    if (it.cg)         d.cg = it.cg;
+    if (Object.keys(d).length) result[String(i + 1)] = d;
+  });
+  return result;
+}
+
+/* ============ 加载剧本数据 ============ */
+
+function loadScriptData(data, sourceName = '') {
+  state.scriptData = {};
+  for (const [k, v] of Object.entries(data)) {
+    state.scriptData[String(k)] = v;
+  }
+  rebuildSortedIds();
+  state.currentId = state.sortedIds[0] || 1;
+  state.undoStack = [];
+  state.redoStack = [];
+  state.isDirty = false;
+  refreshList();
+  loadDialogue(state.currentId);
+  updateToolbarInfo();
+  setStatus(`已加载 ${Object.keys(state.scriptData).length} 条对话${sourceName ? ' 来自 ' + sourceName : ''}`, 'var(--ok)');
+  toast(`已加载 ${Object.keys(state.scriptData).length} 条对话`);
+}
+
+function rebuildSortedIds() {
+  state.sortedIds = Object.keys(state.scriptData)
+    .map(k => parseInt(k, 10))
+    .filter(n => !isNaN(n))
+    .sort((a, b) => a - b);
+  state.totalDialogues = state.sortedIds.length ? state.sortedIds[state.sortedIds.length - 1] : 0;
+}
+
+function updateToolbarInfo() {
+  const n = Object.keys(state.scriptData).length;
+  toolbarInfo.innerHTML = n
+    ? `<span class="ok">${n} 条对话</span> · 当前 ID: <span class="ok">${state.currentId}</span>`
+    : '就绪';
+}
+
+/* ============ 列表渲染 ============ */
+
+function refreshList() {
+  const term = state.searchTerm.toLowerCase();
+  let ids = state.sortedIds;
+  if (term) {
+    ids = ids.filter(id => {
+      const d = state.scriptData[String(id)];
+      if (!d) return false;
+      const s = (d.s || '').toLowerCase();
+      const t = (d.t || '').toLowerCase();
+      return String(id).includes(term) || s.includes(term) || t.includes(term);
+    });
+  }
+  state.filteredIds = ids;
+
+  // 限制渲染数量（性能）
+  const MAX = 1000;
+  const render = ids.slice(0, MAX);
+
+  const frag = document.createDocumentFragment();
+  for (const id of render) {
+    const d = state.scriptData[String(id)] || {};
+    const el = document.createElement('div');
+    el.className = 'list-item' + (id === state.currentId ? ' selected' : '');
+    el.dataset.id = id;
+    el.innerHTML = `
+      <span class="id">${id}</span>
+      <span class="spk">${escapeHtml(d.s || '')}</span>
+      <span class="txt">${escapeHtml((d.t || '').substring(0, 60))}</span>
+    `;
+    el.addEventListener('click', () => {
+      loadDialogue(id);
+    });
+    frag.appendChild(el);
+  }
+  listBox.innerHTML = '';
+  listBox.appendChild(frag);
+  if (ids.length > MAX) {
+    const more = document.createElement('div');
+    more.style.padding = '8px';
+    more.style.color = 'var(--fg2)';
+    more.style.textAlign = 'center';
+    more.textContent = `还有 ${ids.length - MAX} 条未显示，请使用搜索`;
+    listBox.appendChild(more);
+  }
+}
+
+function escapeHtml(s) {
+  if (!s) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function scrollToCurrentInList() {
+  const sel = listBox.querySelector('.list-item.selected');
+  if (sel) sel.scrollIntoView({ block: 'nearest' });
+}
+
+/* ============ 加载/保存单条对话 ============ */
+
+function loadDialogue(id) {
+  const d = state.scriptData[String(id)] || {};
+  state.currentId = id;
+  editTitle.textContent = `编辑 ID: ${id}`;
+  fBg.value      = d.b || '';
+  fChar.value    = d.c || '';
+  fCg.value      = d.cg || '';
+  fSpeaker.value = d.s || '';
+  fText.value    = d.t || '';
+  fZoom.value    = (d.z === 1 || d.z === 2) ? String(d.z) : '0';
+  fCo.checked    = !!d.co;
+  fC1.value = d.c1 || '';  fC1t.value = d.c1t ?? '';
+  fC2.value = d.c2 || '';  fC2t.value = d.c2t ?? '';
+  fC3.value = d.c3 || '';  fC3t.value = d.c3t ?? '';
+  fC4.value = d.c4 || '';  fC4t.value = d.c4t ?? '';
+  toggleOptionsInputs();
+
+  // 解析立绘
+  parseCharName();
+
+  // 高亮列表
+  document.querySelectorAll('.list-item').forEach(el => {
+    el.classList.toggle('selected', parseInt(el.dataset.id, 10) === id);
+  });
+  scrollToCurrentInList();
+  updateToolbarInfo();
+  updatePreview();
+}
+
+function collectFormData() {
+  const d = {};
+  const bg = fBg.value.trim();       if (bg) d.b = bg;
+  const c  = fChar.value.trim();     if (c)  d.c = c;
+  const cg = fCg.value.trim();       if (cg) d.cg = cg;
+  const s  = fSpeaker.value.trim();  if (s)  d.s = s;
+  const t  = fText.value;            if (t && t.trim()) d.t = t;
+  const z  = parseInt(fZoom.value, 10);
+  if (z === 1 || z === 2) d.z = z;
+  if (fCo.checked) {
+    d.co = true;
+    if (fC1.value.trim()) { d.c1 = fC1.value.trim(); if (fC1t.value) d.c1t = parseInt(fC1t.value, 10); }
+    if (fC2.value.trim()) { d.c2 = fC2.value.trim(); if (fC2t.value) d.c2t = parseInt(fC2t.value, 10); }
+    if (fC3.value.trim()) { d.c3 = fC3.value.trim(); if (fC3t.value) d.c3t = parseInt(fC3t.value, 10); }
+    if (fC4.value.trim()) { d.c4 = fC4.value.trim(); if (fC4t.value) d.c4t = parseInt(fC4t.value, 10); }
+  }
+  return d;
+}
+
+function saveCurrentToMemory() {
+  if (!state.scriptData[String(state.currentId)] && Object.keys(collectFormData()).length === 0) {
+    // 空数据，跳过
+    return;
+  }
+  pushUndo('编辑 ID ' + state.currentId);
+  state.scriptData[String(state.currentId)] = collectFormData();
+  state.isDirty = true;
+  refreshList();
+  updateToolbarInfo();
+  setStatus('已保存到内存（未导出）', 'var(--warn)');
+}
+
+function toggleOptionsInputs() {
+  const dis = !fCo.checked;
+  [fC1, fC1t, fC2, fC2t, fC3, fC3t, fC4, fC4t].forEach(el => el.disabled = dis);
+}
+
+/* ============ 解析/拼接立绘名 ============ */
+
+function parseCharName() {
+  const raw = fChar.value.trim();
+  if (!raw) { fPerson.value = ''; fClothes.value = ''; fPose.value = ''; return; }
+  const base = raw.split('?')[0].replace(/\.[^.]+$/, '');
+  // 格式: 人物名+数字_姿势  或  人物名_姿势
+  const m = base.match(/^([A-Za-z\u4e00-\u9fa5]+?)(\d+)?_(.+)$/);
+  if (m) {
+    fPerson.value  = m[1];
+    fClothes.value = m[2] || '';
+    fPose.value    = m[3];
+  } else {
+    fPerson.value = base;
+    fClothes.value = '';
+    fPose.value = '';
+  }
+}
+
+function buildCharName() {
+  const p = fPerson.value.trim();
+  const c = fClothes.value.trim();
+  const po = fPose.value.trim();
+  if (!p || !po) return;
+  fChar.value = c ? `${p}${c}_${po}` : `${p}_${po}`;
+}
+
+/* ============ 撤销/重做 ============ */
+
+function pushUndo(desc) {
+  if (state.isRestoring) return;
+  state.undoStack.push({
+    data: JSON.parse(JSON.stringify(state.scriptData)),
+    currentId: state.currentId,
+    desc
+  });
+  if (state.undoStack.length > state.maxUndo) state.undoStack.shift();
+  state.redoStack = [];
+  updateUndoButtons();
+}
+
+function undo() {
+  if (state.undoStack.length <= 1) { toast('无法撤销'); return; }
+  const cur = state.undoStack.pop();
+  state.redoStack.push(cur);
+  const prev = state.undoStack[state.undoStack.length - 1];
+  restoreState(prev);
+  toast('已撤销');
+}
+
+function redo() {
+  if (!state.redoStack.length) { toast('无法重做'); return; }
+  const next = state.redoStack.pop();
+  state.undoStack.push(next);
+  restoreState(next);
+  toast('已重做');
+}
+
+function restoreState(s) {
+  state.isRestoring = true;
+  state.scriptData = JSON.parse(JSON.stringify(s.data));
+  state.currentId = s.currentId;
+  rebuildSortedIds();
+  refreshList();
+  loadDialogue(state.currentId);
+  updateToolbarInfo();
+  state.isRestoring = false;
+  updateUndoButtons();
+}
+
+function updateUndoButtons() {
+  $('btnUndo').disabled = state.undoStack.length <= 1;
+  $('btnRedo').disabled = state.redoStack.length === 0;
+}
+
+/* ============ 图片预览 ============ */
+
+function getZoomValue(z) {
+  if (z === 1) return 0.8;
+  if (z === 2) return 1.2;
+  return 1.0;
+}
+
+function findResFile(folder, name) {
+  if (!name) return null;
+  const map = state.resFolders[folder];
+  if (!map || !map.size) return null;
+  // 先精确查（含扩展名）
+  const base = name.replace(/^.*[\\/]/, '');
+  const nameNoExt = base.replace(/\.[^.]+$/, '');
+  return map.get(nameNoExt) || map.get(base) || null;
+}
+
+async function loadImage(folder, name) {
+  const cacheKey = folder + ':' + name;
+  if (state.imageCache.has(cacheKey)) return state.imageCache.get(cacheKey);
+  const file = findResFile(folder, name);
+  if (!file) return null;
+  const url = URL.createObjectURL(file);
+  const img = await new Promise((res, rej) => {
+    const i = new Image();
+    i.onload = () => res(i);
+    i.onerror = rej;
+    i.src = url;
+  });
+  state.imageCache.set(cacheKey, img);
+  return img;
+}
+
+async function updatePreview() {
+  const ctx = previewCanvas.getContext('2d');
+  const W = previewCanvas.width, H = previewCanvas.height;
+  ctx.fillStyle = '#0d0d0d';
+  ctx.fillRect(0, 0, W, H);
+
+  const bgName   = fBg.value.trim();
+  const charName = fChar.value.trim();
+  const cgName   = fCg.value.trim();
+  const zoomVal  = getZoomValue(parseInt(fZoom.value, 10) || 0);
+
+  previewZoom.textContent = `缩放: ${fZoom.value} (${zoomVal}x)`;
+
+  const loaded = [];
+  let failed = 0;
+
+  // 背景
+  if (bgName) {
+    try {
+      const img = await loadImage('bcgi', bgName);
+      if (img) {
+        ctx.drawImage(img, 0, 0, W, H);
+        loaded.push('背景');
+      } else { failed++; }
+    } catch (e) { failed++; }
+  }
+
+  // 立绘（按 zoom 缩放居中）
+  if (charName) {
+    try {
+      const img = await loadImage('cimg', charName);
+      if (img) {
+        const nw = img.width * zoomVal;
+        const nh = img.height * zoomVal;
+        const x = (W - nw) / 2;
+        const y = (H - nh) / 2;
+        ctx.drawImage(img, x, y, nw, nh);
+        loaded.push('立绘');
+      } else { failed++; }
+    } catch (e) { failed++; }
+  }
+
+  // CG
+  if (cgName) {
+    try {
+      const img = await loadImage('evig', cgName);
+      if (img) {
+        ctx.drawImage(img, 0, 0, W, H);
+        loaded.push('CG');
+      } else { failed++; }
+    } catch (e) { failed++; }
+  }
+
+  if (loaded.length === 0 && !failed) {
+    previewStatus.textContent = '无图像可预览（未选择资源文件夹或字段为空）';
+  } else if (loaded.length === 0 && failed) {
+    previewStatus.textContent = `找不到资源文件（${failed} 个）`;
+  } else {
+    previewStatus.textContent = `已显示: ${loaded.join(' + ')}`;
+  }
+}
+
+/* ============ 资源文件夹选择 ============ */
+
+function chooseResourceFolder(folderKey) {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.webkitdirectory = true;
+  input.multiple = true;
+  input.style.display = 'none';
+  input.addEventListener('change', e => {
+    const files = Array.from(e.target.files);
+    const map = new Map();
+    const exts = state.resExt[folderKey];
+    let count = 0;
+    for (const f of files) {
+      const name = f.name;
+      const dot = name.lastIndexOf('.');
+      if (dot === -1) continue;
+      const ext = name.substring(dot).toLowerCase();
+      if (!exts.includes(ext)) continue;
+      const base = name.substring(0, dot);
+      map.set(base, f);
+      map.set(name, f); // 同时也支持带扩展名查询
+      count++;
+    }
+    state.resFolders[folderKey] = map;
+    state.imageCache.clear();
+    toast(`已加载 ${count} 个 ${folderKey} 文件`);
+    updatePreview();
+  });
+  document.body.appendChild(input);
+  input.click();
+  setTimeout(() => document.body.removeChild(input), 1000);
+}
+
+/* ============ 资源选择弹窗 ============ */
+
+let modalResContext = { folder: '', field: '', targetInput: null, resolve: null };
+
+function openResourcePicker(folderKey, field, targetInput) {
+  const map = state.resFolders[folderKey];
+  if (!map || !map.size) {
+    toast(`请先点击工具栏的【选择图片文件夹】加载 ${folderKey} 资源`, 3000);
+    return;
+  }
+  // 去重（因为同时存了带扩展和不带扩展）
+  const names = new Set();
+  for (const [k, v] of map) names.add(k);
+  const nameArr = Array.from(names).sort((a, b) => a.localeCompare(b));
+
+  modalResContext = { folder: folderKey, field, targetInput, resolve: null };
+
+  modalResTitle.textContent = `选择${folderKey}资源 (共 ${nameArr.length})`;
+  modalResSearch.value = '';
+  renderResourceList(nameArr, '');
+  modalRes.classList.add('show');
+  modalResSearch.focus();
+
+  modalResSearch.oninput = () => renderResourceList(nameArr, modalResSearch.value.toLowerCase());
+  modalResList.onclick = e => {
+    const item = e.target.closest('.item');
+    if (!item) return;
+    modalResList.querySelectorAll('.item').forEach(el => el.classList.remove('selected'));
+    item.classList.add('selected');
+  };
+  modalResList.ondblclick = () => {
+    confirmResPick();
+  };
+}
+
+function renderResourceList(names, term) {
+  const filtered = term ? names.filter(n => n.toLowerCase().includes(term)) : names;
+  const MAX = 500;
+  const show = filtered.slice(0, MAX);
+  const frag = document.createDocumentFragment();
+  for (const n of show) {
+    const el = document.createElement('div');
+    el.className = 'item';
+    el.textContent = n;
+    frag.appendChild(el);
+  }
+  modalResList.innerHTML = '';
+  modalResList.appendChild(frag);
+  if (filtered.length > MAX) {
+    const more = document.createElement('div');
+    more.className = 'item';
+    more.style.color = 'var(--fg2)';
+    more.textContent = `... 还有 ${filtered.length - MAX} 个未显示，请细化搜索`;
+    modalResList.appendChild(more);
+  }
+}
+
+function confirmResPick() {
+  const sel = modalResList.querySelector('.item.selected');
+  if (!sel) { toast('请先选择一个资源'); return; }
+  // 去掉扩展名（如果存在）
+  let name = sel.textContent;
+  name = name.replace(/\.[^.]+$/, '');
+  if (modalResContext.targetInput) {
+    modalResContext.targetInput.value = name;
+    if (modalResContext.field === 'c') {
+      parseCharName();
+    }
+  }
+  modalRes.classList.remove('show');
+  updatePreview();
+}
+
+/* ============ 文件导入/导出 ============ */
+
+async function importScriptFile() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.txt,.json';
+  input.multiple = true;
+  input.style.display = 'none';
+  input.addEventListener('change', async e => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    const combined = {};
+    let totalCount = 0;
+    for (const f of files) {
+      try {
+        const text = await f.text();
+        // 判断是否是剧本原始格式（以 [ 开头）还是已经转换过的 JSON 对象
+        const trimmed = text.trim();
+        if (trimmed.startsWith('{')) {
+          // 已经转换过的 JSON
+          const data = JSON.parse(trimmed);
+          for (const [k, v] of Object.entries(data)) {
+            combined[k] = v;
+            totalCount++;
+          }
+        } else if (trimmed.startsWith('[')) {
+          // 原始剧本格式，调用转换器
+          const entries = findAllScriptEntriesOrdered(trimmed);
+          const converted = convertToScriptData(entries);
+          // 偏移 ID
+          const offset = totalCount;
+          for (const [k, v] of Object.entries(converted)) {
+            combined[String(parseInt(k, 10) + offset)] = v;
+            totalCount++;
+          }
+        } else {
+          toast(`文件 ${f.name} 无法识别格式，已跳过`);
+        }
+      } catch (err) {
+        console.error(err);
+        toast(`文件 ${f.name} 解析失败: ${err.message}`);
+      }
+    }
+    if (Object.keys(combined).length === 0) {
+      toast('没有成功加载任何对话');
+      return;
+    }
+    // 重新排序 ID
+    const sortedKeys = Object.keys(combined).map(k => parseInt(k, 10)).sort((a, b) => a - b);
+    const reindexed = {};
+    sortedKeys.forEach((oldId, idx) => {
+      reindexed[String(idx + 1)] = combined[String(oldId)];
+    });
+    loadScriptData(reindexed, `${files.length} 个文件`);
+  });
+  document.body.appendChild(input);
+  input.click();
+  setTimeout(() => document.body.removeChild(input), 1000);
+}
+
+function exportScriptFiles() {
+  const keys = Object.keys(state.scriptData).map(k => parseInt(k, 10)).sort((a, b) => a - b);
+  if (!keys.length) { toast('没有可导出的内容'); return; }
+
+  const chunkSize = 500;
+  const chunks = {};
+  keys.forEach(id => {
+    const c = Math.floor((id - 1) / chunkSize) + 1;
+    if (!chunks[c]) chunks[c] = {};
+    chunks[c][String(id)] = state.scriptData[String(id)];
+  });
+
+  const chunkNums = Object.keys(chunks).map(Number).sort((a, b) => a - b);
+  chunkNums.forEach((c, idx) => {
+    setTimeout(() => {
+      const content = JSON.stringify(chunks[c], null, 2);
+      downloadFile(`scriptData${c}.txt`, content);
+    }, idx * 150);
+  });
+
+  setStatus(`已触发 ${chunkNums.length} 个文件下载`, 'var(--ok)');
+  toast(`已触发 ${chunkNums.length} 个文件下载`, 3000);
+  state.isDirty = false;
+}
+
+function downloadFile(filename, content) {
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+/* ============ 批量操作 ============ */
+
+function fixBackgroundSuffixes() {
+  let count = 0;
+  const exts = ['.jpg', '.jpeg', '.png', '.bmp', '.gif'];
+  pushUndo('修复背景后缀');
+  for (const [k, v] of Object.entries(state.scriptData)) {
+    if (v.b) {
+      const base = v.b.replace(/\.(jpg|jpeg|png|bmp|gif)$/i, '');
+      if (base !== v.b) { v.b = base; count++; }
+    }
+  }
+  if (count === 0) {
+    toast('没有需要修复的背景字段');
+    return;
+  }
+  refreshList();
+  loadDialogue(state.currentId);
+  state.isDirty = true;
+  toast(`已修复 ${count} 个背景后缀`);
+}
+
+function optimizeStorage() {
+  pushUndo('优化储存');
+  const before = Object.keys(state.scriptData).length;
+  let emptyCount = 0;
+  const newData = {};
+  let newId = 1;
+  const sortedKeys = Object.keys(state.scriptData).map(k => parseInt(k, 10)).sort((a, b) => a - b);
+  for (const oldId of sortedKeys) {
+    const d = state.scriptData[String(oldId)];
+    if (!d || Object.keys(d).length === 0) {
+      emptyCount++;
+      continue;
+    }
+    // 清理空字符串字段
+    for (const k of Object.keys(d)) {
+      const v = d[k];
+      if (v === '' || (typeof v === 'string' && v.trim() === '')) delete d[k];
+    }
+    if (Object.keys(d).length === 0) { emptyCount++; continue; }
+    newData[String(newId)] = d;
+    newId++;
+  }
+  state.scriptData = newData;
+  rebuildSortedIds();
+  state.currentId = state.sortedIds[0] || 1;
+  refreshList();
+  loadDialogue(state.currentId);
+  state.isDirty = true;
+  toast(`优化完成：删除 ${emptyCount} 个空对话`);
+}
+
+function addDialogue() {
+  pushUndo('添加对话');
+  const newId = state.totalDialogues + 1;
+  state.scriptData[String(newId)] = {};
+  rebuildSortedIds();
+  state.currentId = newId;
+  refreshList();
+  loadDialogue(newId);
+  state.isDirty = true;
+  toast(`已添加对话 ${newId}`);
+}
+
+function insertDialogueBeforeCurrent() {
+  const insertAt = state.currentId;
+  pushUndo('插入对话');
+  const sortedKeys = Object.keys(state.scriptData).map(k => parseInt(k, 10)).sort((a, b) => b - a);
+  for (const oldId of sortedKeys) {
+    if (oldId >= insertAt) {
+      state.scriptData[String(oldId + 1)] = state.scriptData[String(oldId)];
+      delete state.scriptData[String(oldId)];
+    }
+  }
+  state.scriptData[String(insertAt)] = {};
+  rebuildSortedIds();
+  state.currentId = insertAt;
+  refreshList();
+  loadDialogue(insertAt);
+  state.isDirty = true;
+  toast(`已在位置 ${insertAt} 插入新对话`);
+}
+
+function deleteDialogue() {
+  if (!state.scriptData[String(state.currentId)]) { toast('当前对话不存在'); return; }
+  if (!confirm(`确定要删除对话 ${state.currentId} 吗？`)) return;
+  pushUndo('删除对话');
+  const delId = state.currentId;
+  delete state.scriptData[String(delId)];
+  // 后续 ID 前移
+  const sortedKeys = Object.keys(state.scriptData).map(k => parseInt(k, 10)).sort((a, b) => a - b);
+  const newData = {};
+  let newId = 1;
+  for (const oldId of sortedKeys) {
+    newData[String(newId)] = state.scriptData[String(oldId)];
+    newId++;
+  }
+  state.scriptData = newData;
+  rebuildSortedIds();
+  state.currentId = Math.min(delId, state.totalDialogues) || 1;
+  refreshList();
+  loadDialogue(state.currentId);
+  state.isDirty = true;
+  toast(`已删除对话 ${delId}`);
+}
+
+/* ============ 复制上一页 ============ */
+
+function copyPrevious(field) {
+  if (state.currentId <= 1) { toast('已经是第一页'); return; }
+  const prev = state.scriptData[String(state.currentId - 1)];
+  if (!prev) { toast('上一页不存在'); return; }
+  if (field === 'b' && prev.b) fBg.value = prev.b;
+  else if (field === 'c' && prev.c) { fChar.value = prev.c; parseCharName(); }
+  else if (field === 'cg' && prev.cg) fCg.value = prev.cg;
+  if (field === 'c') updatePreview();
+  else if (field === 'b') updatePreview();
+  else if (field === 'cg') updatePreview();
+  toast('已复制上一页字段');
+}
+
+function copyPreviousAll() {
+  if (state.currentId <= 1) { toast('已经是第一页'); return; }
+  const prev = state.scriptData[String(state.currentId - 1)];
+  if (!prev) { toast('上一页不存在'); return; }
+  if (prev.b) fBg.value = prev.b;
+  if (prev.c) { fChar.value = prev.c; parseCharName(); }
+  if (prev.cg) fCg.value = prev.cg;
+  if (prev.z === 1 || prev.z === 2) fZoom.value = String(prev.z);
+  updatePreview();
+  toast('已复制上一页的立绘/CG/背景/缩放');
+}
+
+/* ============ 跳转 ============ */
+
+function prevDialogue() {
+  const ids = state.sortedIds;
+  const idx = ids.indexOf(state.currentId);
+  if (idx > 0) loadDialogue(ids[idx - 1]);
+}
+
+function nextDialogue() {
+  const ids = state.sortedIds;
+  const idx = ids.indexOf(state.currentId);
+  if (idx >= 0 && idx < ids.length - 1) loadDialogue(ids[idx + 1]);
+}
+
+/* ============ 事件绑定 ============ */
+
+$('btnImportScript').addEventListener('click', importScriptFile);
+$('btnImportFolder').addEventListener('click', () => {
+  // 选择包含 bcgi/cimg/evig 的 common 文件夹
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.webkitdirectory = true;
+  input.multiple = true;
+  input.style.display = 'none';
+  input.addEventListener('change', e => {
+    const files = Array.from(e.target.files);
+    let counts = { bcgi: 0, cimg: 0, evig: 0 };
+    for (const f of files) {
+      const path = f.webkitRelativePath || f.name;
+      const parts = path.split('/');
+      // 找 bcgi / cimg / evig 那一级
+      for (const folderKey of ['bcgi', 'cimg', 'evig']) {
+        if (parts.includes(folderKey)) {
+          const ext = f.name.substring(f.name.lastIndexOf('.')).toLowerCase();
+          if (state.resExt[folderKey].includes(ext)) {
+            const base = f.name.substring(0, f.name.lastIndexOf('.'));
+            state.resFolders[folderKey].set(base, f);
+            state.resFolders[folderKey].set(f.name, f);
+            counts[folderKey]++;
+          }
+        }
+      }
+    }
+    state.imageCache.clear();
+    toast(`已加载: 背景 ${counts.bcgi} / 立绘 ${counts.cimg} / CG ${counts.evig}`);
+    updatePreview();
+  });
+  document.body.appendChild(input);
+  input.click();
+  setTimeout(() => document.body.removeChild(input), 1000);
+});
+
+$('btnPrev').addEventListener('click', prevDialogue);
+$('btnNext').addEventListener('click', nextDialogue);
+$('btnSave').addEventListener('click', saveCurrentToMemory);
+$('btnExport').addEventListener('click', exportScriptFiles);
+$('btnUndo').addEventListener('click', undo);
+$('btnRedo').addEventListener('click', redo);
+$('btnCopyPrev').addEventListener('click', copyPreviousAll);
+$('btnClear').addEventListener('click', () => {
+  if (!confirm('确定要清空所有数据吗？（当前未导出的修改会丢失）')) return;
+  state.scriptData = {};
+  state.sortedIds = [];
+  state.currentId = 1;
+  state.undoStack = [];
+  state.redoStack = [];
+  refreshList();
+  loadDialogue(1);
+  updateToolbarInfo();
+  setStatus('已清空');
+  toast('已清空');
+});
+
+$('btnRefreshPreview').addEventListener('click', updatePreview);
+
+// 字段变化 → 实时更新预览 + 标脏
+[fBg, fChar, fCg, fSpeaker, fText, fZoom].forEach(el => {
+  el.addEventListener('input', () => {
+    state.isDirty = true;
+    updatePreview();
+  });
+  el.addEventListener('change', () => {
+    state.isDirty = true;
+    updatePreview();
+  });
+});
+
+fZoom.addEventListener('change', updatePreview);
+
+fCo.addEventListener('change', toggleOptionsInputs);
+
+// 复制上一页按钮
+document.querySelectorAll('[data-prev]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    copyPrevious(btn.dataset.prev);
+    state.isDirty = true;
+  });
+});
+
+// 选择资源按钮
+document.querySelectorAll('[data-choose]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const folder = btn.dataset.choose;
+    let targetInput = null;
+    if (folder === 'bcgi') targetInput = fBg;
+    else if (folder === 'cimg') targetInput = fChar;
+    else if (folder === 'evig') targetInput = fCg;
+    openResourcePicker(folder, folder === 'bcgi' ? 'b' : (folder === 'cimg' ? 'c' : 'cg'), targetInput);
+  });
+});
+
+$('btnParseChar').addEventListener('click', parseCharName);
+$('btnBuildChar').addEventListener('click', buildCharName);
+
+// 人物/服装/姿势改变时同步拼接
+[fPerson, fClothes, fPose].forEach(el => {
+  el.addEventListener('input', () => {
+    if (fPerson.value.trim() || fPose.value.trim()) buildCharName();
+  });
+});
+
+$('btnAdd').addEventListener('click', addDialogue);
+$('btnInsert').addEventListener('click', insertDialogueBeforeCurrent);
+$('btnDelete').addEventListener('click', deleteDialogue);
+$('btnOptimize').addEventListener('click', optimizeStorage);
+$('btnFixBg').addEventListener('click', fixBackgroundSuffixes);
+
+$('btnBatchRename').addEventListener('click', () => {
+  modalBatch.classList.add('show');
+  $('batchFind').focus();
+});
+
+$('batchCancel').addEventListener('click', () => modalBatch.classList.remove('show'));
+$('batchOk').addEventListener('click', () => {
+  const find = $('batchFind').value;
+  const replace = $('batchReplace').value;
+  if (!find) { toast('请输入查找文本'); return; }
+  pushUndo('批量替换');
+  let count = 0;
+  for (const d of Object.values(state.scriptData)) {
+    if (d.t && d.t.includes(find)) {
+      d.t = d.t.split(find).join(replace);
+      count++;
+    }
+  }
+  modalBatch.classList.remove('show');
+  refreshList();
+  loadDialogue(state.currentId);
+  state.isDirty = true;
+  toast(`已替换 ${count} 处`);
+});
+
+$('modalResCancel').addEventListener('click', () => modalRes.classList.remove('show'));
+$('modalResOk').addEventListener('click', confirmResPick);
+
+// 列表搜索
+listSearch.addEventListener('input', () => {
+  state.searchTerm = listSearch.value;
+  refreshList();
+});
+$('btnListClear').addEventListener('click', () => {
+  listSearch.value = '';
+  state.searchTerm = '';
+  refreshList();
+});
+
+// 快捷键
+document.addEventListener('keydown', e => {
+  // Ctrl+S 保存
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+    e.preventDefault();
+    saveCurrentToMemory();
+    toast('已保存到内存');
+  }
+  // Ctrl+Z 撤销
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
+    e.preventDefault();
+    undo();
+  }
+  // Ctrl+Y 重做
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+    e.preventDefault();
+    redo();
+  }
+  // Ctrl+A 上一个（注意与全选冲突，只在非输入框触发）
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a'
+      && document.activeElement.tagName !== 'INPUT'
+      && document.activeElement.tagName !== 'TEXTAREA') {
+    e.preventDefault();
+    prevDialogue();
+  }
+  // Ctrl+D 下一个
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
+    e.preventDefault();
+    nextDialogue();
+  }
+  // Ctrl+P 复制上一页
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p') {
+    e.preventDefault();
+    copyPreviousAll();
+  }
+});
+
+// 离开前提醒
+window.addEventListener('beforeunload', e => {
+  if (state.isDirty) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+
+/* ============ 初始化 ============ */
+updateUndoButtons();
+setStatus('未加载剧本');
+previewStatus.textContent = '请先导入剧本';
+</script>
+</body>
+</html>
