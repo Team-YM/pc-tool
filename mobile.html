@@ -94,6 +94,12 @@
       letter-spacing: -0.02em;
     }
 
+    .header-links {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     .header-link {
       color: var(--text-muted);
       font-size: 13px;
@@ -157,7 +163,7 @@
 
     .hero-actions {
       display: flex;
-      gap: 12px;
+      gap: 10px;
     }
 
     .btn-main {
@@ -175,10 +181,33 @@
       text-decoration: none;
       box-shadow: 0 4px 20px rgba(0, 113, 227, 0.4);
       transition: transform 0.15s ease;
+      white-space: nowrap;
     }
 
     .btn-main:active {
       transform: scale(0.97);
+    }
+
+    .btn-group-link {
+      height: 48px;
+      padding: 0 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      color: #fff;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      transition: transform 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .btn-group-link:active {
+      transform: scale(0.95);
     }
 
     .btn-gh {
@@ -193,6 +222,7 @@
       color: #fff;
       text-decoration: none;
       transition: transform 0.15s ease;
+      flex-shrink: 0;
     }
 
     .btn-gh:active {
@@ -387,12 +417,17 @@
       <img src="favicon.png" alt="PC-Tool Logo" />
       <span class="brand-name">PC-TOOL</span>
     </a>
-    <a href="home.html" class="header-link">
-      <span>完整工具箱</span>
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="9 18 15 12 9 6"></polyline>
-      </svg>
-    </a>
+    <div class="header-links">
+      <a href="https://qm.qq.com/q/SryrCPwRqI" target="_blank" rel="noopener noreferrer" class="header-link">
+        <span>问题反馈</span>
+      </a>
+      <a href="home-mobile.html" class="header-link">
+        <span>完整工具箱</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </a>
+    </div>
   </header>
 
   <!-- Hero 视口 -->
@@ -409,12 +444,18 @@
     </p>
 
     <div class="hero-actions">
-      <a href="home.html" class="btn-main">
-        <span>立即进入工具箱</span>
+      <a href="home-mobile.html" class="btn-main">
+        <span>进入工具箱</span>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <line x1="5" y1="12" x2="19" y2="12"></line>
           <polyline points="12 5 19 12 12 19"></polyline>
         </svg>
+      </a>
+      <a href="https://qm.qq.com/q/SryrCPwRqI" target="_blank" rel="noopener noreferrer" class="btn-group-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.38 5.08L2.1 21.9l5.02-1.25A9.94 9.94 0 0 0 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm0-4H9V7h2v5zm4 4h-2v-2h2v2zm0-4h-2V7h2v5z"/>
+        </svg>
+        <span>QQ交流群</span>
       </a>
       <a href="https://github.com/Team-YM/pc-tool" target="_blank" rel="noopener noreferrer" class="btn-gh" aria-label="GitHub">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -480,7 +521,11 @@
   <div class="community-box">
     <div class="comm-row">
       <span>QQ 交流群</span>
-      <span class="comm-tag">1121812272</span>
+      <a href="https://qm.qq.com/q/SryrCPwRqI" target="_blank" rel="noopener noreferrer" class="comm-tag" style="color: #2997ff; text-decoration: none;">1121812272</a>
+    </div>
+    <div class="comm-row">
+      <span>意见反馈</span>
+      <a href="https://qm.qq.com/q/SryrCPwRqI" target="_blank" rel="noopener noreferrer" style="color: #2997ff; text-decoration: none; font-size: 13px; font-weight: 500;">加入 QQ 群反馈 &gt;</a>
     </div>
     <div class="comm-row">
       <span>站长邮箱</span>
@@ -491,6 +536,15 @@
       <span class="comm-tag" style="font-size: 12px;">feedback@pc-tool.cn</span>
     </div>
   </div>
+
+  <a href="index.html?view=desktop" class="desktop-switch-btn">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+      <line x1="8" y1="21" x2="16" y2="21"></line>
+      <line x1="12" y1="17" x2="12" y2="21"></line>
+    </svg>
+    <span>切换到电脑版</span>
+  </a>
 
   <div class="footer-note">
     © PC-TOOL · 面对大众 · 为人民服务
