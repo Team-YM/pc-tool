@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>pc-tool - 支持与赞助</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --wechat: #07c160;
+      --alipay: #1677ff;
+      --shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.06);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: linear-gradient(180deg, #eff6ff 0%, var(--bg) 280px);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 780px;
+      width: 100%;
+      background: var(--card-bg);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      padding: 40px 32px;
+      text-align: center;
+    }
+
+    .badge {
+      display: inline-block;
+      background: #dbeafe;
+      color: var(--primary);
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 999px;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-size: 1.85rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 12px;
+    }
+
+    .desc {
+      color: var(--text-muted);
+      font-size: 1rem;
+      max-width: 580px;
+      margin: 0 auto 36px;
+      line-height: 1.6;
+    }
+
+    /* 两个收款码并排网格 */
+    .qr-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+
+    @media (max-width: 640px) {
+      .qr-grid {
+        grid-template-columns: 1fr;
+      }
+      .container {
+        padding: 30px 20px;
+      }
+    }
+
+    .qr-card {
+      background: #fafbfc;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .qr-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px -6px rgba(0, 0, 0, 0.08);
+    }
+
+    .qr-card.wechat {
+      border-top: 4px solid var(--wechat);
+    }
+
+    .qr-card.alipay {
+      border-top: 4px solid var(--alipay);
+    }
+
+    .qr-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .qr-card.wechat .qr-title {
+      color: #059669;
+    }
+
+    .qr-card.alipay .qr-title {
+      color: #0284c7;
+    }
+
+    /* 收款码图片容器 */
+    .qr-wrapper {
+      width: 210px;
+      height: 210px;
+      background: #ffffff;
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+    }
+
+    .qr-wrapper img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      border-radius: 6px;
+      cursor: zoom-in;
+      transition: transform 0.2s ease;
+    }
+
+    .qr-wrapper img:hover {
+      transform: scale(1.04);
+    }
+
+    /* 图片放大预览模态层 */
+    .image-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.82);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+      cursor: zoom-out;
+      padding: 20px;
+    }
+
+    .image-modal.show {
+      display: flex;
+      opacity: 1;
+    }
+
+    .image-modal-content {
+      position: relative;
+      max-width: 90vw;
+      max-height: 85vh;
+      background: #ffffff;
+      padding: 16px;
+      border-radius: 16px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+      animation: modalZoomIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: default;
+    }
+
+    @keyframes modalZoomIn {
+      from {
+        transform: scale(0.85);
+        opacity: 0;
+      }
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .image-modal-content img {
+      max-width: min(420px, 80vw);
+      max-height: 70vh;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      display: block;
+      border-radius: 8px;
+    }
+
+    .modal-close-btn {
+      position: absolute;
+      top: -14px;
+      right: -14px;
+      width: 32px;
+      height: 32px;
+      background: #1e293b;
+      color: #ffffff;
+      border: 2px solid #ffffff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      transition: background 0.2s, transform 0.15s;
+    }
+
+    .modal-close-btn:hover {
+      background: #ef4444;
+      transform: scale(1.1);
+    }
+
+    .qr-hint {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* 底部资金使用承诺 */
+    .pledge-box {
+      background: #f1f5f9;
+      border-radius: 12px;
+      padding: 16px 20px;
+      text-align: left;
+      font-size: 0.9rem;
+      color: #475569;
+      line-height: 1.6;
+    }
+
+    .pledge-box strong {
+      color: var(--text-main);
+    }
+
+    .footer {
+      margin-top: 24px;
+      font-size: 0.85rem;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="badge">用爱发电 · 感谢支持</div>
+    <h1>支持网站持续运营</h1>
+    <p class="desc">
+      您的每一笔赞助与赞赏，都将全部用于<strong>pc-tool.cn的搭建</strong>。感谢您为本站添砖加瓦！
+    </p>
+
+    <!-- 两个收款码区域 -->
+    <div class="qr-grid">
+      <!-- 微信支付 -->
+      <div class="qr-card wechat">
+        <div class="qr-title">微信支付</div>
+        <div class="qr-wrapper">
+          <img 
+            src="./wechat-collection.JPG" 
+            alt="微信收款码"
+          />
+        </div>
+        <div class="qr-hint">打开微信「扫一扫」支持</div>
+      </div>
+
+      <!-- 支付宝 -->
+      <div class="qr-card alipay">
+        <div class="qr-title">支付宝</div>
+        <div class="qr-wrapper">
+          <img 
+            src="./alipay-collection.PNG" 
+            alt="支付宝收款码"
+          />
+        </div>
+        <div class="qr-hint">打开支付宝「扫一扫」支持</div>
+      </div>
+    </div>
+
+    <!-- 用途说明 -->
+    <div class="pledge-box">
+      <strong>资金使用承诺：</strong>所有收到的赞助款都用于搭建pc-tool.cn。
+    </div>
+
+    <div class="footer">
+      感谢所有支持过pc-tool.cn的朋友，愿大家使用愉快！
+      <br>
+      <a href="https://www.pc-tool.cn/" style="color:#818cf8;text-underline-offset:4px;">点击跳转pc-tool.cn</a>
+      <br>
+      站长邮箱：fish@cutefish.online
+      <br>
+      域名邮箱：feedback@pc-tool.cn
+      <br>
+       QQ交流群：1121812272
+    </div>
+  </div>
+
+  <!-- 图片放大预览弹窗 -->
+  <div class="image-modal" id="imageModal" onclick="closeModal()">
+    <div class="image-modal-content" onclick="event.stopPropagation()">
+      <button class="modal-close-btn" onclick="closeModal()" title="关闭">&times;</button>
+      <img id="modalImg" src="" alt="放大收款码">
+    </div>
+  </div>
+
+  <script>
+    const modal = document.getElementById('imageModal');
+    const modalImg = document.getElementById('modalImg');
+
+    // 为两个收款码图片添加点击放大事件
+    document.querySelectorAll('.qr-wrapper img').forEach(img => {
+      img.addEventListener('click', () => {
+        modalImg.src = img.src;
+        modalImg.alt = img.alt;
+        modal.classList.add('show');
+      });
+    });
+
+    function closeModal() {
+      modal.classList.remove('show');
+    }
+
+    // 按 ESC 键也可快速退出放大
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeModal();
+      }
+    });
+  </script>
+</body>
+</html>
