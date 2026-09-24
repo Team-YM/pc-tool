@@ -205,15 +205,87 @@ function formatSize(bytes) {
     return (bytes / 1048576).toFixed(2) + ' MB';
 }
 
-/** 下载 Blob/URL */
+/** 下载 Blob/URL，全面兼容 iOS Safari、iPadOS 与 Android 设备 */
 function downloadFile(url, filename) {
+    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    
+    // 如果是 iOS 设备且为图片类型，提供专门的弹窗让用户直接长按保存到相册
+    var isImage = /\.(png|jpe?g|webp|gif|svg|ico)$/i.test(filename);
+    if (isIOS && isImage) {
+        showImageSaveModal(url, filename);
+        return;
+    }
+
     var a = document.createElement('a');
     a.href = url;
     a.download = filename;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+    setTimeout(function () { 
+        if (typeof url === 'string' && url.indexOf('blob:') === 0) {
+            URL.revokeObjectURL(url); 
+        }
+    }, 15000);
+}
+
+/** 为 iOS/iPad 设备展示图片预览并引导长按保存 */
+function showImageSaveModal(imageUrl, filename) {
+    var modalId = 'ios-image-save-modal';
+    var exist = document.getElementById(modalId);
+    if (exist) document.body.removeChild(exist);
+
+    var overlay = document.createElement('div');
+    overlay.id = modalId;
+    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);';
+
+    var tip = document.createElement('div');
+    tip.style.cssText = 'color:#fff;font-size:15px;margin-bottom:12px;text-align:center;font-weight:500;padding:6px 14px;background:rgba(129,140,248,0.25);border:1px solid rgba(129,140,248,0.4);border-radius:20px;';
+    tip.textContent = '💡 苹果设备请长按下方图片，点击「存储图像」到相册';
+
+    var img = document.createElement('img');
+    img.src = imageUrl;
+    img.style.cssText = 'max-width:92%;max-height:68vh;object-fit:contain;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.15);';
+
+    var btnGroup = document.createElement('div');
+    btnGroup.style.cssText = 'display:flex;gap:12px;margin-top:14px;';
+
+    var tryDownloadBtn = document.createElement('button');
+    tryDownloadBtn.textContent = '尝试直接下载';
+    tryDownloadBtn.style.cssText = 'padding:8px 16px;border-radius:8px;background:rgba(129,140,248,0.3);border:1px solid rgba(129,140,248,0.5);color:#fff;font-size:13px;cursor:pointer;';
+    tryDownloadBtn.onclick = function() {
+        var a = document.createElement('a');
+        a.href = imageUrl;
+        a.download = filename;
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    };
+
+    var closeBtn = document.createElement('button');
+    closeBtn.textContent = '关闭预览';
+    closeBtn.style.cssText = 'padding:8px 16px;border-radius:8px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;font-size:13px;cursor:pointer;';
+    closeBtn.onclick = function() {
+        if (overlay.parentNode) document.body.removeChild(overlay);
+    };
+
+    btnGroup.appendChild(tryDownloadBtn);
+    btnGroup.appendChild(closeBtn);
+    overlay.appendChild(tip);
+    overlay.appendChild(img);
+    overlay.appendChild(btnGroup);
+
+    overlay.onclick = function(e) {
+        if (e.target === overlay) {
+            document.body.removeChild(overlay);
+        }
+    };
+
+    document.body.appendChild(overlay);
 }
 
 /** 设置拖拽上传 */

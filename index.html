@@ -13,8 +13,11 @@
       }
       var ua = navigator.userAgent || navigator.vendor || window.opera;
       var isMobile = /Mobi|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|webOS/i.test(ua);
+      // 兼容识别 iPadOS（UA 往往包含 Macintosh 但拥有多点触控）及平板
+      var isTablet = /iPad|Android(?!.*Mobile)|Tablet|PlayBook|Silk/i.test(ua) || 
+                     ((/Macintosh/i.test(ua) || navigator.platform === 'MacIntel') && navigator.maxTouchPoints > 1);
       var isSmallScreen = window.innerWidth <= 768;
-      if (isMobile || (isSmallScreen && 'ontouchstart' in window)) {
+      if (isMobile || isTablet || (isSmallScreen && ('ontouchstart' in window || navigator.maxTouchPoints > 0))) {
         window.location.replace('./mobile.html');
       }
     })();

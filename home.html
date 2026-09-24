@@ -5,9 +5,10 @@
     <script>
         (function() {
             var ua = navigator.userAgent || navigator.vendor || window.opera;
-            // 检测是否为手机或平板
+            // 检测是否为手机或平板（包含 iPadOS 桌面模式触控识别）
             var isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|webOS/i.test(ua);
-            var isTablet = /iPad|Android(?!.*Mobile)|Tablet|PlayBook|Silk/i.test(ua) || (/(?:Macintosh|Windows)/i.test(ua) && 'ontouchend' in document && window.innerWidth <= 1024);
+            var isTablet = /iPad|Android(?!.*Mobile)|Tablet|PlayBook|Silk/i.test(ua) || 
+                           ((/Macintosh/i.test(ua) || navigator.platform === 'MacIntel') && navigator.maxTouchPoints > 1);
             if ((isMobile || isTablet) && window.location.pathname.indexOf('mobile.html') === -1) {
                 window.location.replace('./home-mobile.html');
             }

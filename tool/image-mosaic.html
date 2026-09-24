@@ -99,18 +99,22 @@
             justify-content: center;
             margin-bottom: 20px;
             user-select: none;
+            touch-action: none;
+            -webkit-user-select: none;
         }
 
         .canvas-container {
             position: relative;
             display: inline-block;
             max-width: 100%;
+            touch-action: none;
         }
 
         #imageCanvas {
             display: block;
             max-width: 100%;
             height: auto;
+            touch-action: none;
         }
 
         #maskCanvas {
@@ -120,6 +124,7 @@
             width: 100%;
             height: 100%;
             cursor: crosshair;
+            touch-action: none;
         }
 
         .brush-cursor {
@@ -315,28 +320,51 @@
             var rect = imageCanvas.getBoundingClientRect();
             var scaleX = imageCanvas.width / rect.width;
             var scaleY = imageCanvas.height / rect.height;
+            var clientX = e.clientX;
+            var clientY = e.clientY;
+
+            // 触摸事件兼容
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else if (e.changedTouches && e.changedTouches.length > 0) {
+                clientX = e.changedTouches[0].clientX;
+                clientY = e.changedTouches[0].clientY;
+            }
+
             return {
-                x: Math.max(0, Math.min(imageCanvas.width, Math.round((e.clientX - rect.left) * scaleX))),
-                y: Math.max(0, Math.min(imageCanvas.height, Math.round((e.clientY - rect.top) * scaleY)))
+                x: Math.max(0, Math.min(imageCanvas.width, Math.round((clientX - rect.left) * scaleX))),
+                y: Math.max(0, Math.min(imageCanvas.height, Math.round((clientY - rect.top) * scaleY)))
             };
         }
 
-        maskCanvas.addEventListener('mouseenter', function() {
-            if (currentTool === 'brush') brushCursor.style.display = 'block';
-        });
-        maskCanvas.addEventListener('mouseleave', function() {
-            brushCursor.style.display = 'none';
-            if (isDrawing && currentTool === 'brush') {
-                isDrawing = false;
-                pushHistory();
+        // 统一交互逻辑 (支持鼠标与移动端 Touch/Pointer)
+        function handleStart(e) {
+            if (e.touches && e.touches.length > 1) return; // 忽略双指缩放
+            if (e.cancelable) e.preventDefault();
+            isDrawing = true;
+            var pos = getPos(e);
+            startPos = pos;
+            if (currentTool === 'brush') {
+                applyEffectAt(pos.x, pos.y, brushRadius);
             }
-        });
+        }
 
-        maskCanvas.addEventListener('mousemove', function(e) {
-            brushCursor.style.left = e.clientX + 'px';
-            brushCursor.style.top = e.clientY + 'px';
+        function handleMove(e) {
+            var clientX = e.clientX;
+            var clientY = e.clientY;
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            }
+
+            if (clientX !== undefined && clientY !== undefined && !('ontouchstart' in window)) {
+                brushCursor.style.left = clientX + 'px';
+                brushCursor.style.top = clientY + 'px';
+            }
 
             if (!isDrawing) return;
+            if (e.cancelable) e.preventDefault();
             var pos = getPos(e);
 
             if (currentTool === 'brush') {
@@ -347,19 +375,11 @@
                 maskCtx.lineWidth = 2;
                 maskCtx.strokeRect(startPos.x, startPos.y, pos.x - startPos.x, pos.y - startPos.y);
             }
-        });
+        }
 
-        maskCanvas.addEventListener('mousedown', function(e) {
-            isDrawing = true;
-            var pos = getPos(e);
-            startPos = pos;
-            if (currentTool === 'brush') {
-                applyEffectAt(pos.x, pos.y, brushRadius);
-            }
-        });
-
-        window.addEventListener('mouseup', function(e) {
+        function handleEnd(e) {
             if (!isDrawing) return;
+            if (e.cancelable) e.preventDefault();
             isDrawing = false;
 
             if (currentTool === 'rect') {
@@ -376,7 +396,29 @@
             } else if (currentTool === 'brush') {
                 pushHistory();
             }
+        }
+
+        // 鼠标事件
+        maskCanvas.addEventListener('mouseenter', function() {
+            if (currentTool === 'brush' && !('ontouchstart' in window)) brushCursor.style.display = 'block';
         });
+        maskCanvas.addEventListener('mouseleave', function() {
+            brushCursor.style.display = 'none';
+            if (isDrawing && currentTool === 'brush') {
+                isDrawing = false;
+                pushHistory();
+            }
+        });
+
+        maskCanvas.addEventListener('mousedown', handleStart);
+        window.addEventListener('mousemove', handleMove);
+        window.addEventListener('mouseup', handleEnd);
+
+        // 移动端 Touch 事件 (全面兼容真机触摸与滑动)
+        maskCanvas.addEventListener('touchstart', handleStart, { passive: false });
+        window.addEventListener('touchmove', handleMove, { passive: false });
+        window.addEventListener('touchend', handleEnd, { passive: false });
+        window.addEventListener('touchcancel', handleEnd, { passive: false });
 
         function applyEffectAt(cx, cy, radius) {
             var rx = Math.max(0, cx - radius);
@@ -461,10 +503,19 @@
         }
 
         downloadBtn.addEventListener('click', function() {
-            var a = document.createElement('a');
-            a.download = 'mosaic_blur.png';
-            a.href = imageCanvas.toDataURL('image/png');
-            a.click();
+            var filename = 'mosaic_blur.png';
+            if (imageCanvas.toBlob) {
+                imageCanvas.toBlob(function(blob) {
+                    if (blob) {
+                        var url = URL.createObjectURL(blob);
+                        downloadFile(url, filename);
+                    } else {
+                        downloadFile(imageCanvas.toDataURL('image/png'), filename);
+                    }
+                }, 'image/png');
+            } else {
+                downloadFile(imageCanvas.toDataURL('image/png'), filename);
+            }
         });
     </script>
 </body>
