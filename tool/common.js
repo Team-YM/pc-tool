@@ -28,6 +28,23 @@
             }
         }
     });
+
+    // 双端返回适配：如果是移动设备或平板访问工具页，点击返回自动导向移动端首页
+    document.addEventListener('DOMContentLoaded', function () {
+        var ua = navigator.userAgent || navigator.vendor || window.opera;
+        var isMobile = /Mobi|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|webOS/i.test(ua);
+        var isTablet = /iPad|Android(?!.*Mobile)|Tablet|PlayBook|Silk/i.test(ua) || 
+                       ((/Macintosh/i.test(ua) || navigator.platform === 'MacIntel') && navigator.maxTouchPoints > 1);
+        if (isMobile || isTablet || window.innerWidth <= 768) {
+            var backLinks = document.querySelectorAll('.back-link');
+            backLinks.forEach(function (link) {
+                var href = link.getAttribute('href');
+                if (href && (href.indexOf('home.html') !== -1 || href.indexOf('index.html') !== -1)) {
+                    link.setAttribute('href', '../home-mobile.html');
+                }
+            });
+        }
+    });
 })();
 
 // ========== 增强粒子背景动画 ==========
