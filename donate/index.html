@@ -310,7 +310,7 @@
     <div class="footer">
       感谢所有支持过pc-tool.cn的朋友，愿大家使用愉快！
       <br>
-      <a href="https://www.pc-tool.cn/" style="color:#818cf8;text-underline-offset:4px;">点击跳转pc-tool.cn</a>
+      <a href="../home.html" id="backToHomeLink" style="color:#818cf8;text-underline-offset:4px;">← 返回工具主页</a>
       <br>
       站长邮箱：fish@cutefish.online
       <br>
@@ -351,6 +351,20 @@
         closeModal();
       }
     });
+    // 双端返回适配
+    (function() {
+      var ua = navigator.userAgent || navigator.vendor || window.opera;
+      var isMobile = /Mobi|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|webOS/i.test(ua);
+      var isTablet = /iPad|Android(?!.*Mobile)|Tablet|PlayBook|Silk/i.test(ua) || 
+                     ((/Macintosh/i.test(ua) || navigator.platform === 'MacIntel') && navigator.maxTouchPoints > 1);
+      if (isMobile || isTablet || window.innerWidth <= 768) {
+        var backLink = document.getElementById('backToHomeLink');
+        if (backLink) {
+          backLink.setAttribute('href', '../home-mobile.html');
+          backLink.textContent = '← 返回手机版工具主页';
+        }
+      }
+    })();
   </script>
 </body>
 </html>

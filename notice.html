@@ -1009,8 +1009,10 @@
             if (e) e.preventDefault();
             var ua = navigator.userAgent || navigator.vendor || window.opera;
             var isMobile = /Mobi|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|webOS/i.test(ua);
+            var isTablet = /iPad|Android(?!.*Mobile)|Tablet|PlayBook|Silk/i.test(ua) || 
+                           ((/Macintosh/i.test(ua) || navigator.platform === 'MacIntel') && navigator.maxTouchPoints > 1);
             var isSmallScreen = window.innerWidth <= 768;
-            var target = (isMobile || isSmallScreen) ? 'home-mobile.html' : 'home.html';
+            var target = (isMobile || isTablet || isSmallScreen) ? 'home-mobile.html' : 'home.html';
             window.location.href = target;
         }
 
@@ -1027,10 +1029,12 @@
             try {
                 var ua = navigator.userAgent || navigator.vendor || window.opera;
                 var isMobile = /Mobi|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|webOS/i.test(ua);
+                var isTablet = /iPad|Android(?!.*Mobile)|Tablet|PlayBook|Silk/i.test(ua) || 
+                               ((/Macintosh/i.test(ua) || navigator.platform === 'MacIntel') && navigator.maxTouchPoints > 1);
                 var isSmallScreen = window.innerWidth <= 768;
                 var link = document.getElementById('backToHomeLink');
                 if (link) {
-                    link.setAttribute('href', (isMobile || isSmallScreen) ? 'home-mobile.html' : 'home.html');
+                    link.setAttribute('href', (isMobile || isTablet || isSmallScreen) ? 'home-mobile.html' : 'home.html');
                 }
             } catch(e) {}
         })();
