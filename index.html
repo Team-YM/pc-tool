@@ -4,13 +4,6 @@
   <meta charset="UTF-8" />
   <script>
     (function() {
-      // 允许通过 URL 参数 ?view=desktop 或 sessionStorage 强制留在电脑版
-      if (window.location.search.indexOf('view=desktop') !== -1) {
-        sessionStorage.setItem('preferred_view', 'desktop');
-      }
-      if (sessionStorage.getItem('preferred_view') === 'desktop') {
-        return;
-      }
       var ua = navigator.userAgent || navigator.vendor || window.opera;
       var isMobile = /Mobi|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|webOS/i.test(ua);
       // 兼容识别 iPadOS（UA 往往包含 Macintosh 但拥有多点触控）及平板
