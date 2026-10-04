@@ -630,6 +630,51 @@
             will-change: transform;
         }
 
+        .external-badge {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            padding: 2px 7px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 500;
+            color: #a1a1aa;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            letter-spacing: 0.02em;
+            pointer-events: none;
+            transition: all 0.25s ease;
+            z-index: 2;
+        }
+
+        .external-badge svg {
+            width: 10px;
+            height: 10px;
+            stroke-width: 2.2;
+        }
+
+        .card:hover .external-badge {
+            color: #f4f4f5;
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translate(1px, -1px);
+        }
+
+        body.light-theme .external-badge {
+            color: #64748b;
+            background: rgba(0, 0, 0, 0.04);
+            border-color: rgba(0, 0, 0, 0.08);
+        }
+
+        body.light-theme .card:hover .external-badge {
+            color: #0f172a;
+            background: rgba(0, 0, 0, 0.08);
+            border-color: rgba(0, 0, 0, 0.15);
+        }
+
         .card:nth-child(1) { animation-delay: 0.15s; }
         .card:nth-child(2) { animation-delay: 0.20s; }
         .card:nth-child(3) { animation-delay: 0.25s; }
@@ -1172,7 +1217,7 @@
             <a href="./tool/audio-compress.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg></div><div class="card-title">音频压缩</div><div class="card-line"></div></div></a>
             <a href="./tool/video-to-audio.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div><div class="card-title">视频提取音频</div><div class="card-line"></div></div></a>
             <a href="./tool/video-convert.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><path d="m17 8 4 4-4 4"/><path d="m7 8-4 4 4 4"/></svg></div><div class="card-title">视频转格式</div><div class="card-line"></div></div></a>
-            <a href="./redirect.html?target=http://unlock.music.hi.cn/" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div><div class="card-title">音乐解析(第三方)</div><div class="card-line"></div></div></a>
+            <a href="./redirect.html?target=http://unlock.music.hi.cn/" target="_blank" rel="noopener noreferrer" class="card"><div class="card-inner"><span class="external-badge">外链<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></span><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div><div class="card-title">音乐解析(第三方)</div><div class="card-line"></div></div></a>
             <a href="./tool/metronome.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 22 22 2 22"/><line x1="12" y1="6" x2="12" y2="14"/><circle cx="12" cy="16" r="1.5"/></svg></div><div class="card-title">节拍器（BPM）</div><div class="card-line"></div></div></a>
             <a href="./tool/image-compress.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg></div><div class="card-title">图片压缩</div><div class="card-line"></div></div></a>
             <a href="./tool/image-base64.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg></div><div class="card-title">图片转Base64</div><div class="card-line"></div></div></a>
@@ -1200,7 +1245,7 @@
             <a href="./tool/cut-image.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div><div class="card-title">图片抠图</div><div class="card-line"></div></div></a>
             <a href="./tool/video-comp.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></div><div class="card-title">视频压缩</div><div class="card-line"></div></div></a>
             <a href="./tool/vrc-url.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div><div class="card-title">B站视频转URL</div><div class="card-line"></div></div></a>
-            <a href="./redirect.html?target=https://snapany.com/zh" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg></div><div class="card-title">视频解析(第三方)</div><div class="card-line"></div></div></a>
+            <a href="./redirect.html?target=https://snapany.com/zh" target="_blank" rel="noopener noreferrer" class="card"><div class="card-inner"><span class="external-badge">外链<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></span><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg></div><div class="card-title">视频解析(第三方)</div><div class="card-line"></div></div></a>
             <a href="./tool/video-to-gif.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><circle cx="8" cy="10" r="1.5"/><circle cx="16" cy="10" r="1.5"/><polyline points="6 16 9 13 11 15 14 12 18 16"/></svg></div><div class="card-title">视频转GIF</div><div class="card-line"></div></div></a>
             <a href="./tool/video-clip.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div><div class="card-title">视频截取片段</div><div class="card-line"></div></div></a>
             <a href="./tool/video-reverse.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 7 8 12 1 17 1 7"/><rect x="9" y="5" width="15" height="14" rx="2" ry="2"/><polyline points="13 14 10 12 13 10"/></svg></div><div class="card-title">视频倒放</div><div class="card-line"></div></div></a>
@@ -1270,7 +1315,7 @@
             <a href="./tool/screen-test.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><circle cx="12" cy="10" r="3"/></svg></div><div class="card-title">屏幕坏点检测</div><div class="card-line"></div></div></a>
             <a href="./tool/keyboard-test.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="6" y1="8" x2="6.01" y2="8"/><line x1="10" y1="8" x2="10.01" y2="8"/><line x1="14" y1="8" x2="14.01" y2="8"/><line x1="18" y1="8" x2="18.01" y2="8"/><line x1="6" y1="12" x2="6.01" y2="12"/><line x1="10" y1="12" x2="10.01" y2="12"/><line x1="14" y1="12" x2="14.01" y2="12"/><line x1="18" y1="12" x2="18.01" y2="12"/><line x1="7" y1="16" x2="17" y2="16"/></svg></div><div class="card-title">键盘按键测试</div><div class="card-line"></div></div></a>
             <a href="./tool/cps-gamepad-test.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="15" y1="13" x2="15.01" y2="13"/><line x1="18" y1="11" x2="18.01" y2="11"/><rect x="2" y="6" width="20" height="12" rx="2"/></svg></div><div class="card-title">鼠标连点与手柄测试</div><div class="card-line"></div></div></a>
-            <a href="./redirect.html?target=https%3A%2F%2Fwww.arealme.com%2Freaction-test%2Fcn%2F" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div><div class="card-title">反应速度测试(第三方)</div><div class="card-line"></div></div></a>
+            <a href="./redirect.html?target=https%3A%2F%2Fwww.arealme.com%2Freaction-test%2Fcn%2F" target="_blank" rel="noopener noreferrer" class="card"><div class="card-inner"><span class="external-badge">外链<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></span><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div><div class="card-title">反应速度测试(第三方)</div><div class="card-line"></div></div></a>
             <a href="./tool/password-generator.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg></div><div class="card-title">随机密码生成器</div><div class="card-line"></div></div></a>
             <a href="./tool/domain-ip.html" target="_blank" class="card"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div><div class="card-title">域名/IP归属查询</div><div class="card-line"></div></div></a>
             <div class="card" style="cursor: default; opacity: 0.65;" onclick="event.preventDefault();"><div class="card-inner"><div class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div class="card-title">敬请期待...</div><div class="card-line"></div></div></div>

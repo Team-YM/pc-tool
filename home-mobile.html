@@ -217,7 +217,15 @@
 
         /* ==================== 搜索栏 ==================== */
         .search-bar {
-            margin-bottom: 14px;
+            position: sticky;
+            top: calc(52px + env(safe-area-inset-top, 0px));
+            z-index: 95;
+            padding: 8px 0 10px;
+            margin-bottom: 10px;
+            background: rgba(9, 9, 11, 0.88);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            transition: background-color 0.3s ease;
         }
 
         .search-input-wrap {
@@ -704,6 +712,33 @@
             color: #71717a;
         }
 
+        .tool-external-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            margin-left: 6px;
+            padding: 1px 5px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 500;
+            color: #a1a1aa;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            vertical-align: middle;
+        }
+
+        .tool-external-tag svg {
+            width: 9px;
+            height: 9px;
+            stroke-width: 2.2;
+        }
+
+        body.light-theme .tool-external-tag {
+            color: #64748b;
+            background: rgba(0, 0, 0, 0.04);
+            border-color: rgba(0, 0, 0, 0.08);
+        }
+
         /* ==================== 分割标题 ==================== */
         .section-title {
             font-size: 0.6875rem;
@@ -924,6 +959,10 @@
             border-color: rgba(0, 0, 0, 0.1);
         }
 
+        body.light-theme .search-bar {
+            background: rgba(244, 246, 251, 0.92);
+        }
+
         body.light-theme .search-input-wrap {
             background: rgba(255, 255, 255, 0.85);
             border-color: rgba(0, 0, 0, 0.1);
@@ -1110,7 +1149,6 @@
 
         <!-- 分类排列结构：类别1 -> 列表项 / 类别2 -> 列表项 ... -->
         <div class="category-sections" id="categorySections">
-            <div class="search-empty" id="searchEmpty">没有找到匹配的工具...</div>
         </div>
 
         <div class="tool-list" id="toolList" style="display: none;">
@@ -1304,10 +1342,10 @@
                 <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
             </a>
 
-            <a href="./redirect.html?target=http://unlock.music.hi.cn/" target="_blank" class="tool-item">
+            <a href="./redirect.html?target=http://unlock.music.hi.cn/" target="_blank" rel="noopener noreferrer" class="tool-item">
                 <div class="tool-icon icon-red"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>
                 <div class="tool-info">
-                    <div class="tool-name">音乐解析(第三方)</div>
+                    <div class="tool-name">音乐解析(第三方)<span class="tool-external-tag">外链<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></span></div>
                     <div class="tool-desc">第三方音频解锁服务</div>
                 </div>
                 <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
@@ -1536,10 +1574,10 @@
                 <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
             </a>
 
-            <a href="./redirect.html?target=https://snapany.com/zh" target="_blank" class="tool-item">
+            <a href="./redirect.html?target=https://snapany.com/zh" target="_blank" rel="noopener noreferrer" class="tool-item">
                 <div class="tool-icon icon-yellow"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg></div>
                 <div class="tool-info">
-                    <div class="tool-name">视频解析(第三方)</div>
+                    <div class="tool-name">视频解析(第三方)<span class="tool-external-tag">外链<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></span></div>
                     <div class="tool-desc">第三方视频解析服务</div>
                 </div>
                 <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
@@ -2081,10 +2119,10 @@
                 <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
             </a>
 
-            <a href="./redirect.html?target=https%3A%2F%2Fwww.arealme.com%2Freaction-test%2Fcn%2F" target="_blank" class="tool-item">
+            <a href="./redirect.html?target=https%3A%2F%2Fwww.arealme.com%2Freaction-test%2Fcn%2F" target="_blank" rel="noopener noreferrer" class="tool-item">
                 <div class="tool-icon icon-amber"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
                 <div class="tool-info">
-                    <div class="tool-name">反应速度测试(第三方)</div>
+                    <div class="tool-name">反应速度测试(第三方)<span class="tool-external-tag">外链<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></span></div>
                     <div class="tool-desc">在线测试视觉反应毫秒数</div>
                 </div>
                 <div class="tool-arrow"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
@@ -2485,7 +2523,29 @@
                 filterTools();
             });
 
-            searchInput.addEventListener('input', filterTools);
+            // 输入防抖函数，避免连续输入时引起高频重排与卡顿
+            function debounce(func, wait) {
+                var timeout;
+                return function() {
+                    var context = this, args = arguments;
+                    clearTimeout(timeout);
+                    timeout = setTimeout(function() {
+                        func.apply(context, args);
+                    }, wait);
+                };
+            }
+
+            var debouncedFilter = debounce(filterTools, 120);
+
+            searchInput.addEventListener('input', function() {
+                // 清除按钮状态即时切换，保证UI响应灵敏
+                if (searchInput.value.trim()) {
+                    searchClear.style.display = 'flex';
+                } else {
+                    searchClear.style.display = 'none';
+                }
+                debouncedFilter();
+            });
 
             // 主题切换逻辑
             var themeToggleBtn = document.getElementById('themeToggle');

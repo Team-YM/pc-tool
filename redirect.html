@@ -158,7 +158,19 @@
             });
 
             confirmBtn.addEventListener('click', function() {
-                window.location.replace(safeTarget);
+                var safeAnchor = document.createElement('a');
+                safeAnchor.href = safeTarget;
+                safeAnchor.rel = 'noopener noreferrer';
+                safeAnchor.target = '_blank';
+                document.body.appendChild(safeAnchor);
+                safeAnchor.click();
+                setTimeout(function() {
+                    if (window.history.length > 1) {
+                        window.history.back();
+                    } else {
+                        window.location.href = 'index.html';
+                    }
+                }, 400);
             });
         })();
     </script>

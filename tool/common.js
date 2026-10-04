@@ -66,9 +66,11 @@
     document.addEventListener('mousemove', function (e) { mouseX = e.clientX; mouseY = e.clientY; });
     document.addEventListener('mouseleave', function () { mouseX = -9999; mouseY = -9999; });
 
+    var isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     var GS = 8, PS = 6;
-    var WORM_COUNT = Math.floor((W * H) / 15000);
-    var DUST_COUNT = Math.floor((W * H) / 7000);
+    // 移动端/小屏适当降低粒子密度以提升能效
+    var WORM_COUNT = Math.floor((W * H) / (isTouchDevice ? 26000 : 15000));
+    var DUST_COUNT = Math.floor((W * H) / (isTouchDevice ? 14000 : 7000));
 
     var PALETTE = [
         'rgba(16, 185, 129, ',
@@ -195,20 +197,72 @@
         }
     }
 
-    // 性能优化：提供暂停/恢复接口
-    var running = true;
-    window._bgAnimPause = function () { running = false; };
-    window._bgAnimResume = function () { running = true; };
+    // 性能优化：支持标签页后台、页面离屏、手动暂停生命周期控制
+    var isRunning = true;
+    var isVisible = true;
+    var isIntersecting = true;
+    var animFrameId = null;
+
+    function startLoop() {
+        if (!animFrameId && isRunning && isVisible && isIntersecting) {
+            animFrameId = requestAnimationFrame(animate);
+        }
+    }
+
+    function stopLoop() {
+        if (animFrameId) {
+            cancelAnimationFrame(animFrameId);
+            animFrameId = null;
+        }
+    }
+
+    // 对外提供暂停/恢复接口
+    window._bgAnimPause = function () {
+        isRunning = false;
+        stopLoop();
+    };
+    window._bgAnimResume = function () {
+        isRunning = true;
+        startLoop();
+    };
+
+    // 页面可见性检测（切标签页、切后台、熄屏时暂停 rAF）
+    document.addEventListener('visibilitychange', function () {
+        isVisible = !document.hidden;
+        if (isVisible) {
+            startLoop();
+        } else {
+            stopLoop();
+        }
+    });
+
+    // 视口观察器：如果 canvas 完全滚出视口则暂停重绘
+    if ('IntersectionObserver' in window) {
+        var canvasObserver = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+                isIntersecting = entry.isIntersecting;
+                if (isIntersecting) {
+                    startLoop();
+                } else {
+                    stopLoop();
+                }
+            });
+        }, { threshold: 0 });
+        canvasObserver.observe(canvas);
+    }
 
     function animate() {
-        if (!running) { requestAnimationFrame(animate); return; }
+        animFrameId = null;
+        if (!isRunning || !isVisible || !isIntersecting) return;
+
         ctx.clearRect(0, 0, W, H);
         for (var i = 0; i < dusts.length; i++) { dusts[i].update(); dusts[i].draw(ctx); }
         for (var i = 0; i < worms.length; i++) { worms[i].update(); worms[i].draw(ctx); }
         drawConnections();
-        requestAnimationFrame(animate);
+
+        animFrameId = requestAnimationFrame(animate);
     }
-    animate();
+    startLoop();
 })();
 
 
