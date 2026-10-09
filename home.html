@@ -9,7 +9,7 @@
             var isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|webOS/i.test(ua);
             var isTablet = /iPad|Android(?!.*Mobile)|Tablet|PlayBook|Silk/i.test(ua) || 
                            ((/Macintosh/i.test(ua) || navigator.platform === 'MacIntel') && navigator.maxTouchPoints > 1);
-            if ((isMobile || isTablet) && window.location.pathname.indexOf('mobile.html') === -1) {
+            if (isMobile || isTablet) {
                 window.location.replace('./home-mobile.html');
             }
             // 立即应用浅色/深色主题防白屏闪烁
