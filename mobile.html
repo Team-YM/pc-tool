@@ -6,9 +6,12 @@
     (function() {
       var ua = navigator.userAgent || navigator.vendor || window.opera;
       var isMobile = /Mobi|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|webOS/i.test(ua);
+      // 兼容识别 iPadOS（UA 往往包含 Macintosh 但拥有多点触控）及各类平板
+      var isTablet = /iPad|Android(?!.*Mobile)|Tablet|PlayBook|Silk/i.test(ua) || 
+                     ((/Macintosh/i.test(ua) || navigator.platform === 'MacIntel') && navigator.maxTouchPoints > 1);
       var isSmallScreen = window.innerWidth <= 768;
-      // 如果不是手机端或小屏触控设备，回跳到电脑版 index.html
-      if (!isMobile && !isSmallScreen) {
+      // 只有在明确既不是手机、也不是平板、并且不是触屏小屏设备时，才回跳电脑版 index.html
+      if (!isMobile && !isTablet && (!isSmallScreen || (!('ontouchstart' in window) && navigator.maxTouchPoints === 0))) {
         window.location.replace('./index.html');
       }
     })();
