@@ -1086,125 +1086,6 @@
         body.light-theme .footer-divider {
             background: rgba(0, 0, 0, 0.1);
         }
-        /* ==================== 工作台视觉层 ==================== */
-        :root {
-            color-scheme: dark;
-            --ink-0: #071018;
-            --ink-1: #0b1722;
-            --ink-2: #102331;
-            --line: rgba(148, 213, 224, 0.16);
-            --line-strong: rgba(148, 213, 224, 0.34);
-            --ice: #b8eff4;
-            --cyan: #55d6da;
-            --mint: #7ee8c0;
-        }
-
-        body {
-            background-color: var(--ink-0);
-            background-image: radial-gradient(circle at 50% -20%, rgba(29, 104, 123, 0.26), transparent 42%), linear-gradient(145deg, #071018 0%, #0a111a 58%, #061016 100%);
-        }
-
-        .header {
-            height: 72px;
-            padding: 0 32px;
-            background: rgba(7, 16, 24, 0.82);
-            border-bottom-color: var(--line);
-            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.18);
-        }
-
-        .header-inner, .footer-content { max-width: 1280px; }
-        .header-title { color: var(--ice); letter-spacing: 0.08em; }
-        .header-title svg { color: var(--cyan); }
-        .header-search-btn, .theme-toggle-btn { min-width: 44px; min-height: 44px; border-radius: 12px; border-color: var(--line); background: rgba(84, 190, 202, 0.07); }
-        .header-search-btn:hover, .theme-toggle-btn:hover { color: var(--ice); border-color: var(--line-strong); background: rgba(84, 190, 202, 0.14); }
-        .main-container { max-width: 1280px; padding: 142px 32px 72px; }
-        .hero { margin-bottom: 52px; max-width: 760px; }
-        .hero h1 { font-size: clamp(3rem, 6vw, 5.25rem); line-height: 1.05; letter-spacing: -0.035em; }
-        .hero h1 span { color: var(--ice); }
-        .hero p { color: #9cc2ca; max-width: 680px; font-size: 1.08rem; }
-        .notice { border-radius: 14px; border-color: var(--line); background: rgba(13, 33, 45, 0.68); box-shadow: 0 20px 55px rgba(0, 0, 0, 0.18); }
-        .creators-title, .notice-title { color: #8bcbd0; }
-        .creator-card, .card-inner { border-color: var(--line); background: rgba(10, 28, 39, 0.72); }
-        .creator-card:hover { border-color: var(--line-strong); background: rgba(15, 43, 54, 0.86); box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28); }
-        .search-input-wrap { max-width: none; border-radius: 14px; border-color: var(--line); background: rgba(8, 25, 35, 0.88); padding: 14px 18px; }
-        .search-input-wrap:focus-within { border-color: var(--cyan); box-shadow: 0 0 0 4px rgba(85, 214, 218, 0.12); }
-        .category-sections { gap: 58px; }
-        .category-group { gap: 20px; }
-        .category-group-header { padding-bottom: 14px; border-bottom-color: var(--line); }
-        .category-title { color: var(--ice); font-size: 1.35rem; }
-        .category-title::before { background: linear-gradient(180deg, var(--cyan), var(--mint)); }
-        .category-count { color: #8bb6bd; background: rgba(85, 214, 218, 0.08); border-color: var(--line); }
-        .category-quick-nav { gap: 10px; padding: 6px 0 24px; }
-        .quick-nav-btn { min-height: 44px; padding: 8px 18px; color: #8eb4bc; border-color: var(--line); background: rgba(15, 43, 54, 0.58); }
-        .quick-nav-btn:hover, .quick-nav-btn.active { color: var(--ice); border-color: var(--line-strong); background: rgba(48, 151, 157, 0.2); }
-        .grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
-        .card-inner { min-height: 166px; padding: 22px; border-radius: 12px; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
-        .card:hover .card-inner { border-color: rgba(126, 232, 192, 0.52); background: rgba(18, 52, 62, 0.9); box-shadow: 0 18px 38px rgba(0, 0, 0, 0.28), 0 0 24px rgba(85, 214, 218, 0.08); }
-        .card-icon { background: rgba(85, 214, 218, 0.1); }
-        .card-icon svg { color: #8bdde0; }
-        .card:hover .card-icon { background: rgba(85, 214, 218, 0.2); }
-        .card-title { color: #d7f0f2; }
-        .card-line { background: linear-gradient(90deg, var(--cyan), var(--mint)); }
-        .footer { border-top-color: var(--line); }
-
-        body.light-theme { background-color: #eef5f6; background-image: radial-gradient(circle at 50% -20%, rgba(117, 206, 208, 0.22), transparent 42%), linear-gradient(145deg, #f9fcfc, #e9f2f4); }
-        body.light-theme .header { background: rgba(249, 252, 252, 0.86); border-bottom-color: rgba(32, 105, 113, 0.16); }
-        body.light-theme .header-title { color: #173b43; }
-        body.light-theme .header-title svg { color: #168a91; }
-        body.light-theme .header-search-btn, body.light-theme .theme-toggle-btn { border-color: rgba(32, 105, 113, 0.2); background: rgba(22, 138, 145, 0.06); }
-        body.light-theme .hero h1 { color: #102b34; }
-        body.light-theme .hero h1 span { color: #187b83; }
-        body.light-theme .hero p { color: #52727a; }
-        body.light-theme .notice, body.light-theme .creator-card, body.light-theme .card-inner, body.light-theme .search-input-wrap { background: rgba(255, 255, 255, 0.78); border-color: rgba(32, 105, 113, 0.16); }
-        body.light-theme .category-title, body.light-theme .card-title { color: #153841; }
-        body.light-theme .quick-nav-btn { color: #426a72; border-color: rgba(32, 105, 113, 0.16); background: rgba(255, 255, 255, 0.7); }
-        body.light-theme .quick-nav-btn:hover, body.light-theme .quick-nav-btn.active { color: #08747c; border-color: rgba(22, 138, 145, 0.4); background: rgba(22, 138, 145, 0.1); }
-
-        html.light-theme { color-scheme: light; }
-        .page-hidden *, .page-hidden *::before, .page-hidden *::after { animation-play-state: paused !important; }
-        .bg-canvas { opacity: 0.18; }
-        .hero-title-gold { display: none; }
-        .hero { margin-bottom: 28px; }
-        .search-bar { max-width: 100%; margin-bottom: 12px; }
-        .search-input, .search-input::placeholder { color: #9cb9c4; }
-        .search-clear { width: 44px; height: 44px; }
-        .search-input-wrap { min-height: 64px; padding: 9px 18px; }
-        .notice { padding: 20px 24px; }
-        .notice-content { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 24px; }
-        .notice-content p { font-size: 0.875rem; color: #a9c1cb; overflow-wrap: anywhere; }
-        .notice-content a { display: inline-flex; min-height: 44px; align-items: center; color: var(--cyan) !important; }
-        .creators-more { display: inline-flex; align-items: center; min-height: 44px; color: var(--cyan); }
-        .creator-badge { color: #9de4dc; background: rgba(85, 214, 218, 0.08); border-color: var(--line); }
-        .card-inner { will-change: auto; backdrop-filter: none; -webkit-backdrop-filter: none; transition: transform 0.22s ease; height: 100%; }
-        .card-line { width: 100%; transform: scaleX(0); transform-origin: left; transition: transform 0.3s ease; }
-        .card:hover .card-line { transform: scaleX(1); box-shadow: none; }
-        .card:hover .card-title { text-shadow: none; }
-        .card-inner::after { background: linear-gradient(135deg, rgba(85, 214, 218, 0.08), transparent); }
-        a:focus-visible, button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 4px; }
-        body.light-theme .search-input::placeholder { color: #526f7a; }
-        body.light-theme .notice-content a, body.light-theme .creators-more, body.light-theme .creator-badge { color: #08747c !important; }
-        body.light-theme .card-icon, body.light-theme .card:hover .card-icon { background: #e6f4f4; }
-        body.light-theme .card-icon svg, body.light-theme .card:hover .card-icon svg { color: #14777f; filter: none; }
-        body.light-theme .card:hover .card-inner { background: #fff; border-color: #529b9e; box-shadow: 0 12px 24px rgba(16, 64, 70, 0.08); }
-        body.light-theme .search-input-wrap:focus-within { border-color: #168a91; box-shadow: 0 0 0 3px rgba(22, 138, 145, 0.12); }
-        @media (max-width: 480px) {
-            .notice-content { grid-template-columns: minmax(0, 1fr); }
-            .creators-grid, .grid { grid-template-columns: minmax(0, 1fr); }
-            .footer-info { flex-wrap: wrap; gap: 12px; }
-        }
-        @media (prefers-reduced-motion: reduce) {
-            .card, .category-group, .quick-nav-btn, .notice, .creators-section, .footer { opacity: 1; }
-            .card-inner { transform: none !important; }
-        }
-        @media (max-width: 760px) {
-            .header { padding: 0 16px; }
-            .main-container { padding: 112px 18px 52px; }
-            .hero h1 { font-size: clamp(2.7rem, 12vw, 4rem); }
-            .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-        }
-        @media (prefers-reduced-motion: reduce) {
-            *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
-        }
     </style>
 </head>
 <body>
@@ -1461,18 +1342,14 @@
         let width, height;
 
         // 像 TRAE 官网一样的网格像素参数
-        const GRID_SIZE = 28;  // 稀疏网格降低背景绘制成本
+        const GRID_SIZE = 9;   // 稍小网格间距，颗粒度更细腻
         const PIXEL_SIZE = 5;  // 方块像素大小
 
         let cols = 0, rows = 0;
         let mouseX = -9999, mouseY = -9999;
         let time = 0;
-        let animationFrame = 0;
-        let lastFrame = 0;
-        const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
 
         window.addEventListener('mousemove', (e) => {
-            if (motionPreference.matches || document.hidden) return;
             mouseX = e.clientX;
             mouseY = e.clientY + window.scrollY;
 
@@ -1553,7 +1430,7 @@
 
         function resize() {
             width = window.innerWidth;
-            height = Math.min(750, window.innerHeight);
+            height = Math.max(document.documentElement.scrollHeight, window.innerHeight);
             canvas.width = width;
             canvas.height = height;
             cols = Math.ceil(width / GRID_SIZE);
@@ -1564,15 +1441,8 @@
         ro.observe(document.body);
         resize();
 
-        function animate(timestamp = 0) {
-            if (document.hidden || motionPreference.matches || window.scrollY >= height) {
-                animationFrame = 0;
-                return;
-            }
-            animationFrame = requestAnimationFrame(animate);
-            if (timestamp - lastFrame < 50) return;
-            lastFrame = timestamp;
-            time += 0.006;
+        function animate() {
+            time += 0.009; // 增强流动演化速度
             ctx.clearRect(0, 0, width, height);
 
             const scrollY = window.scrollY;
@@ -1664,27 +1534,13 @@
                 }
             }
 
+            requestAnimationFrame(animate);
         }
-        // 背景离屏、页面隐藏或减少动态效果时停止调度。
-        function syncMotion() {
-            document.documentElement.classList.toggle('page-hidden', document.hidden);
-            if (animationFrame) cancelAnimationFrame(animationFrame);
-            animationFrame = 0;
-            if (motionPreference.matches) ctx.clearRect(0, 0, width, height);
-            if (!document.hidden && !motionPreference.matches && window.scrollY < height) {
-                lastFrame = 0;
-                animationFrame = requestAnimationFrame(animate);
-            }
-        }
-        document.addEventListener('visibilitychange', syncMotion);
-        motionPreference.addEventListener('change', syncMotion);
-        window.addEventListener('scroll', syncMotion, { passive: true });
-        syncMotion();
+        animate();
 
         document.querySelectorAll('.card').forEach(card => {
             const inner = card.querySelector('.card-inner');
             card.addEventListener('mousemove', (e) => {
-                if (motionPreference.matches || document.hidden || !window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
                 const rect = card.getBoundingClientRect();
                 const x = e.clientX - rect.left;
                 const y = e.clientY - rect.top;
@@ -1692,8 +1548,8 @@
                 const h = rect.height;
                 const px = (x - w / 2) / (w / 2);
                 const py = (y - h / 2) / (h / 2);
-                const rotateX = -py * 2;
-                const rotateY = px * 2;
+                const rotateX = -py * 10;
+                const rotateY = px * 10;
                 inner.style.setProperty('--glare-x', (x / w * 100) + '%');
                 inner.style.setProperty('--glare-y', (y / h * 100) + '%');
                 inner.style.transform = `perspective(900px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.01)`;
