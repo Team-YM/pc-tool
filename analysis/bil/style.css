@@ -1,0 +1,23 @@
+:root {
+  color-scheme: dark;
+  font-family: Arial, sans-serif;
+  background: #101214;
+  color: #f4f5f6;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; background: #101214; }
+.player-shell { width: min(1100px, calc(100% - 32px)); margin: 0 auto; padding: 24px 0 56px; }
+.player-section { padding-top: 0; }
+.video { display: block; width: 100%; max-height: 72vh; background: #050505; aspect-ratio: 16 / 9; }
+.state { min-height: 300px; display: grid; place-items: center; color: #b7bec8; border: 1px solid #30343a; }
+.state.error { color: #ff8d8d; }
+.details { padding: 22px 0; }
+h1 { margin: 0 0 12px; font-size: clamp(22px, 3vw, 34px); line-height: 1.25; }
+#meta { margin: 0 0 16px; color: #aab1bc; }
+.source-link { color: #fb7299; text-decoration: none; }
+.source-link:hover { text-decoration: underline; }
+@media (max-width: 600px) {
+  .player-shell { width: min(100% - 20px, 1100px); padding-top: 16px; }
+  .state { min-height: 220px; }
+}

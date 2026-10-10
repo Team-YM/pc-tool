@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="B站链接解析工具">
+  <title>LinkExtract · B站视频解析</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <main class="shell">
+    <nav class="nav">
+      <a class="brand" href="/" aria-label="LinkExtract 首页"><span class="brand-mark">L</span><span>LinkExtract</span></a>
+      <span class="nav-note">B站视频解析</span>
+    </nav>
+
+    <section class="hero">
+      <div class="eyebrow"><span class="pulse"></span>媒体链接工具</div>
+      <h1>把分享链接，<br><em>还原成媒体。</em></h1>
+      <p class="intro">粘贴 B 站分享链接，获取视频、音频与封面资源。</p>
+
+      <form class="parser-form" id="parser-form">
+        <label for="url-input">分享链接</label>
+        <div class="input-row">
+          <input id="url-input" name="url" type="text" autocomplete="off" placeholder="粘贴链接或分享文本…" required>
+          <button type="button" class="paste-button" id="paste-button" title="从剪贴板粘贴">粘贴</button>
+          <button type="submit" class="parse-button" id="parse-button"><span>解析链接</span><span class="arrow">↗</span></button>
+        </div>
+        <p class="hint">支持 b23.tv 和 bilibili.com</p>
+      </form>
+
+      <div class="status" id="status" role="status" aria-live="polite"></div>
+    </section>
+
+    <section class="result-panel" id="result-panel" hidden>
+      <div class="section-label">解析结果</div>
+      <div class="result-content" id="result-content"></div>
+    </section>
+
+    <section class="features">
+      <div class="feature"><span class="feature-number">01</span><div><strong>一键识别</strong><p>自动识别 B 站链接</p></div></div>
+      <div class="feature"><span class="feature-number">02</span><div><strong>资源分离</strong><p>视频、音乐、封面分别获取</p></div></div>
+      <div class="feature"><span class="feature-number">03</span><div><strong>清晰可靠</strong><p>解析状态与错误原因明确可见</p></div></div>
+    </section>
+    
+    <section class="api-guide" id="api-guide">
+      <div class="section-label">API & 使用教程</div>
+      <div class="api-guide-grid">
+        <div>
+          <h2>使用 API 解析 B站视频</h2>
+          <p class="guide-intro">通过域名加 BV 号直接获取 B 站视频地址，接口会自动解析并跳转到可播放的视频资源。</p>
+          <div class="api-block">
+            <div class="api-block-heading"><strong>按 BV 号解析</strong><span>GET BV*****</span></div>
+            <div class="code-wrap"><pre id="bvid-example"><code>https://www.pc-tool.cn/analysis/bil/API=BV*****</code></pre><button class="copy-button" type="button" data-copy-target="bvid-example" title="复制请求示例">复制</button></div>
+          </div>
+          <div class="api-block">
+            <div class="api-block-heading"><strong>支持分 P 参数</strong><span>GET /analysis/bil/API=BV*****&p=2</span></div>
+            <div class="code-wrap"><pre id="p-example"><code>https://www.pc-tool.cn/analysis/bil/API=BV*****&p=2</code></pre><button class="copy-button" type="button" data-copy-target="p-example" title="复制请求示例">复制</button></div>
+          </div>
+        </div>
+        <div class="tutorial">
+          <h3>使用教程</h3>
+          <ol>
+            <li><strong>准备 BV 号</strong>从 B 站视频链接中找到 <code>BV*****</code>。</li>
+            <li><strong>访问接口</strong>将域名和 BV 号拼接为 <code>/analysis/bil/API=BV*****</code>。</li>
+            <li><strong>获取视频</strong>接口解析成功后会自动跳转到可播放的视频地址。</li>
+          </ol>
+          <div class="response-note"><strong>返回字段</strong><span><code>title</code> 标题 · <code>author</code> 作者 · <code>duration</code> 时长 · <code>video</code> 视频 · <code>audio</code> 音频 · <code>cover</code> 封面</span></div>
+        </div>
+      </div>
+
+      <div class="vrc-tool">
+        <h2>一键截取BV套用API</h2>
+        <p class="guide-intro">提取视频 BV 号并拼接 API 地址，可选保留分 P 参数，适用于 VRChat 、 Web 等场景。</p>
+        <form id="vrc-form" class="vrc-form">
+          <label for="vrc-bilibili-url">B站视频链接</label>
+          <div class="vrc-input-row">
+            <input id="vrc-bilibili-url" type="text" placeholder="例如：https://www.bilibili.com/video/BV******/?p=2" autocomplete="off">
+            <button type="button" class="paste-button" id="vrc-paste-url">粘贴</button>
+          </div>
+          <label for="vrc-prefix-url">API 链接</label>
+          <div class="vrc-input-row">
+            <input id="vrc-prefix-url" type="text" value="https://www.pc-tool.cn/analysis/bil/API=" placeholder="输入 API 链接" autocomplete="off">
+            <button type="button" class="paste-button" id="vrc-paste-prefix">粘贴</button>
+          </div>
+          <button type="submit" class="parse-button vrc-submit"><span>提取并生成链接</span><span class="arrow">↗</span></button>
+          <p class="vrc-error" id="vrc-error" role="alert"></p>
+        </form>
+        <div class="vrc-result" id="vrc-result" hidden>
+          <div class="api-block-heading"><strong>生成结果</strong><span>URL</span></div>
+          <div class="vrc-result-body">
+            <code id="vrc-result-text"></code>
+            <button type="button" class="copy-button" id="vrc-copy-result">复制</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      请仅处理你拥有权利或获得授权的内容。
+      <a href="http://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; margin-left:14px; padding:5px 11px; border:1px solid var(--line); color:var(--dark); background:#fff; text-decoration:none; font-weight:700;">吉ICP备2026010334号</a>
+    </footer>
+  </main>
+  <script src="./app.js"></script>
+</body>
+</html>

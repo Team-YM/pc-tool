@@ -1,7 +1,0 @@
-# VS Code / Trae Workspace
-*.code-workspace
-.vscode/
-
-# Agent local instructions
-AGENTS.md
-

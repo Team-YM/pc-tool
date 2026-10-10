@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>B站视频播放器</title>
+  <link rel="stylesheet" href="/bil/style.css">
+</head>
+<body>
+  <main class="player-shell">
+    <section class="player-section" aria-live="polite">
+      <div id="state" class="state">正在加载视频信息...</div>
+      <video id="video" class="video" controls playsinline preload="metadata" hidden></video>
+    </section>
+  </main>
+  <script src="/bil/app.js"></script>
+</body>
+</html>

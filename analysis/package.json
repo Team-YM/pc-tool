@@ -1,0 +1,16 @@
+{
+  "name": "media-parser-site",
+  "version": "1.0.0",
+  "private": true,
+  "description": "B站链接解析站点",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
