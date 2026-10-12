@@ -1,0 +1,9 @@
+{
+  "name": "p2p-file-room",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Direct WebRTC file sharing rooms",
+  "main": "server.js",
+  "scripts": { "start": "node server.js", "dev": "node server.js" },
+  "dependencies": { "express": "^4.21.2", "socket.io": "^4.8.1" }
+}

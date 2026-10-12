@@ -206,9 +206,10 @@ function imageProxyUrl(imageUrl, filename, download = false) {
   return `/api/image?${params}`;
 }
 
-function mergedVideoUrl(videoUrl, audioUrl, filename, download = false) {
+function mergedVideoUrl(videoUrl, audioUrl, filename, cacheKey, download = false) {
   if (!videoUrl || !audioUrl) return '';
   const params = new URLSearchParams({ name: filename, video: videoUrl, audio: audioUrl });
+  if (cacheKey) params.set('key', cacheKey);
   if (download) params.set('download', '1');
   return `/api/merged-video?${params}`;
 }
@@ -221,7 +222,14 @@ function contentDisposition(disposition, filename) {
 function normalizeResult(info, platform, sourceUrl) {
   const videoUrl = pickFormat(info, 'video');
   const audioUrl = pickFormat(info, 'audio');
-  const video = mergedVideoUrl(videoUrl, audioUrl, safeFilename(info.title, 'mp4'));
+  const bvid = bilibiliBvid(sourceUrl);
+  const page = new URL(sourceUrl).searchParams.get('p') || '1';
+  const videoFormat = info.formats?.find(item => item.url === videoUrl);
+  const audioFormat = info.formats?.find(item => item.url === audioUrl);
+  const cacheKey = bvid
+    ? `bilibili:${bvid}:p${page}:v${videoFormat?.format_id || videoFormat?.height || 'default'}:a${audioFormat?.format_id || 'default'}`
+    : '';
+  const video = mergedVideoUrl(videoUrl, audioUrl, safeFilename(info.title, 'mp4'), cacheKey);
   reportDebug('D', 'media tracks inspected', { platform, formatCount: Array.isArray(info.formats) ? info.formats.length : 0, selectedVideo: info.formats?.find(item => item.vcodec !== 'none' && item.url)?.format_id || null, selectedAudio: info.formats?.find(item => item.vcodec === 'none' && item.acodec !== 'none' && item.url)?.format_id || null, videoCodec: info.formats?.find(item => item.vcodec !== 'none' && item.url)?.vcodec || null, audioCodec: info.formats?.find(item => item.vcodec === 'none' && item.acodec !== 'none' && item.url)?.acodec || null });
   reportDebug('C', 'normalized media URLs', { platform, videoHost: videoUrl ? new URL(videoUrl).hostname : null, videoExt: info.formats?.find(item => item.vcodec !== 'none' && item.url)?.ext || info.ext || null, audioExt: info.formats?.find(item => item.vcodec === 'none' && item.acodec !== 'none' && item.url)?.ext || null });
   return {
@@ -270,6 +278,7 @@ app.get('/api/image', async (req, res) => {
 });
 
 const mergedVideos = new Map();
+const mergedVideoRetentionMs = 3 * 60 * 60 * 1000;
 
 function sendMergedVideo(req, res, output, filename) {
   fs.stat(output, (error, stat) => {
@@ -307,7 +316,8 @@ app.get('/api/merged-video', async (req, res) => {
   if (!allowed(videoUrl) || !allowed(audioUrl)) return res.status(403).send('不支持的媒体地址。');
 
   const filename = String(req.query.name || 'video.mp4').trim() || 'video.mp4';
-  const key = crypto.createHash('sha256').update(`${videoUrl}\n${audioUrl}`).digest('hex');
+  const cacheIdentity = String(req.query.key || '').trim() || `${videoUrl}\n${audioUrl}`;
+  const key = crypto.createHash('sha256').update(cacheIdentity).digest('hex');
   const cached = mergedVideos.get(key);
   if (cached && cached.output && fs.existsSync(cached.output)) return sendMergedVideo(req, res, cached.output, filename);
   if (cached?.promise) {
@@ -346,7 +356,14 @@ app.get('/api/merged-video', async (req, res) => {
   mergedVideos.set(key, { output, promise });
   try {
     await promise;
-    mergedVideos.set(key, { output });
+    const cleanupTimer = setTimeout(() => {
+      if (mergedVideos.get(key)?.output === output) mergedVideos.delete(key);
+      fs.rm(output, { force: true }, error => {
+        if (error) console.error(`[media-cleanup] ${error.message}`);
+      });
+    }, mergedVideoRetentionMs);
+    cleanupTimer.unref();
+    mergedVideos.set(key, { output, cleanupTimer });
     return sendMergedVideo(req, res, output, filename);
   } catch (error) {
     mergedVideos.delete(key);
