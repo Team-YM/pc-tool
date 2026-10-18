@@ -280,8 +280,32 @@ app.get('/api/image', async (req, res) => {
 const mergedVideos = new Map();
 const mergedVideoRetentionMs = 3 * 60 * 60 * 1000;
 
+async function cleanupOrphanedMedia() {
+  try {
+    for (const name of await fs.promises.readdir(os.tmpdir())) {
+      const match = /^media-([a-f0-9]{64})(?:\.mp4|-(?:video|audio)\.m4s)$/.exec(name);
+      if (!match || mergedVideos.has(match[1])) continue;
+      const target = path.join(os.tmpdir(), name);
+      try {
+        const stat = await fs.promises.stat(target);
+        if (Date.now() - stat.mtimeMs >= mergedVideoRetentionMs && !mergedVideos.has(match[1])) {
+          await fs.promises.rm(target, { force: true });
+        }
+      } catch (error) {
+        if (error.code !== 'ENOENT') console.error(`[media-cleanup] ${error.message}`);
+      }
+    }
+  } catch (error) {
+    console.error(`[media-cleanup] ${error.message}`);
+  }
+}
+cleanupOrphanedMedia();
+const orphanCleanupTimer = setInterval(cleanupOrphanedMedia, 60 * 60 * 1000);
+orphanCleanupTimer.unref();
+
 function sendMergedVideo(req, res, output, filename) {
   fs.stat(output, (error, stat) => {
+    if (res.destroyed || res.writableEnded) return;
     if (error) return res.status(500).send('合并文件读取失败。');
     res.setHeader('Content-Type', 'video/mp4');
     res.setHeader('Content-Disposition', contentDisposition(req.query.download === '1' ? 'attachment' : 'inline', filename));
@@ -299,7 +323,19 @@ function sendMergedVideo(req, res, output, filename) {
     const partial = Boolean(match);
     res.status(partial ? 206 : 200).setHeader('Content-Length', end - start + 1);
     if (partial) res.setHeader('Content-Range', `bytes ${start}-${end}/${stat.size}`);
-    fs.createReadStream(output, { start, end }).pipe(res);
+    const stream = fs.createReadStream(output, { start, end });
+    const closeStream = () => {
+      if (!res.writableFinished) stream.destroy();
+    };
+    res.once('close', closeStream);
+    stream.once('close', () => res.off('close', closeStream));
+    stream.once('error', streamError => {
+      res.off('close', closeStream);
+      if (res.destroyed) return;
+      if (!res.headersSent) res.status(500).send('合并文件读取失败。');
+      else res.destroy(streamError);
+    });
+    stream.pipe(res);
   });
 }
 

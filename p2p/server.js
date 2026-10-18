@@ -16,14 +16,27 @@ let bans = readBans();
 const rooms = new Map();
 const sockets = new Map();
 const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const banRetentionMs = 24 * 60 * 60 * 1000;
 
 function readBans() { try { return JSON.parse(fs.readFileSync(BAN_FILE, 'utf8')); } catch { return {}; } }
-function saveBans() { fs.writeFileSync(BAN_FILE, JSON.stringify(bans, null, 2)); }
+function pruneBans(now = Date.now()) {
+  let changed = false;
+  for (const [id, item] of Object.entries(bans)) {
+    const expiresAt = item.bannedUntil || (item.lastFailure || item.createdAt || 0) + banRetentionMs;
+    if (expiresAt <= now) { delete bans[id]; changed = true; }
+  }
+  return changed;
+}
+function saveBans() { pruneBans(); fs.writeFileSync(BAN_FILE, JSON.stringify(bans, null, 2)); }
+if (pruneBans()) saveBans();
+const bansCleanupTimer = setInterval(() => { if (pruneBans()) saveBans(); }, 60 * 60 * 1000);
+bansCleanupTimer.unref();
 function idFor(socket) { const supplied = String(socket.handshake.auth?.visitorId || ''); return /^[a-zA-Z0-9_-]{8,80}$/.test(supplied) ? supplied : `anon-${crypto.randomUUID()}`; }
 function banStatus(id) {
   const item = bans[id];
   if (!item) return { banned: false, failures: 0 };
-  if (item.bannedUntil && item.bannedUntil <= Date.now()) { delete bans[id]; saveBans(); return { banned: false, failures: 0 }; }
+  const expiresAt = item.bannedUntil || (item.lastFailure || item.createdAt || 0) + banRetentionMs;
+  if (expiresAt <= Date.now()) { delete bans[id]; saveBans(); return { banned: false, failures: 0 }; }
   return { banned: Boolean(item.bannedUntil), failures: item.failures || 0, bannedUntil: item.bannedUntil || null };
 }
 function registerFailure(id, reason) {
