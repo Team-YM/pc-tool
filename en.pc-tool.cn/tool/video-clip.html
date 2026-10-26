@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Clipper</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="Free online video trimming tool. Set start and end times to cut video clips, processed in your browser — safe and free.">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="Video Clipper | PC-TOOL">
+    <meta property="og:description" content="Free online tools — image conversion, video compression, audio conversion and more — every feature built for productivity, completely free.">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/video-clip.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="en_US">
+    <style>
+        #videoInput { display: none; }
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 3px;
+            margin: 15px 0;
+            display: none;
+            overflow: hidden;
+        }
+        .progress-bar .fill {
+            height: 100%;
+            background: linear-gradient(90deg, #818cf8, #34d399);
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .time-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .time-row label {
+            color: #a1a1aa;
+            font-size: 14px;
+        }
+        .time-row input[type="text"] {
+            width: 80px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: #e4e4e7;
+            font-size: 14px;
+            text-align: center;
+        }
+        .time-row input[type="text"]:focus {
+            outline: none;
+            border-color: rgba(129, 140, 248, 0.5);
+        }
+        .time-tip {
+            color: #71717a;
+            font-size: 12px;
+            text-align: center;
+        }
+        video {
+            max-width: 100%;
+            border-radius: 8px;
+            display: none;
+            margin: 10px auto;
+        }
+    </style>
+</head>
+<body>
+<canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <a href="../index.html" class="back-link">← Back to Tools</a>
+
+    <div class="container">
+        <h1>Video Clipper</h1>
+        <p>Set the start and end times, then cut out the clip you need and export it.</p>
+
+        <div class="upload-area" id="uploadArea">
+            <p>Click or drag to upload a video</p>
+            <input type="file" id="videoInput" accept="video/*">
+        </div>
+
+        <div id="videoInfo" style="text-align:center; margin:10px 0; display:none;">
+            <p id="fileName" style="color:#e4e4e7;"></p>
+            <p id="durationInfo" style="color:#71717a; font-size:13px;"></p>
+        </div>
+
+        <div class="time-row">
+            <label>Start time:</label>
+            <input type="text" id="startTime" value="00:00" placeholder="MM:SS">
+            <label style="margin-left:10px;">End time:</label>
+            <input type="text" id="endTime" value="00:05" placeholder="MM:SS">
+        </div>
+        <p class="time-tip">Format: minutes:seconds or seconds, e.g. 01:30 or 90</p>
+
+        <video id="previewVideo" controls></video>
+
+        <div class="progress-bar" id="progressBar">
+            <div class="fill" id="progressFill"></div>
+        </div>
+
+        <div style="text-align:center;">
+            <button class="convert-btn" id="clipBtn">Start Clipping</button>
+            <button class="download-btn" id="downloadBtn">Download clip</button>
+        </div>
+
+        <div class="result-box" id="resultBox">
+            <h3>Clipping Complete</h3>
+            <div class="size-info" id="sizeInfo"></div>
+        </div>
+
+        <div class="contact-tip">For feature requests or feedback, join our Discord: <a href="https://discord.gg/wjvS3efTj" target="_blank" rel="noopener noreferrer">https://discord.gg/wjvS3efTj</a></div>
+
+    <script src="common.js"></script>
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const videoInput = document.getElementById('videoInput');
+        const clipBtn = document.getElementById('clipBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const resultBox = document.getElementById('resultBox');
+        const sizeInfo = document.getElementById('sizeInfo');
+        const videoInfo = document.getElementById('videoInfo');
+        const fileName = document.getElementById('fileName');
+        const durationInfo = document.getElementById('durationInfo');
+        const previewVideo = document.getElementById('previewVideo');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        const startTime = document.getElementById('startTime');
+        const endTime = document.getElementById('endTime');
+
+        let videoFile = null, clipUrl = null;
+
+        uploadArea.onclick = () => videoInput.click();
+        setupDragDrop(uploadArea, (files) => {
+            if (files[0]?.type.startsWith('video/')) handleVideo(files[0]);
+            else showToast('Please upload a video file');
+        });
+
+        videoInput.onchange = (e) => handleVideo(e.target.files[0]);
+
+        function handleVideo(f) {
+            videoFile = f;
+            fileName.textContent = 'File name: ' + f.name + ' (' + formatSize(f.size) + ')';
+            const url = URL.createObjectURL(f);
+            previewVideo.src = url;
+            previewVideo.style.display = 'block';
+            previewVideo.onloadedmetadata = () => {
+                const d = previewVideo.duration;
+                const mins = Math.floor(d / 60);
+                const secs = Math.floor(d % 60);
+                durationInfo.textContent = 'Video duration: ' + mins + 'm ' + secs + 's (total ' + d.toFixed(1) + 's)';
+            };
+            videoInfo.style.display = 'block';
+            resultBox.style.display = 'none';
+            downloadBtn.style.display = 'none';
+        }
+
+        function parseTime(str) {
+            str = str.trim();
+            if (str.includes(':')) {
+                const parts = str.split(':');
+                return parseInt(parts[0]) * 60 + parseFloat(parts[1]);
+            }
+            return parseFloat(str);
+        }
+
+        clipBtn.onclick = async () => {
+            if (!videoFile) { showToast('Please upload a video first'); return; }
+
+            const start = parseTime(startTime.value);
+            const end = parseTime(endTime.value);
+            if (isNaN(start) || isNaN(end)) { showToast('Please enter valid times'); return; }
+            if (start >= end) { showToast('The start time must be earlier than the end time'); return; }
+
+            clipBtn.disabled = true;
+            clipBtn.textContent = 'Clipping...';
+            progressBar.style.display = 'block';
+            progressFill.style.width = '0%';
+            resultBox.style.display = 'none';
+            downloadBtn.style.display = 'none';
+
+            try {
+                const duration = end - start;
+                const video = document.createElement('video');
+                video.preload = 'auto';
+                video.muted = true;
+                const url = URL.createObjectURL(videoFile);
+
+                await new Promise((resolve, reject) => {
+                    video.onloadedmetadata = resolve;
+                    video.onerror = () => reject(new Error('Failed to load the video'));
+                    video.src = url;
+                });
+
+                video.currentTime = start;
+                await new Promise(r => { video.onseeked = r; });
+
+                const stream = video.captureStream(30);
+                const chunks = [];
+                let mimeType = 'video/webm';
+                if (!MediaRecorder.isTypeSupported('video/webm')) {
+                    mimeType = 'video/webm;codecs=vp8';
+                    if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = '';
+                }
+                const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+                recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+
+                const startTimeRecord = Date.now();
+                recorder.start();
+
+                video.play().catch(e => { throw new Error('Playback failed: ' + e.message); });
+
+                const checkEnd = setInterval(() => {
+                    const elapsed = (Date.now() - startTimeRecord) / 1000;
+                    if (elapsed >= duration) {
+                        clearInterval(checkEnd);
+                        video.pause();
+                        recorder.stop();
+                    }
+                    progressFill.style.width = Math.min(elapsed / duration * 100, 100) + '%';
+                }, 100);
+
+                await new Promise((resolve) => {
+                    recorder.onstop = () => {
+                        clearInterval(checkEnd);
+                        resolve();
+                    };
+                });
+
+                URL.revokeObjectURL(url);
+                const clipBlob = new Blob(chunks, { type: mimeType || 'video/webm' });
+                clipUrl = URL.createObjectURL(clipBlob);
+
+                sizeInfo.innerHTML = 'Original video: ' + formatSize(videoFile.size) + '<br>Clip: <span class="highlight">' + formatSize(clipBlob.size) + '</span><br>Duration: <span class="highlight">' + duration.toFixed(1) + 's</span>';
+                resultBox.style.display = 'block';
+                downloadBtn.style.display = 'inline-block';
+            } catch (e) {
+                showToast('Clipping failed: ' + e.message);
+            } finally {
+                clipBtn.disabled = false;
+                clipBtn.textContent = 'Start Clipping';
+                progressBar.style.display = 'none';
+            }
+        };
+
+        downloadBtn.onclick = () => {
+            const a = document.createElement('a');
+            a.href = clipUrl;
+            a.download = (videoFile?.name || 'video').replace(/\.\w+$/, '') + '-clip.webm';
+            a.click();
+        };
+    </script>
+</body>
+</html>
+
+
+

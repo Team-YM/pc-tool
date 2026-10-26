@@ -1,0 +1,1398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Changelog Timeline | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <meta name="description" content="PC-TOOL Changelog">
+    <meta property="og:title" content="Changelog Timeline | PC-TOOL">
+    <meta property="og:description" content="PC-TOOL Latest updates from PC-TOOL">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/notice.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="en_US">
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        :root {
+            --primary: #818cf8;
+            --primary-glow: rgba(129, 140, 248, 0.4);
+            --accent: #34d399;
+            --accent-glow: rgba(52, 211, 153, 0.35);
+        }
+        body {
+            background:#09090b; color:#f4f4f5;
+            font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+            background-image:linear-gradient(to bottom left, #242323, #131314, #000000);
+            background-attachment:fixed;
+            -webkit-font-smoothing:antialiased;
+            min-height:100vh;
+            overflow-x:hidden;
+            display:flex;
+            flex-direction:column;
+            position:relative;
+            transition: background-color 0.5s ease, color 0.5s ease;
+        }
+
+        .back-link, .notice-card, .page-header h1, .page-header .subtitle, .footer-note {
+            transition: background-color 0.5s ease, border-color 0.5s ease, color 0.5s ease, box-shadow 0.5s ease;
+        }
+
+        /* Light theme support */
+        body.light-theme {
+            background-color: #f4f6fb;
+            background-image: linear-gradient(to bottom left, #ffffff, #edf2f9, #e4ecf7);
+            color: #1f2937;
+        }
+
+        body.light-theme .back-link {
+            color: #4b5563;
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+        }
+
+        body.light-theme .back-link:hover {
+            color: #111827;
+            background: rgba(255, 255, 255, 0.95);
+            border-color: rgba(0, 0, 0, 0.16);
+        }
+
+        body.light-theme .page-header h1 {
+            color: #111827;
+        }
+
+        body.light-theme .page-header .subtitle {
+            color: #6b7280;
+        }
+
+        body.light-theme .notice-card {
+            background: rgba(255, 255, 255, 0.78);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+        }
+
+        body.light-theme .notice-card:hover {
+            background: rgba(255, 255, 255, 0.95);
+            border-color: rgba(99, 102, 241, 0.3);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+        }
+
+        body.light-theme .notice-card h3 {
+            color: #111827;
+        }
+
+        body.light-theme .notice-card .notice-body {
+            color: #4b5563;
+        }
+
+        body.light-theme .notice-card .notice-body li {
+            color: #374151;
+        }
+
+        body.light-theme .notice-card .notice-body strong {
+            color: #111827;
+        }
+
+        body.light-theme .footer-note {
+            color: #9ca3af;
+        }
+
+        .bg-canvas {
+            position:fixed; top:0; left:0; width:100vw; height:100vh;
+            z-index:0; pointer-events:none; filter:blur(2px);
+        }
+
+        .top-nav {
+            position:fixed; top:0; left:0; right:0; height:70px;
+            display:flex; align-items:center; justify-content:space-between;
+            padding:0 28px; z-index:50;
+            background:linear-gradient(to bottom, rgba(9,9,11,0.85), rgba(9,9,11,0));
+            pointer-events:none;
+        }
+        .top-nav > * { pointer-events:auto; }
+
+        .back-link {
+            color:#a1a1aa; font-size:14px; text-decoration:none;
+            background:rgba(24,24,27,0.7); backdrop-filter:blur(12px);
+            -webkit-backdrop-filter:blur(12px);
+            padding:8px 18px; border-radius:999px;
+            border:1px solid rgba(255,255,255,0.08);
+            transition:all 0.25s cubic-bezier(0.16,1,0.3,1);
+            display:inline-flex; align-items:center; gap:6px;
+        }
+        .back-link:hover {
+            color:#fff; border-color:rgba(255,255,255,0.25);
+            background:rgba(39,39,42,0.8);
+            box-shadow:0 4px 20px rgba(0,0,0,0.3);
+            transform:translateX(-2px);
+        }
+
+        .nav-actions {
+            display:flex; align-items:center; gap:10px;
+        }
+        .nav-btn {
+            background:rgba(24,24,27,0.7);
+            border:1px solid rgba(255,255,255,0.08);
+            color:#a1a1aa;
+            padding:7px 15px;
+            border-radius:999px;
+            font-size:13px;
+            cursor:pointer;
+            backdrop-filter:blur(12px);
+            -webkit-backdrop-filter:blur(12px);
+            transition:all 0.2s;
+            display:inline-flex; align-items:center; gap:5px;
+        }
+        .nav-btn:hover {
+            color:#f4f4f5;
+            border-color:rgba(129,140,248,0.5);
+            background:rgba(39,39,42,0.9);
+        }
+        .nav-btn.primary {
+            border-color:rgba(129,140,248,0.4);
+            color:#c7d2fe;
+            background:rgba(99,102,241,0.15);
+        }
+        .nav-btn.primary:hover {
+            background:rgba(99,102,241,0.3);
+            color:#fff;
+            box-shadow:0 0 16px rgba(99,102,241,0.3);
+        }
+
+        /* Header area and left/right arrow controls */
+        .header-section {
+            position:relative; z-index:10;
+            text-align:center;
+            padding-top:76px;
+            padding-bottom:12px;
+            flex-shrink:0;
+        }
+        .header-section h1 {
+            font-size:28px; font-weight:700; letter-spacing:-0.02em;
+            color:#e4e4e7; margin-bottom:6px;
+        }
+        .header-section .subtitle {
+            color:#71717a; font-size:14px;
+            margin-bottom:14px;
+        }
+
+        /* Centered direction control bar */
+        .top-arrow-controller {
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            gap:14px;
+            background:rgba(24,24,27,0.65);
+            border:1px solid rgba(255,255,255,0.08);
+            padding:6px 14px;
+            border-radius:999px;
+            backdrop-filter:blur(14px);
+            -webkit-backdrop-filter:blur(14px);
+            box-shadow:0 6px 24px rgba(0,0,0,0.35);
+        }
+        .arrow-action-btn {
+            width:38px; height:38px;
+            border-radius:50%;
+            background:rgba(255,255,255,0.06);
+            border:1px solid rgba(255,255,255,0.1);
+            color:#f4f4f5;
+            cursor:pointer;
+            display:inline-flex; align-items:center; justify-content:center;
+            transition:transform 0.15s, background 0.15s, border-color 0.15s;
+            outline:none;
+            user-select:none;
+            -webkit-user-select:none;
+            touch-action:manipulation;
+        }
+        .arrow-action-btn svg {
+            width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round;
+            pointer-events:none;
+        }
+        .arrow-action-btn:hover {
+            background:rgba(129,140,248,0.2);
+            border-color:rgba(129,140,248,0.6);
+            color:#fff;
+            box-shadow:0 0 14px rgba(129,140,248,0.4);
+            transform:scale(1.08);
+        }
+        .arrow-action-btn:active {
+            transform:scale(0.95);
+        }
+        .arrow-action-btn:hover.btn-prev svg {
+            transform:translateX(-2px);
+        }
+        .arrow-action-btn:hover.btn-next svg {
+            transform:translateX(2px);
+        }
+        .top-arrow-controller .controller-text {
+            font-size:13px;
+            color:#a1a1aa;
+            font-weight:500;
+            padding:0 4px;
+            letter-spacing:0.02em;
+        }
+
+        /* Horizontal scrolling viewport */
+        .horizontal-viewport {
+            position:relative; z-index:10;
+            flex:1;
+            display:flex;
+            flex-direction:column;
+            justify-content:center;
+            min-height:540px;
+            padding:10px 0 20px;
+        }
+
+        /* Timeline track */
+        .timeline-track-wrap {
+            overflow-x:auto;
+            overflow-y:hidden;
+            scrollbar-width:none;
+            -ms-overflow-style:none;
+            padding:30px 60px 40px;
+            position:relative;
+            opacity:0;
+            transition:opacity 0.25s ease-out;
+        }
+        .timeline-track-wrap.ready {
+            opacity:1;
+        }
+        .timeline-track-wrap::-webkit-scrollbar {
+            display:none;
+        }
+
+        .timeline-rail {
+            display:flex;
+            position:relative;
+            align-items:flex-start;
+            gap:48px;
+            padding-top:36px;
+            width:max-content;
+            margin:0 auto;
+        }
+
+        /* Horizontal glowing timeline rail */
+        .timeline-rail::before {
+            content:'';
+            position:absolute;
+            top:12px;
+            left:0;
+            right:0;
+            height:3px;
+            background:linear-gradient(to right, 
+                rgba(52, 211, 153, 0.25) 0%, 
+                rgba(129, 140, 248, 0.6) 50%, 
+                rgba(236, 72, 153, 0.8) 100%
+            );
+            border-radius:2px;
+            box-shadow:0 0 16px rgba(129,140,248,0.4);
+            z-index:1;
+        }
+
+        /* Direction hint labels */
+        .track-direction-label {
+            position:absolute;
+            top:-20px;
+            font-size:12px;
+            font-weight:600;
+            letter-spacing:0.08em;
+            text-transform:uppercase;
+            padding:3px 12px;
+            border-radius:6px;
+            background:rgba(24,24,27,0.75);
+            backdrop-filter:blur(8px);
+            z-index:2;
+        }
+        .label-past {
+            left:10px;
+            color:#6ee7b7;
+            border:1px solid rgba(16,185,129,0.3);
+        }
+        .label-present {
+            right:10px;
+            color:#f472b6;
+            border:1px solid rgba(236,72,153,0.4);
+            box-shadow:0 0 12px rgba(236,72,153,0.3);
+        }
+
+        /* Individual timeline node */
+        .timeline-node {
+            position:relative;
+            width:380px;
+            flex-shrink:0;
+        }
+
+        /* Axis node cursor: precisely locked to the center of the line */
+        .node-pin {
+            position:absolute;
+            top:-23px; /* rail padding-top(36px) - line center(13.5px) = 22.5px */
+            left:28px;
+            width:14px;
+            height:14px;
+            border-radius:50%;
+            background:#818cf8;
+            border:2.5px solid #09090b;
+            box-shadow:0 0 0 2px rgba(129,140,248,0.5), 0 0 14px rgba(129,140,248,0.7);
+            z-index:4;
+            transform:translate(-50%, -50%);
+            transition:transform 0.25s, background 0.25s, box-shadow 0.25s;
+            pointer-events:none;
+        }
+        .timeline-node:hover .node-pin {
+            transform:translate(-50%, -50%) scale(1.3);
+            background:#a5b4fc;
+            box-shadow:0 0 0 3px rgba(129,140,248,0.8), 0 0 20px rgba(129,140,248,0.9);
+        }
+
+        .timeline-node.current .node-pin {
+            background:#ec4899;
+            box-shadow:0 0 0 3px rgba(236,72,153,0.5), 0 0 18px rgba(236,72,153,0.9);
+            animation:pulseGlow 2s infinite alternate;
+        }
+        @keyframes pulseGlow {
+            0% { transform:translate(-50%, -50%) scale(1); box-shadow:0 0 0 2px rgba(236,72,153,0.4), 0 0 12px rgba(236,72,153,0.6); }
+            100% { transform:translate(-50%, -50%) scale(1.25); box-shadow:0 0 0 4px rgba(236,72,153,0.8), 0 0 22px rgba(236,72,153,1); }
+        }
+
+        /* Date badge */
+        .node-date {
+            display:inline-flex;
+            align-items:center;
+            font-size:13px;
+            font-weight:600;
+            color:#a1a1aa;
+            margin-bottom:12px;
+            letter-spacing:0.04em;
+            padding:4px 14px;
+            border-radius:8px;
+            background:rgba(24,24,27,0.6);
+            border:1px solid rgba(255,255,255,0.06);
+            backdrop-filter:blur(8px);
+        }
+        .timeline-node.current .node-date {
+            color:#f472b6;
+            border-color:rgba(236,72,153,0.3);
+            background:rgba(236,72,153,0.1);
+        }
+
+        /* Card body */
+        .notice-card {
+            background:rgba(24,24,27,0.45);
+            border:1px solid rgba(255,255,255,0.07);
+            border-radius:16px;
+            padding:22px 24px;
+            backdrop-filter:blur(14px);
+            -webkit-backdrop-filter:blur(14px);
+            box-shadow:0 10px 30px rgba(0,0,0,0.35);
+            transition:all 0.3s cubic-bezier(0.16,1,0.3,1);
+            max-height:460px;
+            overflow-y:auto;
+            scrollbar-width:thin;
+            scrollbar-color:rgba(255,255,255,0.15) transparent;
+        }
+        .notice-card::-webkit-scrollbar {
+            width:4px;
+        }
+        .notice-card::-webkit-scrollbar-thumb {
+            background:rgba(255,255,255,0.15);
+            border-radius:4px;
+        }
+        .notice-card:hover {
+            background:rgba(28,28,32,0.65);
+            border-color:rgba(255,255,255,0.16);
+            box-shadow:0 16px 40px rgba(0,0,0,0.5);
+            transform:translateY(-4px);
+        }
+
+        .timeline-node.current .notice-card {
+            border-color:rgba(236,72,153,0.3);
+            background:rgba(28,24,30,0.55);
+        }
+
+        .card-header {
+            margin-bottom:12px;
+            display:flex;
+            flex-wrap:wrap;
+            align-items:center;
+            gap:6px;
+        }
+
+        .tag {
+            display:inline-block; padding:3px 10px; border-radius:6px;
+            font-size:12px; font-weight:600;
+        }
+        .tag.new { background:rgba(16,185,129,0.18); color:#6ee7b7; border:1px solid rgba(16,185,129,0.25); }
+        .tag.fix { background:rgba(245,158,11,0.18); color:#fcd34d; border:1px solid rgba(245,158,11,0.25); }
+        .tag.upgrade { background:rgba(129,140,248,0.18); color:#a5b4fc; border:1px solid rgba(129,140,248,0.25); }
+        .tag.warning { background:rgba(239,68,68,0.18); color:#f87171; border:1px solid rgba(239,68,68,0.25); }
+        .tag.latest { background:rgba(236,72,153,0.2); color:#f472b6; border:1px solid rgba(236,72,153,0.35); }
+
+        .notice-body {
+            color:#a1a1aa; font-size:13.5px; line-height:1.75;
+        }
+        .notice-body ul {
+            padding-left:18px; margin-top:4px;
+        }
+        .notice-body li {
+            margin-bottom:8px; color:#d4d4d8;
+        }
+        .notice-body li:last-child {
+            margin-bottom:0;
+        }
+        .notice-body strong {
+            color:#f4f4f5; font-weight:600;
+        }
+
+        /* Floating scroll navigation and progress indicator */
+        .bottom-controller {
+            position:relative; z-index:20;
+            display:flex; flex-direction:column;
+            align-items:center; justify-content:center;
+            padding:12px 20px 24px;
+            gap:10px;
+        }
+
+        .scroll-progress-container {
+            width:min(480px, 80vw);
+            height:5px;
+            background:rgba(255,255,255,0.08);
+            border-radius:999px;
+            overflow:hidden;
+            position:relative;
+            cursor:pointer;
+        }
+        .scroll-progress-bar {
+            height:100%;
+            width:0%;
+            background:linear-gradient(to right, #34d399, #818cf8, #ec4899);
+            border-radius:999px;
+            transition:width 0.15s ease-out;
+        }
+
+        .footer-note {
+            text-align:center; color:#52525b;
+            font-size:13px;
+        }
+
+        @media (max-width:768px) {
+            .top-nav { padding:0 16px; }
+            .timeline-node { width:310px; }
+            .timeline-rail { gap:28px; }
+            .timeline-track-wrap { padding:30px 24px 30px; }
+            .header-section { padding-top:68px; }
+            .header-section h1 { font-size:24px; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <div class="top-nav">
+        <a href="index.html" class="back-link" id="backToHomeLink" onclick="handleGoBack(event)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            Back to Home
+        </a>
+        <div class="nav-actions">
+            <button class="nav-btn" id="btn-to-past" title="Scroll to the earliest entry">Earliest</button>
+            <button class="nav-btn primary" id="btn-to-latest" title="Scroll to the latest update">Latest</button>
+        </div>
+    </div>
+
+    <div class="header-section">
+        <h1>Changelog</h1>
+        <div class="subtitle">Record every change and improvement</div>
+
+        <!-- Top left/right arrow controls -->
+        <div class="top-arrow-controller">
+            <button class="arrow-action-btn btn-prev" id="top-prev-btn" title="View earlier updates">
+                <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+            <span class="controller-text"></span>
+            <button class="arrow-action-btn btn-next" id="top-next-btn" title="View latest updates">
+                <svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Horizontal timeline -->
+    <div class="horizontal-viewport" id="viewport">
+        <div class="timeline-track-wrap" id="trackWrap">
+            <div class="timeline-rail" id="rail">
+                <span class="track-direction-label label-past">Early entries (old)</span>
+                <span class="track-direction-label label-present">Latest entries (new)</span>
+
+                <!-- 1. 2026-06-01 (Launch) -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-06-01</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag new">Launch</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li><strong>PC-TOOL officially launched</strong> — Free online tool collection，Serving everyone, completely free</li>
+                                <li>Added <strong>QR Code Generator</strong> — generate QR codes from text or links, with custom colors and logos</li>
+                                <li>Added <strong>QR Code Decoder</strong> — read content from uploaded QR code images</li>
+                                <li>Added <strong>Image Format Converter</strong> — supports conversion between JPG / PNG / WebP / GIF / BMP / PDF</li>
+                                <li>Added <strong>Image Compressor</strong> — supports batch compression with adjustable quality</li>
+                                <li>Added <strong>Image to Base64</strong> — drag in an image to generate a Base64 string</li>
+                                <li>Added <strong>Base64 to Image</strong> — paste a Base64 string to restore an image</li>
+                                <li>Added <strong>Color Format Converter</strong> — convert between HEX / RGB / HSL with a color palette</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. 2026-06-15 -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-06-15</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag new">Added</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>Added<strong>Image Stitcher</strong> — stitch multiple images horizontally or vertically with a custom output resolution</li>
+                                <li>Added<strong>Image-to-GIF Maker</strong> — with a customizable frame rate</li>
+                                <li>Added<strong>Image Watermark</strong> — supports text, image, and tiled watermarks with adjustable opacity and rotation</li>
+                                <li>Added<strong>Image Rotation / Flip</strong> — 90° rotation and horizontal / vertical flipping</li>
+                                <li>Added<strong>Image Color / Filters</strong> — adjust brightness, contrast, saturation, hue, blur, and more</li>
+                                <li>Added<strong>Image DPI Converter</strong> — adjust DPI without changing pixel dimensions</li>
+                                <li>Added<strong>Image Background Remover</strong> — intelligently remove image backgrounds offline to protect privacy</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. 2026-06-30 -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-06-30</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag new">Added</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>Added<strong>Audio Converter</strong> — supports conversion between MP3 / WAV / OGG / M4A</li>
+                                <li>Added<strong>Audio to OGG</strong> — supports MP3 / WAV / FLAC / AAC and other formats</li>
+                                <li>Added<strong>Audio Compressor</strong> — with adjustable compression quality</li>
+                                <li>Introduced <strong>music parsing</strong>(third-party) service</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. 2026-07-10 -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-07-10</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag new">Added</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>Added<strong>Video Compressor</strong> — supports MP4 / WebM / MOV / AVI with adjustable quality and resolution</li>
+                                <li>Added<strong>Video Converter</strong> — Video to WebM</li>
+                                <li>Added<strong>Extract Audio from Video</strong> — extract audio from video</li>
+                                <li>Added<strong>Video to GIF</strong> — custom frame rate and dimensions</li>
+                                <li>Added<strong>Trim Video</strong> — set start and end times to trim</li>
+                                <li>Added<strong>Video Screenshots / Frame Capture</strong> — play to a frame and export it as an image</li>
+                                <li>Added<strong>Bilibili Video to URL</strong> — extract direct Bilibili video links for use in VRChat and similar scenarios</li>
+                                <li>Introduced <strong>video parsing</strong>(third-party) service</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. 2026-07-20 -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-07-20</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag new">Added</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>Added<strong>Trim Audio</strong> — set start and end times to trim an audio clip</li>
+                                <li>Added<strong>Merge Audio</strong> — join multiple audio clips end to end</li>
+                                <li>Added<strong>Merge PDF</strong> — merge multiple PDFs into one using pdf-lib in the browser</li>
+                                <li>Added<strong>Word and PDF Converter</strong> — bidirectional document conversion</li>
+                                <li>Added<strong>File Hash Calculator</strong> — drag in a file to calculate MD5 / SHA1 / SHA256</li>
+                                <li>Added<strong>Metronome (BPM)</strong> — precise tempo with spacebar start/stop control</li>
+                                <li>Added<strong>AI Chat framework</strong> (third-party)— intelligent chat platform</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6. 2026-07-30 -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-07-30</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag upgrade">Upgrade</span>
+                            <span class="tag new">Added</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>Image Format Converter upgraded to<strong>Batch Converter</strong>，upload multiple images, process them individually, and download them all at once</li>
+                                <li>Added<strong>Image Cropper</strong> tool, supporting freeform cropping and common preset ratios such as 1:1, 4:3, and 16:9</li>
+                                <li>The homepage added <strong>Changelog</strong> entry for browsing version updates</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 7. 2026-08-01 -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-08-01</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag warning">Notice</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>cuteFish broke their hand, so all cuteFish projects are paused. qiamao will continue maintaining pc-tool.cn</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 8. 2026-08-15 -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-08-15</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag new">Changed</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>I must have had a coding brain freeze (would you believe me if I said it was fireworks?)</li>
+                                <li>The Word and PDF converter link was wrong; someone found it, and it is now fixed</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 9. 2026-09-03 (Reverse Playback) -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-09-03</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag new">Added</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>Added<strong>Reverse Video</strong> tool — reverse the video and audio with synchronized playback, preview, and download</li>
+                                <li>Added<strong>Reverse Audio</strong> tool — reverse local audio samples and export WAV or MP3</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 10. 2026-09-03 (Warning) -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-09-03</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag warning">Warning</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>The site may be blocked. Download the HTML from GitHub for local use while this is being resolved</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 11. 2026-09-03 (Fixed) -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-09-03</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag fix">Fixed</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>The site is accessible again; please report any remaining issues</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 12. 2026-09-04 (Dead Pixel Test) -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-09-04</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag new">Added</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>Added<strong>Dead Pixel Test</strong> tool — test monitor dead pixels, stuck pixels, dark pixels, and color shifts with full-screen solid colors</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 13. 2026-09-04 (Regression Notice) -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-09-04</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag warning">Notice</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>cuteFish: I am back! The pins in my hand are still in place, but I can code again. qiamao and I will do our best to maintain pc-tool.cn</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 14. 2026-09-04 (Major Upgrade) -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-09-04</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag upgrade">Major Upgrade</span>
+                            <span class="tag new">Full Release</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li><strong>【Development / Text Tools (9)】</strong>：JSON formatting and validation, URL encoding / decoding, Timestamp Converter, Regex Tester, random password / UUID generator, base conversion, MD5 / SHA encryption, Unicode conversion, and HTML entity encoding / decoding.</li>
+                                <li><strong>【Image Tools (8)】</strong>：Image Color Picker、image to monochrome / inversion, GIF compression, Remove Image Watermark, image to SVG, image collage / 9-grid slicing, image pixelation / blur, and photo to hand-drawn / sketch.</li>
+                                <li><strong>【PDF Tools (6)】</strong>：PDF splitting, PDF compression, PDF to image, image to PDF, PDF encryption / decryption, and PDF text extraction.</li>
+                                <li><strong>【Video Tools (5)】</strong>：Merge Videos、Video Watermark、Video Speed Changer、Remove Video Watermark、video to wallpaper / cover.</li>
+                                <li><strong>【Audio Tools (4)】</strong>：Audio Speed Changer、Audio Pitch Shifter、text to speech (TTS), and speech to text (ASR).</li>
+                                <li><strong>【Network / Operations Tools (6)】</strong>：Short Link Generator、User-Agent parsing, HTTP status lookup, website speed test / Ping, SSL certificate checking, and port scanning.</li>
+                                <li><strong>【Life / Calculation Tools (6)】</strong>：Date Calculator、unit conversion, BMI calculator, loan / compound interest calculator, currency conversion, and lunar calendar / weather lookup.</li>
+                                <li><strong>【Other Tools (4)】</strong>：Barcode Generator、random numbers, lucky wheel, Countdown Timer, Pomodoro Timer, and Morse code encoding / decoding.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 15. 2026-09-05 -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-09-05</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag new">Added</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>Added<strong>Keyboard Test</strong> tool — online keyboard self-test with live highlights, colored key markers, and shortcut blocking</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 16. 2026-09-06 -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-09-06</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag warning">Notice</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>All feedback has moved to our Discord: <a href="https://discord.gg/wjvS3efTj" target="_blank" rel="noopener noreferrer">https://discord.gg/wjvS3efTj</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 17. 2026-09-07 -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-09-07</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag upgrade">UI Upgrade</span>
+                            <span class="tag new">Added</span>
+                            <span class="tag fix">Fixed</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li><strong>【Homepage category redesign and animation upgrade】</strong>：The homepage tool list is grouped by category with smooth anchor navigation and staggered elastic entry animations. “AudioVideo” is split into separate “Audio” and “Video” categories.</li>
+                                <li><strong>【Added: Mouse Auto-Clicker and Gamepad Test】</strong>：supports real-time mouse CPS testing、dynamic waveform curve drawing、with peak and average statistics；supports HTML5 Gamepad controllers，with real-time dual-stick dead-zone, button matrix, and motor vibration tests。</li>
+                                <li><strong>【Added: Random Password Generator】</strong>：Local cryptographic randomness with customizable length, letter case, digits, special characters, confusing-character filtering, entropy and strength checks, and one-click single or batch copying.</li>
+                                <li><strong>【Added: CSV / Excel Converter】</strong>：Supports bidirectional CSV and Excel (.xlsx/.xls) conversion, GBK/UTF-8 encoding with BOM protection against garbled text, and online table preview.</li>
+                                <li><strong>【Fixed: Text-to-Speech (TTS) silent export issue】</strong>：Rebuilt audio capture with standard tab audio streams and PCM 16-bit WAV conversion, completely fixing silent exports.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 18. 2026-09-08 -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-09-08</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag warning">Notice</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>Site owner email: fish@cutefish.online</li>
+                                <li>Domain email: feedback@pc-tool.cn</li>
+                                <li>Donation channel opened: https://cutefish.online/pc-tool-donate/</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 19. 2026-09-09 -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-09-09</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag fix">UI Fix</span>
+                            <span class="tag new">Added</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>Fixed: image-gif.html image-watermark.html image-rotate.html image-filter.html image-compress.html image-base64.html image-base64-decode.html file-hash.html has an incorrectly positioned Back to Home button</li>
+                                <li>Fixed: image-stitch.html image-gif.html has a nesting issue</li>
+                                <li>Added: image-enhance.html supports AI model selection (results may vary because GitHub rate limits are low; the planned model is Real-ESRGAN)</li>
+                                <li>Added: Smart music BPM detector</li>
+                                <li>This will do for now; hardly anyone is watching, and I am too lazy to check every file name</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 20. 2026-09-10 -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-09-10</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag new">Added</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>Added<strong>View & Remove Image EXIF</strong> tool — locally parse photo settings and GPS data, then remove private metadata with one click</li>
+                                <li>Added<strong>Color Scheme Generator</strong> tool — generate complementary, analogous, and triadic palettes with CSS variables, Tailwind, JSON export, and light/dark scales</li>
+                                <li>Added<strong>Online JWT Decoder</strong> tool — parse token structure and payload in real time, convert timestamps, and check expiration status</li>
+                                <li>Added<strong>Code Formatter</strong> — supports JavaScript/HTML/CSS/XML beautification and minification with custom indentation</li>
+                                <li>Added<strong>Markdown Editor</strong> tool — render live previews with a syntax toolbar, local import, HTML export, and automatic saving</li>
+                                <li>Added<strong>Typing Speed Test</strong> tool — bilingual WPM testing with live accuracy statistics and final ratings</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 21. 2026-09-11 -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-09-11</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag new">Added</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>Added<strong>Text Diff</strong> tool — view added, deleted, and unchanged lines</li>
+                                <li>Added<strong>Case & Naming Style Converter</strong> tool — supports common case styles, camelCase, snake_case, kebab-case, and more</li>
+                                <li>Added<strong>Text Cleaner</strong> — supports deduplication, sorting, blank-line removal, and line numbering</li>
+                                <li>Added<strong>Word Counter</strong> tool — count characters, Chinese characters, English words, numbers, lines, paragraphs, and bytes</li>
+                                <li>Added<strong>Simplified/Traditional Chinese & Pinyin</strong> tool — supports Simplified/Traditional conversion, numbered tones, and tone-mark pinyin</li>
+                                <li>Added<strong>ID Photo Maker</strong> tool — supports background replacement, size cropping, A4 layout, and printing</li>
+                                <li>Added<strong>ICO / Icon Generator</strong> tool — generate standard ICO files from PNG/JPG/SVG images in multiple sizes</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 22. Updates -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">****-**-**</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>I am exhausted... I really am. I want to die. Why? Why is everything like this? Leave me alone...</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 23. 2026-09-12 -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-09-12</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag new">Added</span>
+                            <span class="tag upgrade">Upgrade</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>Added<strong>site-wide light mode</strong> — 0.5s smooth transition synchronized across desktop, mobile, and tool pages</li>
+                                <li>⬅ The left side is acting up again 😡</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-09-12</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag upgrade">Upgrade</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>Added a new homepage</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 24. 2026-09-16 -->
+                <div class="timeline-node">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-09-16</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag new">Added</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>Added<strong>Pixel Art Editor</strong> — supports 16x16 to 256x256 grids, flood-fill paint bucket, eyedropper, and lossless PNG/JPG/WebP export at multiple scales</li>
+                                <li>Added<strong>ASCII Art Generator</strong> — supports real-time local image-to-ASCII conversion with multiple character sets and inversion, plus text-to-ASCII banners</li>
+                                <li>Added<strong>Text to Pinyin</strong> — supports tone marks, numbered tones, toneless mode, pinyin initials, and offline pronunciation for common characters</li>
+                                <li>Fixed<strong>an issue where returning from notice.html unexpectedly went to index.html</strong></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 25. 2026-10-01 -->
+                <div class="timeline-node current">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-10-01</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag warning">Notice</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>A new server was purchased, further improving site speed and latency while expanding available services.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 26. 2026-10-05 -->
+                <div class="timeline-node current">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-10-05</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag fix">Fixed</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>Improved site stability and smoothness (you may not notice, believe it or not😂😂😂😂😂😂😂😂😂😂😂😂😂😂😂😂😂😂😂😂😂😂😂😂😂😂😂😂😂😂😂😂😂😂）</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 27. 2026-10-03 -->
+                <div class="timeline-node current">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-10-03</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag new">Added</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>Bilibili video parsing entered internal testing</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 28. 2026-10-10 -->
+                <div class="timeline-node current">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-10-10</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag warning">Notice</span>
+                            <span class="tag new">Added</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>ICP filing approved, filing number: JICP2026010334</li>
+                                <li>Bilibili video parsing entered public testing</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 28. 2026-10-11 -->
+                <div class="timeline-node current">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-10-11</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag fix">Fixed</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>Fixed Bilibili video parsing video cache not being deleted, which filled server storage</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 29. 2026-10-12 -->
+                <div class="timeline-node current">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-10-12</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag new">Added</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>Added P2P peer-to-peer file transfer</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 30. 2026-10-20 -->
+                <div class="timeline-node current">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-10-20</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag warning">Notice</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>Public security filing approved, website filing number: J Public Security Filing 22240102000516. Congratulations🎉</li>
+                                <li>I have a few things to say, although nobody may read them. I am now in my first year of high school, the pressure is growing, and I do not know how long I can keep going</li>
+                                <li>I have been funding the server by myself. GitHub was free before, but it only supports static sites, so services like Bilibili parsing and P2P File Transfer were impossible.</li>
+                                <li>High school has also become busy, leaving little time for server maintenance and new features...</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 31. 2026-10-21 -->
+                <div class="timeline-node current">
+                    <div class="node-pin"></div>
+                    <div class="node-date">2026-10-21</div>
+                    <div class="notice-card">
+                        <div class="card-header">
+                            <span class="tag fix">Fixed</span>
+                        </div>
+                        <div class="notice-body">
+                            <ul>
+                                <li>Fixed a legacy Video Converter issue (it was left half-developed due to technical limitations)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom progress bar -->
+    <div class="bottom-controller">
+        <div class="scroll-progress-container" id="progressBarTrack" title="Click to jump to a point in time">
+            <div class="scroll-progress-bar" id="progressBar"></div>
+        </div>
+        <p class="footer-note">Serving everyone · completely free · powered only by love</p>
+    </div>
+
+    <script>
+        function handleGoBack(e) {
+            if (e) e.preventDefault();
+            var ua = navigator.userAgent || navigator.vendor || window.opera;
+            var isMobile = /Mobi|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|webOS/i.test(ua);
+            var isTablet = /iPad|Android(?!.*Mobile)|Tablet|PlayBook|Silk/i.test(ua) || 
+                           ((/Macintosh/i.test(ua) || navigator.platform === 'MacIntel') && navigator.maxTouchPoints > 1);
+            var isSmallScreen = window.innerWidth <= 768;
+            var target = (isMobile || isTablet || isSmallScreen) ? 'mobile.html' : 'index.html';
+            window.location.href = target;
+        }
+
+        (function() {
+            try {
+                if (localStorage.getItem('pctool_theme') === 'light') {
+                    document.documentElement.classList.add('light-theme');
+                    if (document.body) document.body.classList.add('light-theme');
+                    else document.addEventListener('DOMContentLoaded', function() { document.body.classList.add('light-theme'); });
+                }
+            } catch(e) {}
+
+            // Detect mobile/desktop and direct to the corresponding home
+            try {
+                var ua = navigator.userAgent || navigator.vendor || window.opera;
+                var isMobile = /Mobi|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|webOS/i.test(ua);
+                var isTablet = /iPad|Android(?!.*Mobile)|Tablet|PlayBook|Silk/i.test(ua) || 
+                               ((/Macintosh/i.test(ua) || navigator.platform === 'MacIntel') && navigator.maxTouchPoints > 1);
+                var isSmallScreen = window.innerWidth <= 768;
+                var link = document.getElementById('backToHomeLink');
+                if (link) {
+                    link.setAttribute('href', (isMobile || isTablet || isSmallScreen) ? 'mobile.html' : 'index.html');
+                }
+            } catch(e) {}
+        })();
+    </script>
+    <script>
+        if ('scrollRestoration' in history) {
+            history.scrollRestoration = 'manual';
+        }
+
+        (function() {
+            var trackWrap = document.getElementById('trackWrap');
+            var progressBar = document.getElementById('progressBar');
+            var progressBarTrack = document.getElementById('progressBarTrack');
+            var btnToPast = document.getElementById('btn-to-past');
+            var btnToLatest = document.getElementById('btn-to-latest');
+            var topPrevBtn = document.getElementById('top-prev-btn');
+            var topNextBtn = document.getElementById('top-next-btn');
+
+            // Zero-latency smooth scrolling animation system (with chained accumulation and hardware acceleration)
+            var currentAnimationId = null;
+            var currentTargetScroll = null;
+
+            function smoothScrollTo(target, customDuration) {
+                var maxScroll = trackWrap.scrollWidth - trackWrap.clientWidth;
+                target = Math.max(0, Math.min(maxScroll, target));
+                
+                if (currentAnimationId) {
+                    cancelAnimationFrame(currentAnimationId);
+                }
+
+                var start = trackWrap.scrollLeft;
+                var distance = target - start;
+                if (Math.abs(distance) < 1) {
+                    trackWrap.scrollLeft = target;
+                    updateProgress();
+                    return;
+                }
+
+                var duration = customDuration || 280; // 280ms quick, crisp transition with no waiting
+                var startTime = performance.now();
+
+                function easeOutQuad(t) {
+                    return t * (2 - t);
+                }
+
+                function frame(now) {
+                    var elapsed = now - startTime;
+                    var progress = Math.min(elapsed / duration, 1);
+                    var factor = easeOutQuad(progress);
+
+                    trackWrap.scrollLeft = start + distance * factor;
+                    updateProgress();
+
+                    if (progress < 1) {
+                        currentAnimationId = requestAnimationFrame(frame);
+                    } else {
+                        currentAnimationId = null;
+                        currentTargetScroll = null;
+                    }
+                }
+
+                currentTargetScroll = target;
+                currentAnimationId = requestAnimationFrame(frame);
+            }
+
+            // single-step displacement
+            var STEP_DISTANCE = 430;
+
+            function stepScroll(direction) {
+                // if a combo is active, continue accumulating from the target value to reduce lag
+                var basePos = (currentTargetScroll !== null) ? currentTargetScroll : trackWrap.scrollLeft;
+                smoothScrollTo(basePos + (direction * STEP_DISTANCE), 260);
+            }
+
+            function scrollToLatest() {
+                var maxScroll = trackWrap.scrollWidth - trackWrap.clientWidth;
+                smoothScrollTo(maxScroll, 350);
+            }
+
+            function scrollToPast() {
+                smoothScrollTo(0, 350);
+            }
+
+            // Update progress bar
+            function updateProgress() {
+                var maxScroll = trackWrap.scrollWidth - trackWrap.clientWidth;
+                if (maxScroll <= 0) {
+                    progressBar.style.width = '100%';
+                    return;
+                }
+                var pct = (trackWrap.scrollLeft / maxScroll) * 100;
+                progressBar.style.width = Math.min(100, Math.max(0, pct)) + '%';
+            }
+
+            trackWrap.addEventListener('scroll', updateProgress, { passive: true });
+            window.addEventListener('resize', updateProgress);
+
+            // Move with the top arrows (instant pointerdown trigger removes the 300ms mobile/PC click delay)
+            topPrevBtn.addEventListener('pointerdown', function(e) {
+                if (e.button !== 0) return;
+                stepScroll(-1);
+            });
+            topNextBtn.addEventListener('pointerdown', function(e) {
+                if (e.button !== 0) return;
+                stepScroll(1);
+            });
+
+            // Top jump buttons
+            btnToPast.addEventListener('click', scrollToPast);
+            btnToLatest.addEventListener('click', scrollToLatest);
+
+            // Click the progress bar to jump
+            progressBarTrack.addEventListener('click', function(e) {
+                var rect = progressBarTrack.getBoundingClientRect();
+                var clickX = e.clientX - rect.left;
+                var pct = clickX / rect.width;
+                var maxScroll = trackWrap.scrollWidth - trackWrap.clientWidth;
+                smoothScrollTo(maxScroll * pct, 320);
+            });
+
+            // Keyboard left/right arrows with smooth transitions
+            window.addEventListener('keydown', function(e) {
+                if (e.key === 'ArrowLeft') {
+                    stepScroll(-1);
+                } else if (e.key === 'ArrowRight') {
+                    stepScroll(1);
+                }
+            });
+
+            // Initial page load: align to the latest entry before the first paint to prevent a visible jump
+            function initScrollPosition() {
+                var maxScroll = trackWrap.scrollWidth - trackWrap.clientWidth;
+                trackWrap.scrollLeft = maxScroll;
+                updateProgress();
+                trackWrap.classList.add('ready');
+            }
+
+            // Run once immediately (align after DOM parsing)
+            initScrollPosition();
+
+            // Recalibrate silently during load for late-loading resources such as images
+            window.addEventListener('load', function() {
+                initScrollPosition();
+            });
+        })();
+
+        // Keep the original snake background animation logic
+        (function() {
+            var canvas = document.getElementById('bg-canvas');
+            var ctx = canvas.getContext('2d');
+            var W, H, mouseX = -9999, mouseY = -9999;
+
+            function resize() {
+                W = window.innerWidth; H = window.innerHeight;
+                canvas.width = W; canvas.height = H;
+            }
+            window.addEventListener('resize', resize); resize();
+
+            document.addEventListener('mousemove', function(e) { mouseX = e.clientX; mouseY = e.clientY; });
+            document.addEventListener('mouseleave', function() { mouseX = -9999; mouseY = -9999; });
+
+            var GS = 8, PS = 6;
+            var WORM_COUNT = Math.floor((W * H) / 20000);
+
+            var COLORS = [
+                'rgba(16, 185, 129, ',
+                'rgba(129, 140, 248, ',
+                'rgba(168, 85, 247, ',
+                'rgba(236, 72, 153, ',
+            ];
+
+            function rpick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+            var Worm = (function() {
+                function W() { this.init(true); }
+                W.prototype.init = function(pre) {
+                    this.x = Math.random() * (W / GS);
+                    this.y = Math.random() * (H / GS);
+                    this.angle = Math.random() * Math.PI * 2;
+                    this.speed = Math.random() * 0.08 + 0.02;
+                    this.history = [];
+                    this.maxLen = Math.floor(Math.random() * 50 + 15);
+                    this.turn = (Math.random() - 0.5) * 0.03;
+                    this.color = rpick(COLORS);
+                    if (pre) { var n = Math.floor(Math.random() * this.maxLen); for (var i = 0; i < n; i++) this.update(true); }
+                };
+                W.prototype.update = function(isInit) {
+                    var fa = Math.sin(this.x * 0.03) * Math.cos(this.y * 0.03) * Math.PI * 2;
+                    var dx = mouseX / GS - this.x, dy = mouseY / GS - this.y;
+                    var d = Math.sqrt(dx * dx + dy * dy);
+                    if (d < 30 && d > 0) fa += Math.atan2(dy, dx) * (1 - d / 30) * 0.02;
+                    this.angle += (fa - this.angle) * 0.015 + this.turn;
+                    this.x += Math.cos(this.angle) * this.speed;
+                    this.y += Math.sin(this.angle) * this.speed;
+                    var gx = Math.floor(this.x), gy = Math.floor(this.y);
+                    if (this.history.length === 0 || this.history[this.history.length - 1].x !== gx || this.history[this.history.length - 1].y !== gy) {
+                        this.history.push({ x: gx, y: gy });
+                        if (this.history.length > this.maxLen) this.history.shift();
+                    }
+                    if (!isInit && (this.x < -15 || this.x > (W / GS) + 15 || this.y < -15 || this.y > (H / GS) + 15)) this.init();
+                };
+                W.prototype.draw = function(ctx) {
+                    if (this.history.length < 2) return;
+                    for (var i = 0; i < this.history.length; i++) {
+                        var pos = this.history[i];
+                        var alpha = 1, prog = i / this.history.length;
+                        if (prog > 0.8) alpha = (1 - prog) * 5;
+                        else if (prog < 0.2) alpha = prog * 5;
+                        if (Math.random() > 0.96) alpha *= 0.1;
+                        ctx.fillStyle = this.color + (alpha * 0.4) + ')';
+                        ctx.fillRect(pos.x * GS, pos.y * GS, PS, PS);
+                    }
+                };
+                return W;
+            })();
+
+            var worms = Array.from({ length: WORM_COUNT }, function() { return new Worm(); });
+
+            function animate() {
+                ctx.clearRect(0, 0, W, H);
+                for (var i = 0; i < worms.length; i++) { worms[i].update(); worms[i].draw(ctx); }
+                requestAnimationFrame(animate);
+            }
+            animate();
+        })();
+    </script>
+</body>
+</html>

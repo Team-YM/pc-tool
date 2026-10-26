@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Formatter</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="Online code formatter, beautifier and minifier for JavaScript, HTML, CSS and XML, processed entirely in your browser.">
+    <meta property="og:title" content="Code Formatter | PC-TOOL">
+    <meta property="og:description" content="Free online code formatter that beautifies and minifies JavaScript, HTML, CSS and XML, running completely in your browser.">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/code-format.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="en_US">
+    <link rel="stylesheet" href="common.css">
+    <!-- js-beautify formatting library (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/js-beautify@1.15.1/js/lib/beautify.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/js-beautify@1.15.1/js/lib/beautify-css.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/js-beautify@1.15.1/js/lib/beautify-html.js"></script>
+    <style>
+        .container {
+            max-width: 980px;
+        }
+        .container h1 {
+            color: #e4e4e7;
+            margin-bottom: 8px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .container > p {
+            color: #a1a1aa;
+            font-size: 15px;
+            margin-bottom: 20px;
+        }
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 12px;
+            align-items: center;
+        }
+        .tool-btn {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #e4e4e7;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .tool-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-1px);
+        }
+        .tool-btn.primary {
+            background: #818cf8;
+            color: #fff;
+            border-color: #818cf8;
+        }
+        .tool-btn.primary:hover {
+            background: #6366f1;
+        }
+        .settings-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 16px;
+            font-size: 13px;
+            color: #a1a1aa;
+        }
+        .settings-row label {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .format-select {
+            margin: 0;
+            padding: 6px 28px 6px 12px;
+            font-size: 13px;
+            background-color: rgba(15, 15, 18, 0.7);
+        }
+        .editor-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        @media (max-width: 768px) {
+            .editor-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .editor-box {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            text-align: left;
+        }
+        .editor-header {
+            font-size: 13px;
+            color: #a1a1aa;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .textarea-styled {
+            width: 100%;
+            height: 380px;
+            background: rgba(15, 15, 18, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 12px 14px;
+            color: #e4e4e7;
+            font-size: 13px;
+            line-height: 1.5;
+            resize: vertical;
+            outline: none;
+            font-family: Consolas, Monaco, "Courier New", monospace;
+            tab-size: 2;
+            transition: border-color 0.2s;
+        }
+        .textarea-styled:focus {
+            border-color: rgba(129, 140, 248, 0.5);
+        }
+        .status-bar {
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            display: none;
+            margin-top: 8px;
+            text-align: left;
+        }
+        .status-bar.success {
+            display: block;
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        .status-bar.error {
+            display: block;
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        .foot-note {
+            margin-top: 24px;
+            text-align: center;
+            font-size: 12px;
+            color: #71717a;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <a href="../index.html" class="back-link">← Back to Tools</a>
+
+    <div class="container">
+        <h1>Code Formatter</h1>
+        <p>Beautify and minify JavaScript, HTML, CSS and XML code — all done locally in your browser.</p>
+
+        <div class="toolbar">
+            <select id="langSel" class="format-select">
+                <option value="javascript">JavaScript</option>
+                <option value="html">HTML</option>
+                <option value="css">CSS</option>
+                <option value="xml">XML</option>
+            </select>
+            <button class="tool-btn primary" id="formatBtn">Format</button>
+            <button class="tool-btn" id="minifyBtn">Minify</button>
+            <button class="tool-btn" id="copyBtn">Copy Result</button>
+            <button class="tool-btn" id="sampleBtn">Sample Code</button>
+            <button class="tool-btn" id="clearBtn">Clear</button>
+        </div>
+
+        <div class="settings-row">
+            <label>Indent Width
+                <select id="indentSizeSel" class="format-select">
+                    <option value="2">2 spaces</option>
+                    <option value="4" selected>4 spaces</option>
+                    <option value="8">8 spaces</option>
+                </select>
+            </label>
+            <label>Indent Character
+                <select id="indentCharSel" class="format-select">
+                    <option value="space" selected>Space</option>
+                    <option value="tab">Tab</option>
+                </select>
+            </label>
+        </div>
+
+        <div class="editor-grid">
+            <div class="editor-box">
+                <div class="editor-header">
+                    <span>Source input:</span>
+                    <span id="inputStat">0 characters</span>
+                </div>
+                <textarea class="textarea-styled" id="codeInput" placeholder="Paste or type code here..."></textarea>
+            </div>
+            <div class="editor-box">
+                <div class="editor-header">
+                    <span>Result:</span>
+                    <span id="outputStat">0 characters</span>
+                </div>
+                <textarea class="textarea-styled" id="codeOutput" placeholder="Formatted output appears here..." readonly></textarea>
+            </div>
+        </div>
+
+        <div id="statusMsg" class="status-bar"></div>
+
+        <div class="foot-note">All processing happens locally in your browser; no data is ever uploaded.</div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        (function () {
+            const langSel = document.getElementById('langSel');
+            const codeInput = document.getElementById('codeInput');
+            const codeOutput = document.getElementById('codeOutput');
+            const inputStat = document.getElementById('inputStat');
+            const outputStat = document.getElementById('outputStat');
+            const statusMsg = document.getElementById('statusMsg');
+            const indentSizeSel = document.getElementById('indentSizeSel');
+            const indentCharSel = document.getElementById('indentCharSel');
+
+            // Built-in samples for each language
+            const SAMPLES = {
+                javascript: 'function greet(name) {\n    const message = `Hello, ${name}!`;\n    // Print a greeting\n    console.log(message);\n    return message;\n}\n\nconst user = { name: "PC-TOOL", active: true, tags: ["tools", "online", "free"] };\ngreet(user.name);',
+                html: '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n<title>Code Formatter</title>\n</head>\n<body>\n<div class="container"><h1>Hello, PC-TOOL</h1><p>This is an HTML formatting sample.</p></div>\n</body>\n</html>',
+                css: 'body { margin: 0; padding: 0; background-color: #09090b; color: #f4f4f5; }\n.container { display: flex; align-items: center; justify-content: center; }\n.btn { padding: 8px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); }',
+                xml: '<?xml version="1.0" encoding="UTF-8"?>\n<config>\n<app name="PC-TOOL" version="1.0.0"><author>cute-Fish</author><features><feature>format</feature><feature>minify</feature></features></app>\n</config>'
+            };
+
+            const LANG_LABELS = { javascript: 'JavaScript', html: 'HTML', css: 'CSS', xml: 'XML' };
+
+            // Check whether the three js-beautify global functions loaded successfully
+            function isLibLoaded() {
+                return typeof window.js_beautify === 'function' &&
+                    typeof window.css_beautify === 'function' &&
+                    typeof window.html_beautify === 'function';
+            }
+
+            function showstatus(ok, text) {
+                statusMsg.className = 'status-bar ' + (ok ? 'success' : 'error');
+                statusMsg.textContent = text;
+            }
+
+            function hidestatus() {
+                statusMsg.className = 'status-bar';
+                statusMsg.textContent = '';
+            }
+
+            // Build js-beautify options from the settings
+            function getOptions() {
+                const indentSize = parseInt(indentSizeSel.value, 10) || 4;
+                const useTab = indentCharSel.value === 'tab';
+                return {
+                    indent_size: useTab ? 1 : indentSize,
+                    indent_char: useTab ? '\t' : ' ',
+                    preserve_newlines: true,
+                    max_preserve_newlines: 2,
+                    wrap_line_length: 0
+                };
+            }
+
+            function beautify(code, lang, options) {
+                if (lang === 'javascript') return window.js_beautify(code, options);
+                if (lang === 'css') return window.css_beautify(code, options);
+                // Both HTML and XML are handled by html_beautify
+                if (lang === 'html' || lang === 'xml') return window.html_beautify(code, options);
+                return code;
+            }
+
+            // Token-scanning minifier: strips comments (keeping string contents intact) and collapses runs of whitespace into a single space
+            function minifyCode(code) {
+                let out = '';
+                let i = 0;
+                const n = code.length;
+                let state = 'normal'; // normal | single | double | template | line | block | html
+                let pendingSpace = false;
+
+                function isSpace(ch) {
+                    return ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r' || ch === '\f' || ch === '\v';
+                }
+
+                while (i < n) {
+                    const c = code[i];
+                    const n1 = code[i + 1];
+                    const n2 = code[i + 2];
+                    const n3 = code[i + 3];
+
+                    // Keep string contents as-is and handle escape sequences
+                    if (state === 'single' || state === 'double' || state === 'template') {
+                        const quote = state === 'single' ? "'" : state === 'double' ? '"' : '`';
+                        out += c;
+                        if (c === '\\') { out += (n1 || ''); i += 2; continue; }
+                        if (c === quote) state = 'normal';
+                        i++;
+                        continue;
+                    }
+                    if (state === 'line') {
+                        if (c === '\n' || c === '\r') state = 'normal';
+                        i++;
+                        continue;
+                    }
+                    if (state === 'block') {
+                        if (c === '*' && n1 === '/') { state = 'normal'; i += 2; continue; }
+                        i++;
+                        continue;
+                    }
+                    if (state === 'html') {
+                        if (c === '-' && n1 === '-' && n2 === '>') { state = 'normal'; i += 3; continue; }
+                        i++;
+                        continue;
+                    }
+
+                    // Normal state
+                    if (c === "'") { state = 'single'; out += c; i++; continue; }
+                    if (c === '"') { state = 'double'; out += c; i++; continue; }
+                    if (c === '`') { state = 'template'; out += c; i++; continue; }
+                    if (c === '/' && n1 === '/') { state = 'line'; pendingSpace = true; i += 2; continue; }
+                    if (c === '/' && n1 === '*') { state = 'block'; pendingSpace = true; i += 2; continue; }
+                    if (c === '<' && n1 === '!' && n2 === '-' && n3 === '-') { state = 'html'; pendingSpace = true; i += 4; continue; }
+                    if (isSpace(c)) {
+                        if (out.length > 0 && !isSpace(out[out.length - 1])) pendingSpace = true;
+                        i++;
+                        continue;
+                    }
+                    if (pendingSpace) {
+                        if (out.length > 0 && !isSpace(out[out.length - 1])) out += ' ';
+                        pendingSpace = false;
+                    }
+                    out += c;
+                    i++;
+                }
+                return out.trim();
+            }
+
+            function updateStats() {
+                inputStat.textContent = codeInput.value.length + ' characters';
+                outputStat.textContent = codeOutput.value.length + ' characters';
+            }
+
+            function doFormat() {
+                const raw = codeInput.value;
+                if (!raw.trim()) {
+                    showstatus(false, 'Please enter the code you want to format!');
+                    return;
+                }
+                if (!isLibLoaded()) {
+                    showstatus(false, 'The formatting library is not loaded. Check your connection and refresh the page.');
+                    return;
+                }
+                try {
+                    const lang = langSel.value;
+                    codeOutput.value = beautify(raw, lang, getOptions());
+                    showstatus(true, LANG_LABELS[lang] + ' formatting complete!');
+                    updateStats();
+                } catch (err) {
+                    codeOutput.value = '';
+                    showstatus(false, 'Formatting failed: ' + err.message);
+                    updateStats();
+                }
+            }
+
+            function doMinify() {
+                const raw = codeInput.value;
+                if (!raw.trim()) {
+                    showstatus(false, 'Please enter the code you want to minify!');
+                    return;
+                }
+                try {
+                    codeOutput.value = minifyCode(raw);
+                    showstatus(true, 'Minification complete — collapsed into a single line.');
+                    updateStats();
+                } catch (err) {
+                    codeOutput.value = '';
+                    showstatus(false, 'Minification failed: ' + err.message);
+                    updateStats();
+                }
+            }
+
+            function fillSample() {
+                codeInput.value = SAMPLES[langSel.value] || '';
+                updateStats();
+                doFormat();
+            }
+
+            function clearAll() {
+                codeInput.value = '';
+                codeOutput.value = '';
+                hidestatus();
+                updateStats();
+            }
+
+            function copyResult() {
+                if (!codeOutput.value) {
+                    showstatus(false, 'There is no result to copy yet!');
+                    return;
+                }
+                const done = () => {
+                    showstatus(true, 'Copied to clipboard!');
+                };
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(codeOutput.value).then(done).catch(() => {
+                        codeOutput.select();
+                        document.execCommand('copy');
+                        done();
+                    });
+                } else {
+                    codeOutput.select();
+                    document.execCommand('copy');
+                    done();
+                }
+            }
+
+            document.getElementById('formatBtn').addEventListener('click', doFormat);
+            document.getElementById('minifyBtn').addEventListener('click', doMinify);
+            document.getElementById('copyBtn').addEventListener('click', copyResult);
+            document.getElementById('sampleBtn').addEventListener('click', fillSample);
+            document.getElementById('clearBtn').addEventListener('click', clearAll);
+            codeInput.addEventListener('input', updateStats);
+
+            // After page load, check whether the CDN libraries are available and show a friendly message if not
+            window.addEventListener('load', function () {
+                if (!isLibLoaded()) {
+                    showstatus(false, 'Failed to load the js-beautify library. This may be a network issue — refresh the page or check your connection.');
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

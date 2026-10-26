@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JWT在线解码器 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="在线JWT Token解码工具，实时解析Header与Payload，JSON语法高亮，自动转换exp/iat/nbf时间戳并检测有效期状态，纯前端本地解码不验证签名。">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="JWT在线解码器 | PC-TOOL">
+    <meta property="og:description" content="免费在线JWT解码工具，实时解析令牌结构与时间戳，完全纯前端运行。">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/jwt-decode.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="zh_CN">
+    <style>
+        .container {
+            max-width: 780px;
+        }
+        /* 输入区 */
+        .token-input {
+            width: 100%;
+            min-height: 110px;
+            margin-top: 20px;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: #e4e4e7;
+            font-size: 0.8125rem;
+            font-family: Consolas, Monaco, "Courier New", monospace;
+            line-height: 1.6;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.25s ease;
+            word-break: break-all;
+        }
+        .token-input:focus {
+            border-color: rgba(129, 140, 248, 0.5);
+        }
+        .token-input::placeholder {
+            color: #71717a;
+        }
+        /* 操作行 */
+        .action-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 14px;
+            flex-wrap: wrap;
+        }
+        .ctrl-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #e4e4e7;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.8125rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .ctrl-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-1px);
+        }
+        .ctrl-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .ctrl-btn.primary {
+            background: rgba(99, 102, 241, 0.25);
+            border-color: rgba(129, 140, 248, 0.4);
+            color: #c7d2fe;
+        }
+        .ctrl-btn.primary:hover:not(:disabled) {
+            background: rgba(99, 102, 241, 0.45);
+            border-color: rgba(129, 140, 248, 0.7);
+        }
+        .hint-text {
+            font-size: 0.75rem;
+            color: #71717a;
+            margin-left: auto;
+        }
+        /* 错误提示 */
+        .error-box {
+            display: none;
+            margin-top: 16px;
+            padding: 12px 16px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            border-radius: 10px;
+            color: #fca5a5;
+            font-size: 0.875rem;
+            line-height: 1.6;
+            word-break: break-all;
+        }
+        /* 算法/类型信息条 */
+        .meta-bar {
+            display: none;
+            margin-top: 16px;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            font-size: 0.875rem;
+            color: #a1a1aa;
+            flex-wrap: wrap;
+            gap: 6px 24px;
+        }
+        .meta-bar .meta-item strong {
+            color: #c7d2fe;
+            font-weight: 600;
+        }
+        /* 签名警告条 */
+        .warn-banner {
+            display: none;
+            margin-top: 12px;
+            padding: 10px 16px;
+            background: rgba(234, 179, 8, 0.1);
+            border: 1px solid rgba(234, 179, 8, 0.3);
+            border-radius: 10px;
+            color: #fde047;
+            font-size: 0.8125rem;
+        }
+        /* 结果面板 */
+        .result-panels {
+            display: none;
+            margin-top: 20px;
+            gap: 16px;
+            flex-direction: column;
+        }
+        .panel {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .panel-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .panel-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #e4e4e7;
+        }
+        .panel-title .sub {
+            color: #71717a;
+            font-weight: 400;
+            font-size: 0.75rem;
+            margin-left: 8px;
+        }
+        .copy-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #a1a1aa;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .copy-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #e4e4e7;
+        }
+        .panel-body {
+            margin: 0;
+            padding: 14px 16px;
+            max-height: 320px;
+            overflow: auto;
+            font-family: Consolas, Monaco, "Courier New", monospace;
+            font-size: 0.8125rem;
+            line-height: 1.7;
+            color: #d4d4d8;
+            white-space: pre;
+        }
+        /* JSON 语法高亮配色 */
+        .tok-key { color: #818cf8; }
+        .tok-str { color: #6ee7b7; }
+        .tok-num { color: #fbbf24; }
+        .tok-bool { color: #f472b6; }
+        .tok-null { color: #f472b6; }
+        /* 时间戳标注 */
+        .ts-note {
+            color: #71717a;
+            font-style: italic;
+        }
+        .ts-status {
+            display: inline-block;
+            padding: 0 8px;
+            margin-left: 6px;
+            border-radius: 999px;
+            font-size: 0.6875rem;
+            font-style: normal;
+            vertical-align: 1px;
+        }
+        .ts-status.expired {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #f87171;
+        }
+        .ts-status.valid {
+            background: rgba(52, 211, 153, 0.12);
+            border: 1px solid rgba(52, 211, 153, 0.4);
+            color: #34d399;
+        }
+        .ts-status.pending {
+            background: rgba(251, 191, 36, 0.12);
+            border: 1px solid rgba(251, 191, 36, 0.4);
+            color: #fbbf24;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <!-- 统一位置返回首页按钮 -->
+    <a href="../index.html" class="back-link">← 返回转换工具首页</a>
+
+    <div class="container">
+        <h1>JWT在线解码器</h1>
+        <p>粘贴 JWT Token 实时解码 Header 与 Payload，自动转换时间戳并检测有效期状态</p>
+
+        <!-- Token 输入框 -->
+        <textarea id="tokenInput" class="token-input" rows="4"
+            placeholder="粘贴形如 eyJhbGciOi...xxx.yyy.zzz 的 JWT Token，输入即自动解析" spellcheck="false"></textarea>
+
+        <!-- 操作按钮 -->
+        <div class="action-row">
+            <button class="ctrl-btn primary" id="formatCopyBtn" disabled>格式化复制</button>
+            <button class="ctrl-btn" id="clearBtn">清空</button>
+            <span class="hint-text">Ctrl+Enter 重新解析</span>
+        </div>
+
+        <!-- 错误提示 -->
+        <div id="errorBox" class="error-box"></div>
+
+        <!-- 算法与类型信息 -->
+        <div id="metaBar" class="meta-bar">
+            <span class="meta-item">签名算法：<strong id="algText">--</strong></span>
+            <span class="meta-item">Token 类型：<strong id="typText">--</strong></span>
+        </div>
+
+        <!-- 签名警告条 -->
+        <div id="warnBanner" class="warn-banner">签名验证需密钥，本工具仅解码不验证签名，请勿以此判断令牌真实性。</div>
+
+        <!-- 解析结果面板 -->
+        <div id="resultPanels" class="result-panels">
+            <div class="panel">
+                <div class="panel-head">
+                    <span class="panel-title">Header<span class="sub">头部信息</span></span>
+                    <button class="copy-btn" id="copyHeaderBtn">复制JSON</button>
+                </div>
+                <pre class="panel-body" id="headerOut"></pre>
+            </div>
+            <div class="panel">
+                <div class="panel-head">
+                    <span class="panel-title">Payload<span class="sub">载荷信息</span></span>
+                    <button class="copy-btn" id="copyPayloadBtn">复制JSON</button>
+                </div>
+                <pre class="panel-body" id="payloadOut"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            // ---------- DOM 引用 ----------
+            const tokenInput = document.getElementById('tokenInput');
+            const errorBox = document.getElementById('errorBox');
+            const metaBar = document.getElementById('metaBar');
+            const warnBanner = document.getElementById('warnBanner');
+            const algText = document.getElementById('algText');
+            const typText = document.getElementById('typText');
+            const resultPanels = document.getElementById('resultPanels');
+            const headerOut = document.getElementById('headerOut');
+            const payloadOut = document.getElementById('payloadOut');
+            const formatCopyBtn = document.getElementById('formatCopyBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const copyHeaderBtn = document.getElementById('copyHeaderBtn');
+            const copyPayloadBtn = document.getElementById('copyPayloadBtn');
+
+            // 当前解析结果缓存（供复制使用）
+            let currentHeader = null;
+            let currentPayload = null;
+
+            // ---------- Base64URL 解码 ----------
+            // 将 Base64URL（-、_ 字符，可省略 padding）转为 UTF-8 字符串
+            function base64UrlDecode(segment) {
+                // 字符集合法性预检（Base64URL 标准字符）
+                if (!/^[A-Za-z0-9_-]*$/.test(segment)) {
+                    throw new Error('包含非法的 Base64URL 字符');
+                }
+                // 替换 URL 安全字符为标准 Base64 字符
+                let b64 = segment.replace(/-/g, '+').replace(/_/g, '/');
+                // 补齐 padding 至 4 的倍数
+                const pad = b64.length % 4;
+                if (pad === 1) {
+                    throw new Error('Base64 长度非法（不能被 4 整除余 1）');
+                }
+                if (pad === 2) b64 += '==';
+                else if (pad === 3) b64 += '=';
+                // 先按字节解码再转 UTF-8，避免中文等多字节字符乱码
+                const binary = atob(b64);
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) {
+                    bytes[i] = binary.charCodeAt(i);
+                }
+                return new TextDecoder('utf-8').decode(bytes);
+            }
+
+            // ---------- HTML 转义 ----------
+            function escapeHtml(str) {
+                return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            }
+
+            // ---------- JSON 语法高亮（简单正则实现） ----------
+            function highlightJson(json) {
+                const escaped = escapeHtml(json);
+                return escaped.replace(
+                    /("(?:\\u[0-9a-fA-F]{4}|\\[^u]|[^\\"])*")(\s*:)?|\b(?:true|false)\b|\bnull\b|-?\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b/g,
+                    function (match, str, colon) {
+                        let cls;
+                        if (str !== undefined) {
+                            cls = colon !== undefined ? 'key' : 'str';
+                        } else if (match === 'true' || match === 'false') {
+                            cls = 'bool';
+                        } else if (match === 'null') {
+                            cls = 'null';
+                        } else {
+                            cls = 'num';
+                        }
+                        return '<span class="tok-' + cls + '">' + match + '</span>';
+                    }
+                );
+            }
+
+            // ---------- 时间相关工具 ----------
+            const TIME_LABELS = { exp: '过期时间', iat: '签发时间', nbf: '生效时间' };
+
+            // 时间戳转本地可读时间字符串
+            function formatLocalTime(ts) {
+                const d = new Date(ts * 1000);
+                if (isNaN(d.getTime())) return '无效时间';
+                const p = function (n) { return String(n).padStart(2, '0'); };
+                return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) +
+                    ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+            }
+
+            // 相对时间描述（如"3 天前"）
+            function relativeTime(ts) {
+                const diffSec = Math.floor(Date.now() / 1000) - ts;
+                const abs = Math.abs(diffSec);
+                const suffix = diffSec >= 0 ? '前' : '后';
+                if (abs < 60) return abs + ' 秒' + suffix;
+                if (abs < 3600) return Math.floor(abs / 60) + ' 分钟' + suffix;
+                if (abs < 86400) return Math.floor(abs / 3600) + ' 小时' + suffix;
+                return Math.floor(abs / 86400) + ' 天' + suffix;
+            }
+
+            // 依据字段名与时间戳生成状态徽标 HTML
+            function timeStatusHtml(key, ts) {
+                const local = formatLocalTime(ts);
+                const label = TIME_LABELS[key];
+                let status = '';
+                if (key === 'exp') {
+                    status = ts < Date.now() / 1000
+                        ? '<span class="ts-status expired">已过期</span>'
+                        : '<span class="ts-status valid">有效</span>';
+                } else if (key === 'nbf') {
+                    status = ts > Date.now() / 1000
+                        ? '<span class="ts-status pending">尚未生效</span>'
+                        : '<span class="ts-status valid">已生效</span>';
+                }
+                return '<span class="ts-note">  // ' + label + ': ' + local +
+                    ' (' + relativeTime(ts) + ')' + status + '</span>';
+            }
+
+            // 对已高亮的 JSON 逐行附加时间戳标注（匹配 "exp": 数字 形式的行）
+            function annotateTimes(highlighted) {
+                return highlighted.split('\n').map(function (line) {
+                    const m = line.match(/^(\s*<span class="tok-key">"(exp|iat|nbf)":<\/span>\s*<span class="tok-num">)(-?\d+)(<\/span>,?)$/);
+                    if (!m) return line;
+                    return m[1] + m[3] + m[4] + timeStatusHtml(m[2], parseInt(m[3], 10));
+                }).join('\n');
+            }
+
+            // ---------- 复制工具 ----------
+            function copyText(text, btn, okText) {
+                const done = function () {
+                    const old = btn.textContent;
+                    btn.textContent = okText || '已复制！';
+                    setTimeout(function () { btn.textContent = old; }, 1500);
+                };
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(done).catch(function () {
+                        fallbackCopy(text); done();
+                    });
+                } else {
+                    fallbackCopy(text); done();
+                }
+            }
+
+            // 旧浏览器降级复制
+            function fallbackCopy(text) {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                try { document.execCommand('copy'); } catch (e) { /* 忽略 */ }
+                document.body.removeChild(ta);
+            }
+
+            // ---------- 界面状态控制 ----------
+            function showError(msg) {
+                currentHeader = null;
+                currentPayload = null;
+                errorBox.textContent = '解析失败：' + msg;
+                errorBox.style.display = 'block';
+                metaBar.style.display = 'none';
+                warnBanner.style.display = 'none';
+                resultPanels.style.display = 'none';
+                formatCopyBtn.disabled = true;
+            }
+
+            function clearOutputs() {
+                currentHeader = null;
+                currentPayload = null;
+                errorBox.style.display = 'none';
+                metaBar.style.display = 'none';
+                warnBanner.style.display = 'none';
+                resultPanels.style.display = 'none';
+                formatCopyBtn.disabled = true;
+            }
+
+            // ---------- 核心解析流程 ----------
+            function parseToken() {
+                const raw = tokenInput.value.trim();
+                if (!raw) {
+                    clearOutputs();
+                    return;
+                }
+
+                // 段数校验
+                const parts = raw.split('.');
+                if (parts.length !== 3) {
+                    showError('JWT 应由 3 个部分组成（Header.Payload.Signature），当前为 ' + parts.length + ' 个部分。');
+                    return;
+                }
+                if (!parts[0] || !parts[1]) {
+                    showError('Header 或 Payload 部分为空，不是有效的 JWT。');
+                    return;
+                }
+
+                // 解码并解析 JSON
+                let headerObj, payloadObj;
+                try {
+                    headerObj = JSON.parse(base64UrlDecode(parts[0]));
+                } catch (e) {
+                    showError('Header 段解析失败（' + (e.message || 'Base64 或 JSON 非法') + '）。');
+                    return;
+                }
+                try {
+                    payloadObj = JSON.parse(base64UrlDecode(parts[1]));
+                } catch (e) {
+                    showError('Payload 段解析失败（' + (e.message || 'Base64 或 JSON 非法') + '）。');
+                    return;
+                }
+                if (typeof headerObj !== 'object' || headerObj === null || Array.isArray(headerObj)) {
+                    showError('Header 解码后不是 JSON 对象。');
+                    return;
+                }
+                if (typeof payloadObj !== 'object' || payloadObj === null || Array.isArray(payloadObj)) {
+                    showError('Payload 解码后不是 JSON 对象。');
+                    return;
+                }
+
+                currentHeader = headerObj;
+                currentPayload = payloadObj;
+
+                // 算法与类型信息
+                algText.textContent = headerObj.alg !== undefined ? String(headerObj.alg) : '未指定';
+                typText.textContent = headerObj.typ !== undefined ? String(headerObj.typ) : '未指定';
+
+                // 渲染高亮结果（Payload 附加时间戳标注）
+                headerOut.innerHTML = highlightJson(JSON.stringify(headerObj, null, 2));
+                payloadOut.innerHTML = annotateTimes(highlightJson(JSON.stringify(payloadObj, null, 2)));
+
+                // 展示结果
+                errorBox.style.display = 'none';
+                metaBar.style.display = 'flex';
+                warnBanner.style.display = 'block';
+                resultPanels.style.display = 'flex';
+                formatCopyBtn.disabled = false;
+            }
+
+            // ---------- 事件绑定 ----------
+            // 输入即实时解析
+            tokenInput.addEventListener('input', parseToken);
+
+            // Ctrl+Enter 重新解析
+            tokenInput.addEventListener('keydown', function (e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    parseToken();
+                }
+            });
+
+            // 清空按钮
+            clearBtn.addEventListener('click', function () {
+                tokenInput.value = '';
+                clearOutputs();
+                tokenInput.focus();
+            });
+
+            // 复制 Header
+            copyHeaderBtn.addEventListener('click', function () {
+                if (currentHeader) {
+                    copyText(JSON.stringify(currentHeader, null, 2), copyHeaderBtn);
+                }
+            });
+
+            // 复制 Payload
+            copyPayloadBtn.addEventListener('click', function () {
+                if (currentPayload) {
+                    copyText(JSON.stringify(currentPayload, null, 2), copyPayloadBtn);
+                }
+            });
+
+            // 格式化复制完整 {header, payload}
+            formatCopyBtn.addEventListener('click', function () {
+                if (currentHeader && currentPayload) {
+                    const full = JSON.stringify({ header: currentHeader, payload: currentPayload }, null, 2);
+                    copyText(full, formatCopyBtn, '已复制！');
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

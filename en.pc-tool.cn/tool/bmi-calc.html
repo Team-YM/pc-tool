@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMI Calculator | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="Free online BMI calculator that accurately computes your body mass index and healthy weight range, with assessments based on both Chinese and WHO international standards.">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .container {
+            max-width: 720px;
+        }
+        .container h1 {
+            color: #e4e4e7;
+            margin-bottom: 8px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .container > p {
+            color: #a1a1aa;
+            font-size: 15px;
+            margin-bottom: 24px;
+        }
+        .calc-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .input-group label {
+            display: block;
+            font-size: 13px;
+            color: #a1a1aa;
+            margin-bottom: 6px;
+        }
+        .input-styled {
+            width: 100%;
+            padding: 10px 14px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 15px;
+            outline: none;
+            font-family: monospace, sans-serif;
+        }
+        .input-styled:focus {
+            border-color: rgba(129, 140, 248, 0.5);
+        }
+        .gender-options {
+            display: flex;
+            gap: 12px;
+            margin-top: 4px;
+        }
+        .gender-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            color: #e4e4e7;
+            cursor: pointer;
+        }
+        .action-btn {
+            padding: 10px 24px;
+            background: #818cf8;
+            border: none;
+            color: white;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .action-btn:hover {
+            background: #6366f1;
+        }
+        .result-panel {
+            display: none;
+            background: rgba(129, 140, 248, 0.08);
+            border: 1px solid rgba(129, 140, 248, 0.2);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+        .bmi-val-huge {
+            font-size: 48px;
+            font-weight: 800;
+            color: #34d399;
+            font-family: monospace;
+            margin: 10px 0;
+        }
+        .bmi-tag {
+            display: inline-block;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        .bmi-desc {
+            color: #a1a1aa;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        /* BMI progress bar indicator */
+        .bar-container {
+            position: relative;
+            margin: 24px 0 12px;
+            height: 12px;
+            border-radius: 6px;
+            background: linear-gradient(to right, #60a5fa 0%, #34d399 25%, #fbbf24 60%, #f87171 100%);
+        }
+        .bar-pointer {
+            position: absolute;
+            top: -6px;
+            width: 4px;
+            height: 24px;
+            background: #ffffff;
+            border-radius: 2px;
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+            transform: translateX(-50%);
+            transition: left 0.4s ease;
+        }
+        .range-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+        .range-table th, .range-table td {
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 8px 10px;
+            text-align: left;
+        }
+        .range-table th {
+            background: rgba(255, 255, 255, 0.04);
+            color: #a1a1aa;
+        }
+        .range-table td {
+            color: #d4d4d8;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+    <a href="../index.html" class="back-link">← Back to Home</a>
+
+    <div class="container">
+        <h1>BMI Calculator</h1>
+        <p>Use your height and weight to find out whether you are underweight, normal, overweight, or obese, and see your healthy weight range.</p>
+
+        <div class="calc-card">
+            <div class="form-grid">
+                <div class="input-group">
+                    <label>Gender</label>
+                    <div class="gender-options">
+                        <label class="gender-label"><input type="radio" name="gender" value="male" checked> Male</label>
+                        <label class="gender-label"><input type="radio" name="gender" value="female"> Female</label>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Age (years)</label>
+                    <input type="number" class="input-styled" id="userAge" value="25" min="1" max="120">
+                </div>
+                <div class="input-group">
+                    <label>Height (cm)</label>
+                    <input type="number" class="input-styled" id="userHeight" placeholder="Example: 175" value="175">
+                </div>
+                <div class="input-group">
+                    <label>Weight (kg)</label>
+                    <input type="number" class="input-styled" id="userWeight" placeholder="Example: 65" value="65" step="0.1">
+                </div>
+            </div>
+            <button class="action-btn" onclick="calcBMI()">Calculate BMI</button>
+        </div>
+
+        <div class="result-panel" id="resultPanel">
+            <div style="font-size: 14px; color: #a1a1aa;">Your body mass index (BMI) is:</div>
+            <div class="bmi-val-huge" id="resBmi">21.2</div>
+            <span class="bmi-tag" id="resTag">Normal weight</span>
+
+            <div class="bar-container">
+                <div class="bar-pointer" id="barPointer" style="left: 45%;"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 11px; color: #71717a; margin-bottom: 16px;">
+                <span>Underweight (&lt;18.5)</span>
+                <span>Normal (18.5~23.9)</span>
+                <span>Overweight (24~27.9)</span>
+                <span>Obese (&ge;28)</span>
+            </div>
+
+            <p class="bmi-desc" id="resDesc">
+                Your healthy weight range is: <strong id="resIdealRange" style="color: #34d399;">56.7 ~ 73.2 kg</strong>
+            </p>
+        </div>
+
+        <div class="calc-card">
+            <div style="font-size: 15px; font-weight: 600; color: #e4e4e7; margin-bottom: 8px;">BMI reference ranges for Chinese adults:</div>
+            <table class="range-table">
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>BMI range</th>
+                        <th>Assessment</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Underweight</td>
+                        <td>&lt; 18.5</td>
+                        <td>Body fat is too low; consider improving nutrition and adding strength training</td>
+                    </tr>
+                    <tr>
+                        <td style="color: #34d399; font-weight: 600;">Normal</td>
+                        <td>18.5 ~ 23.9</td>
+                        <td>Healthy and well-proportioned; keep up your good daily routine and diet</td>
+                    </tr>
+                    <tr>
+                        <td style="color: #fbbf24; font-weight: 600;">Overweight</td>
+                        <td>24.0 ~ 27.9</td>
+                        <td>Above the healthy range, which adds strain on the heart; consider losing some fat</td>
+                    </tr>
+                    <tr>
+                        <td style="color: #f87171; font-weight: 600;">Obese</td>
+                        <td>&ge; 28.0</td>
+                        <td>Higher health risk; follow a balanced diet and do regular aerobic exercise</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        function calcBMI() {
+            const heightCm = parseFloat(document.getElementById('userHeight').value);
+            const weightKg = parseFloat(document.getElementById('userWeight').value);
+
+            if (!heightCm || !weightKg || heightCm <= 0 || weightKg <= 0) {
+                showToast('Please enter a valid height and weight');
+                return;
+            }
+
+            const heightM = heightCm / 100;
+            const bmi = weightKg / (heightM * heightM);
+            const bmiFormatted = bmi.toFixed(1);
+
+            const resBmi = document.getElementById('resBmi');
+            const resTag = document.getElementById('resTag');
+            const barPointer = document.getElementById('barPointer');
+            const resIdealRange = document.getElementById('resIdealRange');
+
+            resBmi.textContent = bmiFormatted;
+
+            // Ideal weight range (18.5 ~ 23.9)
+            const minIdeal = (18.5 * heightM * heightM).toFixed(1);
+            const maxIdeal = (23.9 * heightM * heightM).toFixed(1);
+            resIdealRange.textContent = `${minIdeal} ~ ${maxIdeal} kg`;
+
+            let tagText = '';
+            let tagColor = '';
+            let tagBg = '';
+            let percent = 0;
+
+            if (bmi < 18.5) {
+                tagText = 'Underweight';
+                tagColor = '#60a5fa';
+                tagBg = 'rgba(96, 165, 250, 0.2)';
+                percent = Math.max(5, (bmi / 18.5) * 25);
+            } else if (bmi < 24) {
+                tagText = 'Normal';
+                tagColor = '#34d399';
+                tagBg = 'rgba(52, 211, 153, 0.2)';
+                percent = 25 + ((bmi - 18.5) / (24 - 18.5)) * 35;
+            } else if (bmi < 28) {
+                tagText = 'Overweight';
+                tagColor = '#fbbf24';
+                tagBg = 'rgba(251, 191, 36, 0.2)';
+                percent = 60 + ((bmi - 24) / (28 - 24)) * 25;
+            } else {
+                tagText = 'Obese';
+                tagColor = '#f87171';
+                tagBg = 'rgba(248, 113, 113, 0.2)';
+                percent = Math.min(96, 85 + ((bmi - 28) / 10) * 15);
+            }
+
+            resTag.textContent = tagText;
+            resTag.style.color = tagColor;
+            resTag.style.background = tagBg;
+            resBmi.style.color = tagColor;
+            barPointer.style.left = `${percent}%`;
+
+            document.getElementById('resultPanel').style.display = 'block';
+        }
+
+        calcBMI();
+    </script>
+</body>
+</html>

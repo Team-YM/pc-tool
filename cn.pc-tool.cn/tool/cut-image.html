@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智能抠图</title>
+<link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="免费在线智能抠图工具，完全离线运行，无需上传图片到服务器，隐私安全有保障，支持任意图片格式。">
+    <link rel="stylesheet" href="common.css">
+<!-- OGP 社交分享标签 -->
+<meta property="og:title" content="智能抠图 - 离线免费 | PC-TOOL">
+<meta property="og:description" content="免费在线工具集合——图片转换、视频压缩、音频转格式、图片抠图……每一个功能都为效率而生，完全免费，为人民服务！">
+<meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+<meta property="og:url" content="https://www.pc-tool.cn/tool/cut-image.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="PC-TOOL">
+<meta property="og:locale" content="zh_CN">
+<style>
+
+body {
+  min-height: 100vh;
+    display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  color: #e0e0e0;
+}
+
+.container {
+  width: 100%;
+  max-width: 1100px;
+}
+
+h1 {
+  text-align: center;
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: #fff;
+  letter-spacing: -0.5px;
+}
+
+.subtitle {
+  text-align: center;
+  font-size: 0.8rem;
+  color: #777;
+  margin-bottom: 28px;
+}
+
+/* ---- 上传区域 ---- */
+.dropzone {
+  border: 2px dashed #333;
+  border-radius: 16px;
+  padding: 48px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: rgba(255,255,255,0.02);
+  margin-bottom: 24px;
+}
+
+.dropzone:hover,
+.dropzone.dragover {
+  border-color: #667eea;
+  background: rgba(102,126,234,0.06);
+}
+
+.dropzone-icon { font-size: 2.8rem; margin-bottom: 12px; }
+.dropzone-title { font-size: 1.1rem; font-weight: 600; color: #ccc; margin-bottom: 6px; }
+.dropzone-hint { font-size: 0.78rem; color: #666; }
+.dropzone.hidden { display: none; }
+
+/* ---- 双栏预览 ---- */
+.preview-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.preview-row.hidden { display: none; }
+
+.preview-card {
+  flex: 1;
+  min-width: 320px;
+  background: #1a1a2a;
+  border-radius: 16px;
+  padding: 16px;
+  border: 1px solid #2a2a3a;
+}
+
+.preview-card h3 {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #aaa;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.canvas-wrap {
+  background: repeating-conic-gradient(#2a2a3a 0% 25%, #222236 0% 50%) 50% / 20px 20px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #333;
+}
+
+.canvas-wrap canvas {
+  width: 100%;
+  display: block;
+}
+
+/* ---- 按钮 ---- */
+.actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.actions.hidden { display: none; }
+
+button {
+  padding: 11px 28px;
+  border: none;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #fff;
+}
+
+button:hover { transform: translateY(-1px); filter: brightness(1.08); }
+button:active { transform: scale(0.97); }
+button:disabled { opacity: 0.45; cursor: not-allowed; transform: none; filter: none; }
+
+.btn-cut { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); box-shadow: 0 4px 16px rgba(102,126,234,0.3); padding: 13px 36px; font-size: 1rem; }
+.btn-download { background: linear-gradient(135deg, #00b4aa 0%, #008c7a 100%); }
+.btn-reset { background: linear-gradient(135deg, #3a3a5a 0%, #2a2a4a 100%); }
+
+/* ---- 状态条 ---- */
+.status-bar {
+  margin-top: 16px;
+  text-align: center;
+  font-size: 0.8rem;
+  color: #888;
+  min-height: 20px;
+}
+
+.status-bar .loader {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border: 2px solid #667eea;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 0.6s linear infinite;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---- 特性标签 ---- */
+.features {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 28px;
+  flex-wrap: wrap;
+}
+
+.feature-tag {
+  font-size: 0.7rem;
+  color: #6fcf97;
+  background: rgba(111,207,151,0.08);
+  border: 1px solid rgba(111,207,151,0.2);
+  padding: 5px 14px;
+  border-radius: 40px;
+}
+
+/* ---- 进度条 ---- */
+.progress-wrap {
+  width: 260px;
+  height: 5px;
+  background: #2a2a3a;
+  border-radius: 10px;
+  margin: 16px auto 0;
+  overflow: hidden;
+  display: none;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  border-radius: 10px;
+  transition: width 0.3s;
+  width: 0%;
+}
+
+/* ---- 响应式 ---- */
+@media (max-width: 750px) {
+  h1 { font-size: 1.4rem; }
+  .preview-card { min-width: 100%; }
+}
+</style>
+</head>
+<body>
+<canvas id="bg-canvas" class="bg-canvas"></canvas>
+    <a href="../index.html" class="back-link">← 返回转换工具首页</a>
+
+<div class="container">
+  <h1>智能抠图</h1>
+  <p class="subtitle">完全离线 · 无需上传 · 隐私安全 · 任意图片</p>
+
+  <!-- 拖拽上传区 -->
+  <div class="dropzone" id="dropzone">
+    <div class="dropzone-title">拖拽图片到此处，或点击选择</div>
+    <div class="dropzone-hint">支持 JPG / PNG / WebP，处理完全在本地进行</div>
+  </div>
+
+  <input type="file" id="fileInput" accept="image/*" hidden>
+
+  <!-- 双栏预览 -->
+  <div class="preview-row hidden" id="previewRow">
+    <div class="preview-card">
+      <h3>原图</h3>
+      <div class="canvas-wrap">
+        <canvas id="inputCanvas"></canvas>
+      </div>
+    </div>
+    <div class="preview-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 0 10px;">
+        <h3 style="margin-bottom: 0;">抠图结果</h3>
+        <select id="modelSelect" style="background: #2a2a3a; color: #fff; border: 1px solid #444; border-radius: 6px; padding: 4px 8px; font-size: 0.8rem; outline: none; cursor: pointer;">
+          <option value="medium" selected>IS-Net FP16 (高精度/80MB)</option>
+          <option value="small">IS-Net QInt8 (性能优/40MB)</option>
+        </select>
+      </div>
+      <div class="canvas-wrap">
+        <canvas id="outputCanvas"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- 进度条 -->
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
+
+  <!-- 状态 -->
+  <div class="status-bar" id="statusBar">准备就绪，上传图片即可开始</div>
+
+  <!-- 操作按钮 -->
+  <div class="actions hidden" id="actions">
+    <button class="btn-cut" id="cutBtn">开始抠图</button>
+    <button class="btn-download" id="downloadBtn">下载 PNG</button>
+    <button class="btn-reset" id="resetBtn">重新选择</button>
+  </div>
+
+  <!-- 特性 -->
+  <div class="features">
+    <span class="feature-tag">完全离线</span>
+    <span class="feature-tag">AI 模型</span>
+    <span class="feature-tag">任意图片</span>
+    <span class="feature-tag">永久免费</span>
+    <span class="feature-tag">无需注册</span>
+  </div>
+
+  <div class="contact-tip">
+    面向大众，有任何想要的功能或者意见，请联系<br><strong>QQ交流群：1121812272</strong>
+  </div>
+</div>
+
+<script>
+// ==================== DOM 引用 ====================
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const modelSelect = document.getElementById('modelSelect');
+const previewRow = document.getElementById('previewRow');
+const inputCanvas = document.getElementById('inputCanvas');
+const outputCanvas = document.getElementById('outputCanvas');
+const cutBtn = document.getElementById('cutBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+const resetBtn = document.getElementById('resetBtn');
+const statusBar = document.getElementById('statusBar');
+const actions = document.getElementById('actions');
+const progressWrap = document.getElementById('progressWrap');
+const progressFill = document.getElementById('progressFill');
+
+const inputCtx = inputCanvas.getContext('2d');
+const outputCtx = outputCanvas.getContext('2d');
+
+let originalImage = null;
+let resultBlob = null;
+let isProcessing = false;
+let sourceFileName = '';
+
+// ==================== 初始化画布 ====================
+function ensureCanvas() {
+  const w = Math.min(600, window.innerWidth - 60);
+  inputCanvas.width = w;
+  inputCanvas.height = Math.round(w * 0.667);
+  outputCanvas.width = w;
+  outputCanvas.height = Math.round(w * 0.667);
+}
+
+function drawCheckerboard(ctx, w, h) {
+  const size = 16;
+  for (let y = 0; y < h; y += size) {
+    for (let x = 0; x < w; x += size) {
+      ctx.fillStyle = ((Math.floor(x / size) + Math.floor(y / size)) % 2 === 0) ? '#30304a' : '#252540';
+      ctx.fillRect(x, y, size, size);
+    }
+  }
+}
+
+function clearOutputCanvas() {
+  drawCheckerboard(outputCtx, outputCanvas.width, outputCanvas.height);
+}
+
+ensureCanvas();
+clearOutputCanvas();
+drawCheckerboard(inputCtx, inputCanvas.width, inputCanvas.height);
+
+// ==================== 文件处理 ====================
+function loadImage(file) {
+  if (!file.type.match(/image\/(jpeg|png|webp)/)) {
+    statusBar.innerHTML = '不支持的格式，请使用 JPG / PNG / WebP';
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      originalImage = img;
+      resultBlob = null;
+      sourceFileName = file.name.replace(/\.[^.]+$/, '');
+
+      // 按比例缩放画布
+      let dw = 600, dh = (img.height / img.width) * 600;
+      if (dh > 500) { dh = 500; dw = (img.width / img.height) * 500; }
+      inputCanvas.width = dw;
+      inputCanvas.height = dh;
+      outputCanvas.width = dw;
+      outputCanvas.height = dh;
+
+      inputCtx.drawImage(img, 0, 0, dw, dh);
+      clearOutputCanvas();
+      cutBtn.disabled = false;
+
+      dropzone.classList.add('hidden');
+      previewRow.classList.remove('hidden');
+      actions.classList.remove('hidden');
+      statusBar.innerHTML = '图片已加载，点击「开始抠图」处理';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ==================== 抠图逻辑 ====================
+async function removeBackground() {
+  if (!originalImage || isProcessing) return;
+
+  isProcessing = true;
+  cutBtn.disabled = true;
+  downloadBtn.disabled = true;
+  progressWrap.style.display = 'block';
+  progressFill.style.width = '0%';
+  statusBar.innerHTML = '<span class="loader"></span>正在加载 AI 模型（首次加载约需 5-15 秒）...';
+
+  try {
+    // 动态加载抠图引擎 (ESM import)
+    progressFill.style.width = '15%';
+    statusBar.innerHTML = '<span class="loader"></span>正在加载抠图引擎...';
+
+    const mod = await import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm');
+    const imglyRemoveBackground = mod.removeBackground;
+
+    // 将 canvas 转为 Blob
+    progressFill.style.width = '30%';
+    statusBar.innerHTML = '<span class="loader"></span>AI 模型推理中...';
+
+    const blob = await new Promise(resolve => inputCanvas.toBlob(resolve, 'image/png'));
+
+    const selectedModel = modelSelect.value;
+    
+    // 执行抠图
+    const config = {
+      model: selectedModel,
+      output: { format: 'image/png', quality: 1 },
+      progress: (key, current, total) => {
+        const pct = 30 + Math.round((current / total) * 60);
+        progressFill.style.width = pct + '%';
+        if (key === 'fetch:model') {
+          statusBar.innerHTML = '<span class="loader"></span>正在下载 AI 模型 (需下载几十MB，请耐心等待)...';
+        } else if (key === 'compute:inference') {
+          statusBar.innerHTML = '<span class="loader"></span>AI 正在处理图片...';
+        }
+      }
+    };
+
+    resultBlob = await imglyRemoveBackground(blob, config);
+
+    // 显示结果
+    progressFill.style.width = '95%';
+    const resultUrl = URL.createObjectURL(resultBlob);
+    const resultImg = new Image();
+    resultImg.onload = () => {
+      clearOutputCanvas();
+      outputCtx.drawImage(resultImg, 0, 0, outputCanvas.width, outputCanvas.height);
+      URL.revokeObjectURL(resultUrl);
+
+      progressFill.style.width = '100%';
+      setTimeout(() => { progressWrap.style.display = 'none'; }, 400);
+
+      downloadBtn.disabled = false;
+      cutBtn.disabled = false;
+      isProcessing = false;
+      statusBar.innerHTML = '抠图完成！点击「下载 PNG」保存透明背景图片';
+    };
+    resultImg.src = resultUrl;
+
+  } catch (err) {
+    console.error('抠图失败:', err);
+    statusBar.innerHTML = '抠图失败: ' + (err.message || '未知错误');
+    progressWrap.style.display = 'none';
+    cutBtn.disabled = false;
+    downloadBtn.disabled = false;
+    isProcessing = false;
+  }
+}
+
+// ==================== 下载 & 复制 ====================
+function downloadResult() {
+  if (!resultBlob) {
+    statusBar.innerHTML = '请先执行抠图';
+    return;
+  }
+  const url = URL.createObjectURL(resultBlob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = (sourceFileName || 'cutout') + '-智能抠图.png';
+  a.click();
+  URL.revokeObjectURL(url);
+  statusBar.innerHTML = '已下载 PNG（透明背景）';
+}
+
+function resetUI() {
+  originalImage = null;
+  resultBlob = null;
+  isProcessing = false;
+  cutBtn.disabled = true;
+  downloadBtn.disabled = true;
+  progressWrap.style.display = 'none';
+  ensureCanvas();
+  drawCheckerboard(inputCtx, inputCanvas.width, inputCanvas.height);
+  clearOutputCanvas();
+  dropzone.classList.remove('hidden');
+  previewRow.classList.add('hidden');
+  actions.classList.add('hidden');
+  statusBar.innerHTML = '准备就绪，上传图片即可开始';
+}
+
+// ==================== 事件绑定 ====================
+dropzone.addEventListener('click', () => fileInput.click());
+
+dropzone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  dropzone.classList.add('dragover');
+});
+
+dropzone.addEventListener('dragleave', () => {
+  dropzone.classList.remove('dragover');
+});
+
+dropzone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropzone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) loadImage(file);
+});
+
+fileInput.addEventListener('change', () => {
+  const file = fileInput.files[0];
+  if (file) loadImage(file);
+  fileInput.value = '';
+});
+
+cutBtn.addEventListener('click', removeBackground);
+downloadBtn.addEventListener('click', downloadResult);
+resetBtn.addEventListener('click', resetUI);
+
+// 粘贴图片
+document.addEventListener('paste', (e) => {
+  const item = e.clipboardData?.items?.[0];
+  if (item?.type?.startsWith('image/')) {
+    loadImage(item.getAsFile());
+  }
+});
+
+// ==================== 初始状态 ====================
+cutBtn.disabled = true;
+downloadBtn.disabled = true;
+</script>
+<script src="common.js"></script>
+</body>
+</html>

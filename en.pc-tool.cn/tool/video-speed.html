@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Speed Changer</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="Free online video speed changer. Speed up or slow down a video from 0.25x to 4.0x with pitch-preserved audio, processed entirely in your browser — safe and free.">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="Video Speed Changer | PC-TOOL">
+    <meta property="og:description" content="Free online tools — image conversion, video compression, audio conversion and more — every feature built for productivity, completely free.">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/video-speed.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="en_US">
+    <style>
+        .container {
+            max-width: 780px;
+        }
+        #videoInput { display: none; }
+
+        .speed-presets {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin: 16px 0;
+        }
+
+        .speed-btn {
+            padding: 7px 15px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.04);
+            color: #d4d4d8;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .speed-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .speed-btn.active {
+            background: rgba(129, 140, 248, 0.25);
+            border-color: rgba(129, 140, 248, 0.6);
+            color: #c4b5fd;
+            font-weight: bold;
+        }
+
+        .slider-box {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            padding: 16px 20px;
+            margin: 15px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .slider-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+        }
+
+        .slider-row label {
+            color: #a1a1aa;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+        .slider-row input[type="range"] {
+            flex: 1;
+        }
+
+        .speed-val-display {
+            color: #38bdf8;
+            font-size: 18px;
+            font-weight: bold;
+            min-width: 60px;
+            text-align: right;
+        }
+
+        .options-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            color: #a1a1aa;
+            font-size: 13px;
+            flex-wrap: wrap;
+        }
+
+        .options-row label {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+
+        .preview-box {
+            display: none;
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .preview-box video {
+            max-width: 100%;
+            max-height: 380px;
+            border-radius: 8px;
+            background: #000;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 3px;
+            margin: 15px 0 6px;
+            display: none;
+            overflow: hidden;
+        }
+
+        .progress-bar .fill {
+            height: 100%;
+            background: linear-gradient(90deg, #818cf8, #34d399);
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.2s;
+        }
+
+        .status-text {
+            font-size: 13px;
+            color: #a1a1aa;
+            text-align: center;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <a href="../index.html" class="back-link">← Back to Tools</a>
+
+    <div class="container">
+        <h1>Video Speed Changer</h1>
+        <p>Adjust the playback speed of a video, with multiple fast and slow presets and pitch-synced audio, all processed in your browser with no plug-ins.</p>
+
+        <div class="upload-area" id="uploadArea">
+            <p>Click or drag to upload a video file</p>
+            <input type="file" id="videoInput" accept="video/*">
+        </div>
+
+        <div id="videoMeta" style="text-align:center; margin:10px 0; display:none;">
+            <p id="fileName" style="color:#e4e4e7; font-size:14px;"></p>
+            <p id="durationInfo" style="color:#71717a; font-size:13px;"></p>
+        </div>
+
+        <div id="settingsBox" style="display:none;">
+            <div class="speed-presets">
+                <button class="speed-btn" data-speed="0.25">0.25x (very slow)</button>
+                <button class="speed-btn" data-speed="0.5">0.5x (slow motion)</button>
+                <button class="speed-btn" data-speed="0.75">0.75x</button>
+                <button class="speed-btn active" data-speed="1.0">1.0x (original)</button>
+                <button class="speed-btn" data-speed="1.25">1.25x</button>
+                <button class="speed-btn" data-speed="1.5">1.5x (recommended)</button>
+                <button class="speed-btn" data-speed="2.0">2.0x (double speed)</button>
+                <button class="speed-btn" data-speed="3.0">3.0x</button>
+                <button class="speed-btn" data-speed="4.0">4.0x (fastest)</button>
+            </div>
+
+            <div class="slider-box">
+                <div class="slider-row">
+                    <label>Speed adjustment:</label>
+                    <input type="range" id="speedSlider" min="0.25" max="4.0" step="0.05" value="1.0">
+                    <span class="speed-val-display" id="speedDisplay">1.00x</span>
+                </div>
+                <div class="options-row">
+                    <label>
+                        <input type="checkbox" id="keepPitchCheck" checked> Keep audio pitch (prevents chipmunk voice)
+                    </label>
+                    <label>
+                        <input type="checkbox" id="muteAudioCheck"> Export as a silent video
+                    </label>
+                    <span id="targetDurationTip" style="color:#71717a;">Estimated duration after speed change: -</span>
+                </div>
+            </div>
+
+            <div class="preview-box" id="previewBox">
+                <video id="previewVideo" controls playsinline></video>
+                <div style="font-size:12px; color:#71717a; margin-top:4px;">Use the player above to preview the speed change in real time</div>
+            </div>
+        </div>
+
+        <div class="progress-bar" id="progressBar">
+            <div class="fill" id="progressFill"></div>
+        </div>
+        <div class="status-text" id="statusText">Processing...</div>
+
+        <div style="text-align:center; margin-top:16px;">
+            <button class="convert-btn" id="startBtn" style="display:none;">Export speed-changed video</button>
+            <button class="download-btn" id="downloadBtn">Download speed-changed video</button>
+        </div>
+
+        <div class="result-box" id="resultBox">
+            <h3>Speed change complete</h3>
+            <div class="size-info" id="sizeInfo"></div>
+        </div>
+
+        <div class="contact-tip">For feature requests or feedback, join our Discord: <a href="https://discord.gg/wjvS3efTj" target="_blank" rel="noopener noreferrer">https://discord.gg/wjvS3efTj</a></div>
+
+    <canvas id="hiddenCanvas" style="display:none;"></canvas>
+
+    <script src="common.js"></script>
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const videoInput = document.getElementById('videoInput');
+        const videoMeta = document.getElementById('videoMeta');
+        const fileName = document.getElementById('fileName');
+        const durationInfo = document.getElementById('durationInfo');
+        const settingsBox = document.getElementById('settingsBox');
+        const speedButtons = document.querySelectorAll('.speed-btn');
+        const speedSlider = document.getElementById('speedSlider');
+        const speedDisplay = document.getElementById('speedDisplay');
+        const keepPitchCheck = document.getElementById('keepPitchCheck');
+        const muteAudioCheck = document.getElementById('muteAudioCheck');
+        const targetDurationTip = document.getElementById('targetDurationTip');
+        const previewBox = document.getElementById('previewBox');
+        const previewVideo = document.getElementById('previewVideo');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        const statusText = document.getElementById('statusText');
+        const startBtn = document.getElementById('startBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const resultBox = document.getElementById('resultBox');
+        const sizeInfo = document.getElementById('sizeInfo');
+        const hiddenCanvas = document.getElementById('hiddenCanvas');
+        const hCtx = hiddenCanvas.getContext('2d');
+
+        let videoFile = null;
+        let originalDuration = 0;
+        let currentSpeed = 1.0;
+        let exportedBlobUrl = null;
+        let isProcessing = false;
+
+        uploadArea.onclick = () => videoInput.click();
+        setupDragDrop(uploadArea, (files) => {
+            if (files[0]?.type.startsWith('video/')) handleVideo(files[0]);
+            else showToast('Please upload a valid video file');
+        });
+        videoInput.onchange = (e) => {
+            if (e.target.files[0]) handleVideo(e.target.files[0]);
+        };
+
+        function handleVideo(file) {
+            videoFile = file;
+            fileName.textContent = `File: ${file.name} (${formatSize(file.size)})`;
+            videoMeta.style.display = 'block';
+
+            if (previewVideo.src) URL.revokeObjectURL(previewVideo.src);
+            previewVideo.src = URL.createObjectURL(file);
+            previewBox.style.display = 'block';
+            settingsBox.style.display = 'block';
+            startBtn.style.display = 'inline-block';
+            resultBox.style.display = 'none';
+            downloadBtn.style.display = 'none';
+
+            previewVideo.onloadedmetadata = () => {
+                originalDuration = previewVideo.duration;
+                const m = Math.floor(originalDuration / 60);
+                const s = Math.floor(originalDuration % 60);
+                durationInfo.textContent = `Original duration: ${m}m ${s}s (${originalDuration.toFixed(1)}s) | Resolution: ${previewVideo.videoWidth}×${previewVideo.videoHeight}`;
+                updateSpeedDisplay();
+            };
+        }
+
+        speedButtons.forEach(btn => {
+            btn.onclick = () => {
+                speedButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentSpeed = parseFloat(btn.dataset.speed);
+                speedSlider.value = currentSpeed;
+                updateSpeedDisplay();
+            };
+        });
+
+        speedSlider.oninput = () => {
+            currentSpeed = parseFloat(speedSlider.value);
+            speedButtons.forEach(b => {
+                b.classList.toggle('active', parseFloat(b.dataset.speed) === currentSpeed);
+            });
+            updateSpeedDisplay();
+        };
+
+        keepPitchCheck.onchange = () => {
+            previewVideo.preservesPitch = keepPitchCheck.checked;
+        };
+
+        function updateSpeedDisplay() {
+            speedDisplay.textContent = currentSpeed.toFixed(2) + 'x';
+            previewVideo.playbackRate = currentSpeed;
+            previewVideo.preservesPitch = keepPitchCheck.checked;
+
+            if (originalDuration > 0) {
+                const targetSec = originalDuration / currentSpeed;
+                const m = Math.floor(targetSec / 60);
+                const s = Math.floor(targetSec % 60);
+                targetDurationTip.textContent = `Estimated duration after speed change: about ${m}m ${s}s (${targetSec.toFixed(1)}s)`;
+            }
+        }
+
+        startBtn.onclick = async () => {
+            if (!videoFile || isProcessing) return;
+            isProcessing = true;
+
+            startBtn.disabled = true;
+            startBtn.textContent = 'Processing speed change...';
+            progressBar.style.display = 'block';
+            statusText.style.display = 'block';
+            progressFill.style.width = '0%';
+            resultBox.style.display = 'none';
+            downloadBtn.style.display = 'none';
+
+            try {
+                const speed = currentSpeed;
+                const muteAudio = muteAudioCheck.checked;
+
+                const offVideo = document.createElement('video');
+                offVideo.src = URL.createObjectURL(videoFile);
+                offVideo.muted = true;
+                offVideo.playsInline = true;
+                offVideo.preload = 'auto';
+
+                await new Promise((resolve, reject) => {
+                    offVideo.onloadedmetadata = resolve;
+                    offVideo.onerror = reject;
+                });
+
+                const vw = offVideo.videoWidth || 1280;
+                const vh = offVideo.videoHeight || 720;
+                const duration = offVideo.duration;
+                const newDuration = duration / speed;
+
+                hiddenCanvas.width = vw;
+                hiddenCanvas.height = vh;
+
+                const fps = 30;
+                const canvasStream = hiddenCanvas.captureStream(fps);
+                let finalStream = canvasStream;
+                let audioCtx = null;
+
+                if (!muteAudio) {
+                    try {
+                        statusText.textContent = 'Processing audio speed change...';
+                        const ab = await videoFile.arrayBuffer();
+                        const actx = new (window.AudioContext || window.webkitAudioContext)();
+                        audioCtx = actx;
+                        const decodedBuf = await actx.decodeAudioData(ab);
+
+                        const dest = actx.createMediaStreamDestination();
+                        const source = actx.createBufferSource();
+                        source.buffer = decodedBuf;
+                        source.playbackRate.value = speed;
+                        source.connect(dest);
+                        source.start(0);
+
+                        const aTracks = dest.stream.getAudioTracks();
+                        if (aTracks.length > 0) {
+                            finalStream = new MediaStream([
+                                ...canvasStream.getVideoTracks(),
+                                aTracks[0]
+                            ]);
+                        }
+                    } catch (e) {
+                        console.warn('Audio decode/speed change skipped, outputting a silent video:', e);
+                    }
+                }
+
+                let mimeType = 'video/webm;codecs=vp8';
+                if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1')) {
+                    mimeType = 'video/mp4;codecs=avc1';
+                } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+                    mimeType = 'video/webm;codecs=vp9';
+                } else if (MediaRecorder.isTypeSupported('video/webm')) {
+                    mimeType = 'video/webm';
+                }
+
+                const recorder = new MediaRecorder(finalStream, mimeType ? { mimeType } : {});
+                const chunks = [];
+                recorder.ondataavailable = (e) => {
+                    if (e.data && e.data.size > 0) chunks.push(e.data);
+                };
+
+                const recorderStop = new Promise(resolve => recorder.onstop = resolve);
+
+                offVideo.playbackRate = speed;
+                recorder.start();
+                await offVideo.play();
+
+                await new Promise((resolve) => {
+                    function renderFrame() {
+                        if (offVideo.paused || offVideo.ended) {
+                            resolve();
+                            return;
+                        }
+                        hCtx.drawImage(offVideo, 0, 0, vw, vh);
+
+                        const pct = Math.min(99, Math.round((offVideo.currentTime / duration) * 100));
+                        progressFill.style.width = pct + '%';
+                        statusText.textContent = `Encoding at ${speed.toFixed(2)}x: ${pct}% (about ${newDuration.toFixed(1)}s after speed change)`;
+
+                        requestAnimationFrame(renderFrame);
+                    }
+                    offVideo.onended = resolve;
+                    renderFrame();
+                });
+
+                progressFill.style.width = '100%';
+                statusText.textContent = 'Packaging video...';
+
+                setTimeout(() => {
+                    if (recorder.state === 'recording') recorder.stop();
+                    if (audioCtx) audioCtx.close();
+                }, 100);
+
+                await recorderStop;
+
+                const finalBlob = new Blob(chunks, { type: recorder.mimeType || 'video/webm' });
+                if (exportedBlobUrl) URL.revokeObjectURL(exportedBlobUrl);
+                exportedBlobUrl = URL.createObjectURL(finalBlob);
+
+                sizeInfo.innerHTML = `Original video size: ${formatSize(videoFile.size)} (${duration.toFixed(1)}s)<br>` +
+                                     `New size: <span class="highlight">${formatSize(finalBlob.size)}</span><br>` +
+                                     `Applied speed: <span class="highlight">${speed.toFixed(2)}x</span><br>` +
+                                     `New duration: <span class="highlight">${newDuration.toFixed(1)}s</span>`;
+
+                resultBox.style.display = 'block';
+                downloadBtn.style.display = 'inline-block';
+                statusText.textContent = 'Speed change complete!';
+                showToast('Video speed changed successfully!');
+            } catch (err) {
+                console.error(err);
+                statusText.textContent = 'Processing error: ' + err.message;
+                showToast('Speed change failed: ' + err.message);
+            } finally {
+                isProcessing = false;
+                startBtn.disabled = false;
+                startBtn.textContent = 'Export speed-changed video';
+            }
+        };
+
+        downloadBtn.onclick = () => {
+            if (!exportedBlobUrl) return;
+            const ext = exportedBlobUrl.includes('mp4') ? 'mp4' : 'webm';
+            const base = (videoFile?.name || 'video').replace(/\.\w+$/, '');
+            downloadFile(exportedBlobUrl, `${base}_${currentSpeed.toFixed(2)}x.${ext}`);
+        };
+    </script>
+</body>
+</html>
+
+
+

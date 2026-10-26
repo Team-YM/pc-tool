@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>image EXIF Viewer</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="View image EXIF metadata online (camera, shooting parameters, GPS location) and strip it with one click. Everything is parsed locally in your browser, and images are never uploaded to a server.">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="Image EXIF Viewer and Remover | PC-TOOL">
+    <meta property="og:description" content="Free online image EXIF viewer. Read camera details and GPS location, and strip all metadata with one click, entirely in your browser.">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/image-exif.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="en_US">
+    <style>
+        .container {
+            max-width: 680px;
+            width: 100%;
+        }
+        #imgInput { display: none; }
+
+        /* Preview and basic info cards */
+        .preview-card {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            display: none;
+        }
+        .preview-img-wrap {
+            border-radius: 10px;
+            overflow: hidden;
+            background: rgba(15, 15, 18, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        #previewImg {
+            display: block;
+            max-width: 100%;
+            max-height: 320px;
+            margin: 0 auto;
+        }
+        .file-info {
+            margin-top: 14px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 16px;
+            font-size: 0.875rem;
+            color: #a1a1aa;
+        }
+        .file-info span { color: #e4e4e7; word-break: break-all; }
+
+        /* EXIF results table */
+        .exif-section {
+            margin-top: 20px;
+            display: none;
+        }
+        .exif-section h3 {
+            color: #c7d2fe;
+            font-size: 1rem;
+            margin-bottom: 10px;
+        }
+        .exif-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .exif-table th, .exif-table td {
+            padding: 9px 14px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .exif-table th {
+            color: #a1a1aa;
+            font-weight: 500;
+            width: 34%;
+            white-space: nowrap;
+        }
+        .exif-table td { color: #e4e4e7; word-break: break-all; }
+        .exif-table tr:last-child th, .exif-table tr:last-child td { border-bottom: none; }
+        .gps-value { color: #818cf8; }
+
+        /* Action button row */
+        .controls-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .ctrl-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #e4e4e7;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .ctrl-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-1px);
+        }
+        .ctrl-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .ctrl-btn.primary {
+            background: rgba(99, 102, 241, 0.25);
+            border-color: rgba(129, 140, 248, 0.4);
+            color: #c7d2fe;
+        }
+        .ctrl-btn.primary:hover:not(:disabled) {
+            background: rgba(99, 102, 241, 0.45);
+            border-color: rgba(129, 140, 248, 0.7);
+        }
+
+        /* Status badge */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            font-size: 0.8125rem;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #a1a1aa;
+            margin-top: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .status-badge.done {
+            background: rgba(16, 185, 129, 0.15);
+            border-color: rgba(16, 185, 129, 0.3);
+            color: #6ee7b7;
+        }
+        .status-badge.warn {
+            background: rgba(234, 179, 8, 0.15);
+            border-color: rgba(234, 179, 8, 0.3);
+            color: #fde047;
+        }
+
+        /* Metadata removal explainer */
+        .erase-tip {
+            margin-top: 20px;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            font-size: 0.8125rem;
+            color: #71717a;
+            line-height: 1.7;
+            display: none;
+        }
+        .erase-tip strong { color: #a1a1aa; }
+
+        @media (max-width: 480px) {
+            .file-info { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <!-- Back-to-home button in a unified position -->
+    <a href="../index.html" class="back-link">← Back to Tools</a>
+
+    <div class="container">
+        <h1>Image EXIF Viewer and Remover</h1>
+        <p>Parse image EXIF metadata (camera, shooting parameters, GPS location) locally, and strip it with one click before exporting.</p>
+
+        <!-- Upload area -->
+        <div class="upload-area" id="uploadArea">
+            <p id="uploadTip">Click or drag to uploadimage（JPEG、PNG、WebP）</p>
+            <input type="file" id="imgInput" accept="image/jpeg,image/png,image/webp">
+        </div>
+
+        <div id="statusWrap" style="text-align: center;">
+            <div id="statusBadge" class="status-badge" style="display: none;">Waiting for an image</div>
+        </div>
+
+        <!-- Preview and basic information -->
+        <div class="preview-card" id="previewCard">
+            <div class="preview-img-wrap"><img id="previewImg" alt="imagepreview"></div>
+            <div class="file-info">
+                <div>File name：<span id="infoName">-</span></div>
+                <div>Size: <span id="infoSize">-</span></div>
+                <div>Dimensions: <span id="infoDim">-</span></div>
+                <div>Type: <span id="infoType">-</span></div>
+            </div>
+        </div>
+
+        <!-- EXIF table -->
+        <div class="exif-section" id="exifSection">
+            <h3>EXIF metadata</h3>
+            <table class="exif-table"><tbody id="exifBody"></tbody></table>
+        </div>
+
+        <!-- GPS coordinates row -->
+        <div class="exif-section" id="gpsSection">
+            <h3>GPS location</h3>
+            <table class="exif-table"><tbody id="gpsBody"></tbody></table>
+            <div class="controls-row">
+                <button class="ctrl-btn primary" id="copyGpsBtn">Copy decimal coordinates</button>
+            </div>
+        </div>
+
+        <!-- Strip and export -->
+        <div class="exif-section" id="eraseSection">
+            <div class="controls-row" style="justify-content: flex-start;">
+                <button class="ctrl-btn primary" id="eraseBtn">Strip metadata and export</button>
+                <select class="format-select" id="formatSelect">
+                    <option value="auto">Keep the original format</option>
+                    <option value="image/png">PNG</option>
+                    <option value="image/jpeg">JPEG</option>
+                    <option value="image/webp">WebP</option>
+                </select>
+            </div>
+            <div class="erase-tip" id="eraseTip">
+                <strong>How removal works:</strong> When you export, the tool redraws the image pixels on a local canvas and re-encodes them.
+                The new file contains only pixel data, with none of the EXIF, GPS or thumbnail metadata from the original file.
+                Camera model, capture time and location are therefore removed completely. Everything happens in your browser, and the image is never uploaded to any server.
+            </div>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        (function () {
+            // DOM references
+            const uploadArea = document.getElementById('uploadArea');
+            const imgInput = document.getElementById('imgInput');
+            const uploadTip = document.getElementById('uploadTip');
+            const statusBadge = document.getElementById('statusBadge');
+            const previewCard = document.getElementById('previewCard');
+            const previewImg = document.getElementById('previewImg');
+            const infoName = document.getElementById('infoName');
+            const infoSize = document.getElementById('infoSize');
+            const infoDim = document.getElementById('infoDim');
+            const infoType = document.getElementById('infoType');
+            const exifSection = document.getElementById('exifSection');
+            const exifBody = document.getElementById('exifBody');
+            const gpsSection = document.getElementById('gpsSection');
+            const gpsBody = document.getElementById('gpsBody');
+            const copyGpsBtn = document.getElementById('copyGpsBtn');
+            const eraseBtn = document.getElementById('eraseBtn');
+            const eraseSection = document.getElementById('eraseSection');
+            const eraseTip = document.getElementById('eraseTip');
+            const formatSelect = document.getElementById('formatSelect');
+
+            // Current file state (used for metadata stripping)
+            let currentFile = null;
+            let currentImg = null;
+            let currentOrientation = 1;
+            let currentGpsText = '';
+            let previewUrl = null;
+
+            // ---------------- EXIF parser (hand-written in plain JS) ----------------
+            // Byte size of each TIFF data type
+            const TYPE_SIZE = { 1: 1, 2: 1, 3: 2, 4: 4, 5: 8, 7: 1, 9: 4, 10: 8 };
+            // Common IFD0 tags
+            const TAG_IFD0 = {
+                0x010F: 'Make', 0x0110: 'Model', 0x0112: 'Orientation',
+                0x0131: 'Software', 0x0132: 'Datetime',
+                0x8769: 'ExifIFDPointer', 0x8825: 'GPSInfoIFDPointer'
+            };
+            // Exif sub-IFD tags
+            const TAG_EXIF = {
+                0x829A: 'Exposuretime', 0x829D: 'FNumber', 0x8827: 'ISO',
+                0x9209: 'Flash', 0x920A: 'FocalLength', 0xA403: 'WhiteBalance'
+            };
+            // GPS sub-IFD tags
+            const TAG_GPS = {
+                0x0001: 'GPSLatitudeRef', 0x0002: 'GPSLatitude',
+                0x0003: 'GPSLongitudeRef', 0x0004: 'GPSLongitude'
+            };
+
+            // Locate the APP1 EXIF segment in a JPEG and return a DataView of the TIFF block
+            function findExifSegment(bytes) {
+                if (bytes.length < 4 || bytes[0] !== 0xFF || bytes[1] !== 0xD8) return null;
+                let offset = 2;
+                while (offset + 4 < bytes.length) {
+                    if (bytes[offset] !== 0xFF) return null; // Corrupted segment structure
+                    const marker = bytes[offset + 1];
+                    if (marker === 0xD8 || marker === 0x01 || (marker >= 0xD0 && marker <= 0xD7)) {
+                        offset += 2; // Marker with no length field
+                        continue;
+                    }
+                    if (marker === 0xDA) return null; // Reached image data, so there is no EXIF
+                    const segLen = (bytes[offset + 2] << 8) | bytes[offset + 3];
+                    if (marker === 0xE1 && // APP1
+                        bytes[offset + 4] === 0x45 && bytes[offset + 5] === 0x78 &&
+                        bytes[offset + 6] === 0x69 && bytes[offset + 7] === 0x66 &&
+                        bytes[offset + 8] === 0x00 && bytes[offset + 9] === 0x00) {
+                        // Validate the "Exif\0\0" header and return the TIFF start offset
+                        return { data: bytes, tiff: offset + 10 };
+                    }
+                    offset += 2 + segLen;
+                }
+                return null;
+            }
+
+            // Read the value of a single IFD entry (tiffStart is the absolute offset of the TIFF header)
+            function readEntryValue(view, bytes, tiffStart, entryOff, little) {
+                const type = view.getUint16(entryOff + 2, little);
+                const count = view.getUint32(entryOff + 4, little);
+                const size = (TYPE_SIZE[type] || 1) * count;
+                let valOff = entryOff + 8;
+                if (size > 4) valOff = tiffStart + view.getUint32(entryOff + 8, little); // Value is stored at an offset
+                if (valOff + size > bytes.length) return null;
+
+                switch (type) {
+                    case 2: { // ASCII string
+                        let s = '';
+                        for (let i = 0; i < count; i++) {
+                            const c = bytes[valOff + i];
+                            if (c === 0) break;
+                            s += String.fromCharCode(c);
+                        }
+                        return s.trim();
+                    }
+                    case 1: case 7: { // Byte / undefined
+                        if (count === 1) return bytes[valOff];
+                        return Array.from(bytes.subarray(valOff, valOff + count));
+                    }
+                    case 3: { // SHORT
+                        return count === 1 ? view.getUint16(valOff, little)
+                            : Array.from({ length: count }, (_, i) => view.getUint16(valOff + i * 2, little));
+                    }
+                    case 4: { // LONG
+                        return count === 1 ? view.getUint32(valOff, little)
+                            : Array.from({ length: count }, (_, i) => view.getUint32(valOff + i * 4, little));
+                    }
+                    case 5: { // RATIONAL (numerator/denominator)
+                        const arr = [];
+                        for (let i = 0; i < count; i++) {
+                            const num = view.getUint32(valOff + i * 8, little);
+                            const den = view.getUint32(valOff + i * 8 + 4, little);
+                            arr.push(den === 0 ? 0 : num / den);
+                        }
+                        return count === 1 ? arr[0] : arr;
+                    }
+                    default:
+                        return null;
+                }
+            }
+
+            // Walk an IFD, add results to out, and return [exif pointer, gps pointer]
+            function readIFD(view, bytes, tiffStart, ifdOff, tagMap, out) {
+                const little = view.getUint16(tiffStart) === 0x4949;
+                const count = view.getUint16(ifdOff, little);
+                let exifPtr = 0, gpsPtr = 0;
+                for (let i = 0; i < count; i++) {
+                    const entryOff = ifdOff + 2 + i * 12;
+                    if (entryOff + 12 > bytes.length) break;
+                    const tag = view.getUint16(entryOff, little);
+                    const name = tagMap[tag];
+                    const value = readEntryValue(view, bytes, tiffStart, entryOff, little);
+                    if (name === 'ExifIFDPointer' && typeof value === 'number') exifPtr = value;
+                    else if (name === 'GPSInfoIFDPointer' && typeof value === 'number') gpsPtr = value;
+                    else if (name && value !== null && value !== undefined) out[name] = value;
+                }
+                return [exifPtr, gpsPtr, little];
+            }
+
+            // Main parse entry point: returns a tag object, or null on failure
+            function parseExif(bytes) {
+                const seg = findExifSegment(bytes);
+                if (!seg) return null;
+                const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+                const t0 = seg.tiff;
+                if (t0 + 8 > bytes.length) return null;
+                const order = view.getUint16(t0);
+                if (order !== 0x4949 && order !== 0x4D4D) return null; // Invalid byte order
+                const ifd0Off = t0 + view.getUint32(t0 + 4, order === 0x4949);
+                if (ifd0Off + 2 > bytes.length) return null;
+
+                const result = {};
+                const [exifPtr, gpsPtr] = readIFD(view, bytes, t0, ifd0Off, TAG_IFD0, result);
+                if (exifPtr && t0 + exifPtr + 2 < bytes.length) {
+                    readIFD(view, bytes, t0, t0 + exifPtr, TAG_EXIF, result);
+                }
+                if (gpsPtr && t0 + gpsPtr + 2 < bytes.length) {
+                    readIFD(view, bytes, t0, t0 + gpsPtr, TAG_GPS, result);
+                }
+                return result;
+            }
+
+            // ---------------- Value formatting ----------------
+            function formatExposure(v) {
+                if (v < 1) return '1/' + Math.round(1 / v) + ' s';
+                return v + ' s';
+            }
+            function formatFlash(v) {
+                const flag = Number(v);
+                if (flag & 0x1) return 'Flash fired';
+                if (flag & 0x20) return 'No flash function';
+                return 'Flash did not fire';
+            }
+
+            // Convert GPS degrees/minutes/seconds to decimal
+            function dmsToDecimal(arr, ref) {
+                if (!Array.isArray(arr) || arr.length < 3) return null;
+                let d = arr[0] + arr[1] / 60 + arr[2] / 3600;
+                if (ref === 'S' || ref === 'W') d = -d;
+                return Math.round(d * 1000000) / 1000000;
+            }
+
+            // ---------------- UI rendering ----------------
+            function showBadge(text, cls) {
+                statusBadge.style.display = 'inline-block';
+                statusBadge.className = 'status-badge' + (cls ? ' ' + cls : '');
+                statusBadge.textContent = text;
+            }
+
+            function renderExifTable(tags) {
+                exifBody.innerHTML = '';
+                const rows = [];
+                const push = (label, val) => { if (val !== undefined && val !== null && val !== '') rows.push([label, String(val)]); };
+
+                push('Camera make (Make)', tags.Make);
+                push('Camera model (Model)', tags.Model);
+                push('Date taken (DateTime)', tags.Datetime);
+                push('Orientation', tags.Orientation);
+                push('Aperture (FNumber)', tags.FNumber ? 'f/' + (Math.round(tags.FNumber * 10) / 10) : undefined);
+                push('Shutter speed (ExposureTime)', tags.Exposuretime ? formatExposure(tags.Exposuretime) : undefined);
+                push('ISO', tags.ISO);
+                push('Focal length (FocalLength)', tags.FocalLength ? (Math.round(tags.FocalLength * 10) / 10) + ' mm' : undefined);
+                push('Flash', tags.Flash !== undefined ? formatFlash(tags.Flash) : undefined);
+                push('White balance (WhiteBalance)', tags.WhiteBalance !== undefined ? (Number(tags.WhiteBalance) === 1 ? 'Manual' : 'Auto') : undefined);
+                push('Software', tags.Software);
+
+                if (!rows.length) return false;
+                rows.forEach(([k, v]) => {
+                    const tr = document.createElement('tr');
+                    const th = document.createElement('th');
+                    th.textContent = k;
+                    const td = document.createElement('td');
+                    td.textContent = v;
+                    tr.appendChild(th); tr.appendChild(td);
+                    exifBody.appendChild(tr);
+                });
+                return true;
+            }
+
+            function renderGps(tags) {
+                gpsBody.innerHTML = '';
+                currentGpsText = '';
+                const lat = dmsToDecimal(tags.GPSLatitude, tags.GPSLatitudeRef);
+                const lon = dmsToDecimal(tags.GPSLongitude, tags.GPSLongitudeRef);
+                if (lat === null && lon === null) return false;
+
+                const items = [];
+                if (lat !== null) items.push(['Latitude (GPSLatitude)', lat + '°' + (tags.GPSLatitudeRef === 'S' ? ' S' : ' N')]);
+                if (lon !== null) items.push(['Longitude (GPSLongitude)', lon + '°' + (tags.GPSLongitudeRef === 'W' ? ' W' : ' E')]);
+                if (lat !== null && lon !== null) {
+                    currentGpsText = lat + ', ' + lon;
+                    items.push(['Decimal coordinates', currentGpsText]);
+                }
+                items.forEach(([k, v]) => {
+                    const tr = document.createElement('tr');
+                    const th = document.createElement('th'); th.textContent = k;
+                    const td = document.createElement('td'); td.textContent = v; td.className = 'gps-value';
+                    tr.appendChild(th); tr.appendChild(td);
+                    gpsBody.appendChild(tr);
+                });
+                return true;
+            }
+
+            // ---------------- File handling ----------------
+            function formatSize(bytes) {
+                if (bytes < 1024) return bytes + ' B';
+                if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+                return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+            }
+
+            function cleanuppreview() {
+                if (previewUrl) { URL.revokeObjectURL(previewUrl); previewUrl = null; } // Release the previous preview URL
+            }
+
+            async function handleFile(file) {
+                if (!file) return;
+                const isimage = /^image\/(jpeg|png|webp)$/.test(file.type);
+                if (!isimage) { showBadge('Only JPEG / PNG / WebP images are supported.', 'warn'); return; }
+
+                cleanuppreview();
+                currentFile = file;
+                currentOrientation = 1;
+                currentGpsText = '';
+                uploadTip.textContent = `Current image: ${file.name} (click to choose another)`;
+                showBadge('Parsing...', '');
+
+                try {
+                    const bytes = new Uint8Array(await file.arrayBuffer());
+                    const tags = parseExif(bytes);
+
+                    // Preview and basic information
+                    previewUrl = URL.createObjectURL(file);
+                    previewImg.onload = function () {
+                        infoDim.textContent = previewImg.naturalWidth + ' x ' + previewImg.naturalHeight;
+                    };
+                    previewImg.src = previewUrl;
+                    previewCard.style.display = 'block';
+                    infoName.textContent = file.name;
+                    infoSize.textContent = formatSize(file.size);
+                    infoType.textContent = file.type || 'Unknown';
+
+                    // EXIF display
+                    const hasMain = tags && renderExifTable(tags);
+                    const hasGps = tags && renderGps(tags);
+                    exifSection.style.display = hasMain ? 'block' : 'none';
+                    gpsSection.style.display = hasGps ? 'block' : 'none';
+                    copyGpsBtn.disabled = !currentGpsText;
+                    eraseSection.style.display = 'block';
+                    eraseTip.style.display = 'block';
+
+                    if (!tags || (!hasMain && !hasGps)) {
+                        showBadge('No EXIF data found (PNG/WebP files usually have no metadata).', 'warn');
+                    } else {
+                        currentOrientation = Number(tags.Orientation) || 1;
+                        showBadge(`Parsed (${file.name})`, 'done');
+                    }
+                } catch (err) {
+                    console.error('EXIF parsing failed:', err);
+                    showBadge('Parsing failed: no EXIF data found.', 'warn');
+                }
+            }
+
+            // ---------------- Strip and export ----------------
+            function loadimage(file) {
+                return new Promise((resolve, reject) => {
+                    const url = URL.createObjectURL(file);
+                    const img = new Image();
+                    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+                    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Failed to load the image')); };
+                    img.src = url;
+                });
+            }
+
+            // Draw according to the EXIF orientation so the exported image is upright
+            function drawWithOrientation(canvas, img, orientation) {
+                const w = img.naturalWidth, h = img.naturalHeight;
+                const swap = orientation >= 5 && orientation <= 8;
+                canvas.width = swap ? h : w;
+                canvas.height = swap ? w : h;
+                const ctx = canvas.getContext('2d');
+                switch (orientation) {
+                    case 2: ctx.transform(-1, 0, 0, 1, w, 0); break;
+                    case 3: ctx.transform(-1, 0, 0, -1, w, h); break;
+                    case 4: ctx.transform(1, 0, 0, -1, 0, h); break;
+                    case 5: ctx.transform(0, 1, 1, 0, 0, 0); break;
+                    case 6: ctx.transform(0, 1, -1, 0, h, 0); break;
+                    case 7: ctx.transform(0, -1, -1, 0, h, w); break;
+                    case 8: ctx.transform(0, -1, 1, 0, 0, w); break;
+                }
+                ctx.drawImage(img, 0, 0, w, h);
+            }
+
+            async function eraseAndExport() {
+                if (!currentFile) return;
+                eraseBtn.disabled = true;
+                showBadge('Re-encoding and removing metadata...', '');
+                const canvas = document.createElement('canvas');
+
+                try {
+                    const img = await loadimage(currentFile);
+                    currentImg = img;
+                    drawWithOrientation(canvas, img, currentOrientation);
+
+                    // Choose the export format: with auto, prefer the original format and fall back to PNG if the browser does not support it
+                    let mime = formatSelect.value;
+                    if (mime === 'auto') mime = currentFile.type || 'image/png';
+                    const blob = await new Promise((resolve, reject) => {
+                        canvas.toBlob(b => b ? resolve(b) : reject(new Error('Encoding failed')), mime, 0.92);
+                    });
+                    const outMime = blob.type.indexOf(mime) === -1 ? 'image/png' : blob.type;
+
+                    const ext = outMime.split('/')[1].replace('jpeg', 'jpg');
+                    const baseName = currentFile.name.replace(/\.[^.]+$/, '');
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${baseName}-no-metadata.${ext}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+
+                    // Release large objects promptly to avoid memory leaks
+                    setTimeout(() => URL.revokeObjectURL(url), 3000);
+                    showBadge(`Export complete: ${outMime.split('/')[1].toUpperCase()}. All EXIF/GPS metadata has been removed.`, 'done');
+                } catch (err) {
+                    console.error('Metadata removal failed:', err);
+                    showBadge('Export failed. Please try again or choose a different format.', 'warn');
+                } finally {
+                    canvas.width = 0; canvas.height = 0; // Release canvas memory
+                    currentImg = null;
+                    eraseBtn.disabled = false;
+                }
+            }
+
+            // ---------------- Event bindings ----------------
+            uploadArea.addEventListener('click', () => imgInput.click());
+            imgInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) handleFile(file);
+            });
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = 'rgba(129, 140, 248, 0.5)';
+            });
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+            });
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+                const file = e.dataTransfer.files[0];
+                if (file) handleFile(file);
+            });
+
+            copyGpsBtn.addEventListener('click', () => {
+                if (!currentGpsText) return;
+                navigator.clipboard.writeText(currentGpsText).then(() => {
+                    const old = copyGpsBtn.textContent;
+                    copyGpsBtn.textContent = 'Copied！';
+                    setTimeout(() => copyGpsBtn.textContent = old, 1500);
+                }).catch(() => alert('Coordinates: ' + currentGpsText));
+            });
+
+            eraseBtn.addEventListener('click', eraseAndExport);
+
+            // Release preview resources when the page unloads
+            window.addEventListener('beforeunload', cleanuppreview);
+        })();
+    </script>
+</body>
+</html>

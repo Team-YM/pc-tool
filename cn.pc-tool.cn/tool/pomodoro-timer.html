@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>番茄工作法时钟 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="在线番茄钟计时器（Pomodoro Timer），支持专注时间、短休息、长休息自定义，提供完成音效与沉浸式全屏专注体验。">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .container {
+            max-width: 600px;
+            text-align: center;
+        }
+        .container h1 {
+            color: #e4e4e7;
+            margin-bottom: 8px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .container > p {
+            color: #a1a1aa;
+            font-size: 15px;
+            margin-bottom: 24px;
+        }
+        .mode-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 28px;
+        }
+        .mode-btn {
+            padding: 8px 18px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #a1a1aa;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .mode-btn:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .mode-btn.active {
+            background: rgba(129, 140, 248, 0.2);
+            border-color: rgba(129, 140, 248, 0.5);
+            color: #818cf8;
+            font-weight: 600;
+        }
+        .timer-circle-box {
+            position: relative;
+            width: 260px;
+            height: 260px;
+            margin: 0 auto 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .timer-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+        .circle-bg {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.06);
+            stroke-width: 8;
+        }
+        .circle-progress {
+            fill: none;
+            stroke: #818cf8;
+            stroke-width: 8;
+            stroke-linecap: round;
+            stroke-dasharray: 754;
+            stroke-dashoffset: 0;
+            transition: stroke-dashoffset 1s linear;
+        }
+        .timer-text-content {
+            z-index: 2;
+        }
+        .timer-digits {
+            font-size: 56px;
+            font-weight: 800;
+            color: #ffffff;
+            font-family: monospace;
+            letter-spacing: 2px;
+        }
+        .timer-status {
+            font-size: 14px;
+            color: #a1a1aa;
+            margin-top: 4px;
+        }
+        .controls-row {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .btn-main {
+            padding: 12px 36px;
+            background: #818cf8;
+            border: none;
+            color: white;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 14px rgba(129, 140, 248, 0.4);
+        }
+        .btn-main:hover {
+            background: #6366f1;
+            transform: translateY(-1px);
+        }
+        .btn-sub {
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #e4e4e7;
+            border-radius: 30px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-sub:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+        .stats-box {
+            display: flex;
+            justify-content: space-around;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 16px;
+        }
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .stat-item span:first-child {
+            font-size: 12px;
+            color: #71717a;
+        }
+        .stat-item span:last-child {
+            font-size: 20px;
+            font-weight: 700;
+            color: #34d399;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+    <a href="../index.html" class="back-link">← 返回首页</a>
+
+    <div class="container">
+        <h1>番茄专注时钟</h1>
+        <p>基于番茄工作法（Pomodoro Technique），高效管理时间，保持心流专注与劳逸结合。</p>
+
+        <div class="mode-tabs">
+            <button class="mode-btn active" data-mode="work" data-time="25">专注时段 (25分)</button>
+            <button class="mode-btn" data-mode="shortBreak" data-time="5">短休息 (5分)</button>
+            <button class="mode-btn" data-mode="longBreak" data-time="15">长休息 (15分)</button>
+        </div>
+
+        <div class="timer-circle-box">
+            <svg class="timer-svg" viewBox="0 0 260 260">
+                <circle class="circle-bg" cx="130" cy="130" r="120"></circle>
+                <circle class="circle-progress" id="circleProgress" cx="130" cy="130" r="120"></circle>
+            </svg>
+            <div class="timer-text-content">
+                <div class="timer-digits" id="timerDigits">25:00</div>
+                <div class="timer-status" id="timerStatus">准备就绪</div>
+            </div>
+        </div>
+
+        <div class="controls-row">
+            <button class="btn-main" id="startBtn" onclick="toggleTimer()">开始专注</button>
+            <button class="btn-sub" onclick="resetTimer()">重置</button>
+        </div>
+
+        <div class="stats-box">
+            <div class="stat-item">
+                <span>今日完成番茄数</span>
+                <span id="statCount">0 个</span>
+            </div>
+            <div class="stat-item">
+                <span>累计专注时长</span>
+                <span id="statMinutes">0 分钟</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        const CIRCLE_RADIUS = 120;
+        const CIRCUMFERENCE = 2 * Math.PI * CIRCLE_RADIUS; // 753.98
+
+        let currentMode = 'work';
+        let totalSeconds = 25 * 60;
+        let remainingSeconds = 25 * 60;
+        let timerId = null;
+        let isRunning = false;
+
+        let completedPoms = 0;
+        let totalFocusMins = 0;
+
+        const circleProgress = document.getElementById('circleProgress');
+        const timerDigits = document.getElementById('timerDigits');
+        const timerStatus = document.getElementById('timerStatus');
+        const startBtn = document.getElementById('startBtn');
+        const statCount = document.getElementById('statCount');
+        const statMinutes = document.getElementById('statMinutes');
+
+        circleProgress.style.strokeDasharray = CIRCUMFERENCE;
+        circleProgress.style.strokeDashoffset = 0;
+
+        function playBeep() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+                osc.frequency.setValueAtTime(880, ctx.currentTime + 0.15); // A5
+                gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.6);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.6);
+            } catch (e) {
+                // AudioContext not allowed without gesture
+            }
+        }
+
+        function updateDisplay() {
+            const mins = Math.floor(remainingSeconds / 60);
+            const secs = remainingSeconds % 60;
+            const timeStr = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            timerDigits.textContent = timeStr;
+            document.title = `${timeStr} - 番茄时钟 | PC-TOOL`;
+
+            const offset = CIRCUMFERENCE * (1 - remainingSeconds / totalSeconds);
+            circleProgress.style.strokeDashoffset = offset;
+        }
+
+        function toggleTimer() {
+            if (isRunning) {
+                // 暂停
+                clearInterval(timerId);
+                isRunning = false;
+                startBtn.textContent = '继续';
+                timerStatus.textContent = '已暂停';
+            } else {
+                // 启动
+                isRunning = true;
+                startBtn.textContent = '暂停';
+                timerStatus.textContent = currentMode === 'work' ? '沉浸专注中...' : '享受休息中...';
+                timerId = setInterval(() => {
+                    if (remainingSeconds > 0) {
+                        remainingSeconds--;
+                        updateDisplay();
+                    } else {
+                        clearInterval(timerId);
+                        isRunning = false;
+                        playBeep();
+                        if (currentMode === 'work') {
+                            completedPoms++;
+                            totalFocusMins += Math.round(totalSeconds / 60);
+                            statCount.textContent = `${completedPoms} 个`;
+                            statMinutes.textContent = `${totalFocusMins} 分钟`;
+                            showToast('🎉 恭喜完成一个番茄钟！好好休息一下吧');
+                            switchMode('shortBreak', 5);
+                        } else {
+                            showToast('☕ 休息结束，准备好开始下一个专注了吗？');
+                            switchMode('work', 25);
+                        }
+                    }
+                }, 1000);
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(timerId);
+            isRunning = false;
+            startBtn.textContent = '开始专注';
+            timerStatus.textContent = '准备就绪';
+            remainingSeconds = totalSeconds;
+            updateDisplay();
+        }
+
+        function switchMode(mode, mins) {
+            currentMode = mode;
+            totalSeconds = mins * 60;
+            remainingSeconds = totalSeconds;
+            clearInterval(timerId);
+            isRunning = false;
+            startBtn.textContent = '开始';
+            timerStatus.textContent = '准备就绪';
+
+            if (mode === 'work') {
+                circleProgress.style.stroke = '#818cf8';
+            } else if (mode === 'shortBreak') {
+                circleProgress.style.stroke = '#34d399';
+            } else {
+                circleProgress.style.stroke = '#fbbf24';
+            }
+
+            document.querySelectorAll('.mode-btn').forEach(b => {
+                b.classList.toggle('active', b.dataset.mode === mode);
+            });
+
+            updateDisplay();
+        }
+
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                switchMode(btn.dataset.mode, parseInt(btn.dataset.time, 10));
+            });
+        });
+
+        updateDisplay();
+    </script>
+</body>
+</html>

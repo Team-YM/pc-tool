@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>黑白反色/底片效果</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="免费在线黑白反色与负片底片转换工具，支持纯黑白二值化、色彩反转负片、灰度反转及阈值微调，纯浏览器端离线处理。">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="黑白反色/底片效果 | PC-TOOL">
+    <meta property="og:description" content="在线图片黑白反转、彩色负片底片生成工具，支持二值化阈值与对比度自由微调。">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/image-invert.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="zh_CN">
+    <style>
+        .container {
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .mode-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 18px 0;
+            justify-content: center;
+        }
+
+        .mode-btn {
+            padding: 9px 18px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #a1a1aa;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.25s;
+        }
+
+        .mode-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+        }
+
+        .mode-btn.active {
+            background: rgba(129, 140, 248, 0.25);
+            border-color: rgba(129, 140, 248, 0.6);
+            color: #c4b5fd;
+            font-weight: 500;
+        }
+
+        .slider-box {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            padding: 14px 18px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .slider-box label {
+            font-size: 14px;
+            color: #d4d4d8;
+            white-space: nowrap;
+            min-width: 80px;
+        }
+
+        .slider-box input[type="range"] {
+            flex: 1;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+        }
+
+        .slider-box input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #818cf8;
+            cursor: pointer;
+        }
+
+        .slider-val {
+            font-size: 13px;
+            color: #818cf8;
+            font-family: monospace;
+            width: 45px;
+            text-align: right;
+        }
+
+        .preview-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 15px;
+        }
+
+        @media (max-width: 640px) {
+            .preview-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .preview-pane {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .preview-pane h4 {
+            font-size: 13px;
+            color: #a1a1aa;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .preview-canvas-wrap {
+            width: 100%;
+            height: 320px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: repeating-conic-gradient(#1c1c22 0% 25%, #141418 0% 50%) 50% / 14px 14px;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .preview-canvas-wrap canvas,
+        .preview-canvas-wrap img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        .btn-center {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 22px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+    <a href="../index.html" class="back-link">← 返回转换工具首页</a>
+
+    <div class="container">
+        <h1>黑白反色 / 底片效果</h1>
+        <p>将图像转换为高对比度反色黑白、彩色胶片负片或灰度反转效果，支持阈值动态调校</p>
+
+        <div class="upload-area" id="uploadArea">
+            <p>点击或拖拽上传图片（支持 JPG、PNG、WebP 等）</p>
+            <input type="file" id="fileInput" accept="image/*">
+        </div>
+
+        <div id="processWorkspace" style="display:none;">
+            <div class="mode-row" id="modeGroup">
+                <button class="mode-btn active" data-mode="bw-invert">黑白反转 (高对比)</button>
+                <button class="mode-btn" data-mode="gray-invert">灰度负片 (平滑)</button>
+                <button class="mode-btn" data-mode="color-invert">全彩负片 (经典底片)</button>
+                <button class="mode-btn" data-mode="bw-normal">纯黑白二值化</button>
+            </div>
+
+            <div class="slider-box" id="thresholdBox">
+                <label>黑白分界阈值</label>
+                <input type="range" id="thresholdRange" min="1" max="254" value="128">
+                <span class="slider-val" id="thresholdVal">128</span>
+            </div>
+
+            <div class="slider-box">
+                <label>反色对比度增强</label>
+                <input type="range" id="contrastRange" min="50" max="200" value="100">
+                <span class="slider-val" id="contrastVal">100%</span>
+            </div>
+
+            <div class="preview-grid">
+                <div class="preview-pane">
+                    <h4>原图参考</h4>
+                    <div class="preview-canvas-wrap">
+                        <img id="origImg" alt="原图预览">
+                    </div>
+                </div>
+                <div class="preview-pane">
+                    <h4>反色处理效果</h4>
+                    <div class="preview-canvas-wrap">
+                        <canvas id="resultCanvas"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="btn-center">
+                <button class="btn" id="downloadBtn" style="background:rgba(129,140,248,0.3);border-color:rgba(129,140,248,0.4);">下载反色图片</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        var uploadArea = document.getElementById('uploadArea');
+        var fileInput = document.getElementById('fileInput');
+        var processWorkspace = document.getElementById('processWorkspace');
+        var origImg = document.getElementById('origImg');
+        var resultCanvas = document.getElementById('resultCanvas');
+        var resultCtx = resultCanvas.getContext('2d');
+        var thresholdRange = document.getElementById('thresholdRange');
+        var thresholdVal = document.getElementById('thresholdVal');
+        var contrastRange = document.getElementById('contrastRange');
+        var contrastVal = document.getElementById('contrastVal');
+        var modeGroup = document.getElementById('modeGroup');
+        var downloadBtn = document.getElementById('downloadBtn');
+
+        var currentMode = 'bw-invert';
+        var sourceImage = null;
+
+        uploadArea.addEventListener('click', function() { fileInput.click(); });
+        uploadArea.addEventListener('dragover', function(e) { e.preventDefault(); });
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', function(e) {
+            if (e.target.files.length) handleFile(e.target.files[0]);
+        });
+
+        function handleFile(file) {
+            if (!file || !file.type.startsWith('image/')) return;
+            var reader = new FileReader();
+            reader.onload = function(ev) {
+                var img = new Image();
+                img.onload = function() {
+                    sourceImage = img;
+                    origImg.src = ev.target.result;
+                    processWorkspace.style.display = 'block';
+                    applyInversion();
+                };
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        modeGroup.addEventListener('click', function(e) {
+            if (e.target.classList.contains('mode-btn')) {
+                modeGroup.querySelectorAll('.mode-btn').forEach(function(b) { b.classList.remove('active'); });
+                e.target.classList.add('active');
+                currentMode = e.target.getAttribute('data-mode');
+                applyInversion();
+            }
+        });
+
+        thresholdRange.addEventListener('input', function() {
+            thresholdVal.innerText = thresholdRange.value;
+            applyInversion();
+        });
+
+        contrastRange.addEventListener('input', function() {
+            contrastVal.innerText = contrastRange.value + '%';
+            applyInversion();
+        });
+
+        function applyInversion() {
+            if (!sourceImage) return;
+            var w = sourceImage.width;
+            var h = sourceImage.height;
+            resultCanvas.width = w;
+            resultCanvas.height = h;
+
+            resultCtx.drawImage(sourceImage, 0, 0, w, h);
+            var imgData = resultCtx.getImageData(0, 0, w, h);
+            var d = imgData.data;
+
+            var th = parseInt(thresholdRange.value, 10);
+            var factor = (259 * (parseInt(contrastRange.value, 10) + 255)) / (255 * (259 - parseInt(contrastRange.value, 10)));
+
+            for (var i = 0; i < d.length; i += 4) {
+                var r = d[i];
+                var g = d[i + 1];
+                var b = d[i + 2];
+
+                // 对比度调节
+                if (contrastRange.value !== '100') {
+                    r = Math.min(255, Math.max(0, factor * (r - 128) + 128));
+                    g = Math.min(255, Math.max(0, factor * (g - 128) + 128));
+                    b = Math.min(255, Math.max(0, factor * (b - 128) + 128));
+                }
+
+                // 灰度亮度
+                var gray = 0.299 * r + 0.587 * g + 0.114 * b;
+
+                if (currentMode === 'color-invert') {
+                    // 全彩底片负片
+                    d[i] = 255 - r;
+                    d[i + 1] = 255 - g;
+                    d[i + 2] = 255 - b;
+                } else if (currentMode === 'gray-invert') {
+                    // 灰度反转
+                    var invGray = 255 - gray;
+                    d[i] = invGray;
+                    d[i + 1] = invGray;
+                    d[i + 2] = invGray;
+                } else if (currentMode === 'bw-invert') {
+                    // 黑白反转 (原本亮变黑，原本暗变白)
+                    var val = gray >= th ? 0 : 255;
+                    d[i] = val;
+                    d[i + 1] = val;
+                    d[i + 2] = val;
+                } else if (currentMode === 'bw-normal') {
+                    // 常规二值化 (亮变白，暗变黑)
+                    var val2 = gray >= th ? 255 : 0;
+                    d[i] = val2;
+                    d[i + 1] = val2;
+                    d[i + 2] = val2;
+                }
+            }
+
+            resultCtx.putImageData(imgData, 0, 0);
+        }
+
+        downloadBtn.addEventListener('click', function() {
+            if (!sourceImage) return;
+            var a = document.createElement('a');
+            a.download = 'inverted-image.png';
+            a.href = resultCanvas.toDataURL('image/png');
+            a.click();
+        });
+    </script>
+</body>
+</html>

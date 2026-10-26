@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unit Converter</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="All-in-one online unit converter for fast, accurate conversions between length, weight, area, volume, temperature, data storage and many other physical quantities.">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .container {
+            max-width: 800px;
+        }
+        .container h1 {
+            color: #e4e4e7;
+            margin-bottom: 8px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .container > p {
+            color: #a1a1aa;
+            font-size: 15px;
+            margin-bottom: 24px;
+        }
+        .category-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        .cat-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #a1a1aa;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .cat-btn:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.08);
+        }
+        .cat-btn.active {
+            background: rgba(129, 140, 248, 0.15);
+            border-color: rgba(129, 140, 248, 0.4);
+            color: #818cf8;
+            font-weight: 600;
+        }
+        .converter-box {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 12px;
+            padding: 24px;
+        }
+        .convert-row {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 16px;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        @media (max-width: 600px) {
+            .convert-row {
+                grid-template-columns: 1fr;
+            }
+        }
+        .unit-card {
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            padding: 16px;
+        }
+        .unit-card label {
+            display: block;
+            font-size: 12px;
+            color: #a1a1aa;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        .input-styled {
+            width: 100%;
+            padding: 10px 12px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 16px;
+            outline: none;
+            margin-bottom: 12px;
+            font-family: "SF Mono", "Fira Code", monospace;
+        }
+        .input-styled:focus {
+            border-color: rgba(129, 140, 248, 0.5);
+        }
+        .select-styled {
+            width: 100%;
+            padding: 10px 12px;
+            background: rgba(24, 24, 27, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+            cursor: pointer;
+        }
+        .swap-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: #818cf8;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            margin: 0 auto;
+        }
+        .swap-btn:hover {
+            background: rgba(129, 140, 248, 0.2);
+            transform: rotate(180deg);
+        }
+        .all-units-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin-top: 16px;
+        }
+        .all-units-table th, .all-units-table td {
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 8px 12px;
+            text-align: left;
+        }
+        .all-units-table th {
+            background: rgba(255, 255, 255, 0.04);
+            color: #a1a1aa;
+        }
+        .all-units-table td {
+            color: #e4e4e7;
+            font-family: monospace;
+        }
+        .copy-tag {
+            color: #818cf8;
+            cursor: pointer;
+            margin-left: 8px;
+            font-size: 12px;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+    <a href="../index.html" class="back-link">← Back to Home</a>
+
+    <div class="container">
+        <h1>Unit Converter</h1>
+        <p>Instant two-way conversion between common measurement and data units, covering length, weight, area, volume, temperature and storage capacity.</p>
+
+        <div class="category-tabs" id="catTabs">
+            <button class="cat-btn active" data-cat="length">Length</button>
+            <button class="cat-btn" data-cat="weight">Weight</button>
+            <button class="cat-btn" data-cat="area">Area</button>
+            <button class="cat-btn" data-cat="volume">Volume</button>
+            <button class="cat-btn" data-cat="temp">Temperature</button>
+            <button class="cat-btn" data-cat="storage">Storage</button>
+        </div>
+
+        <div class="converter-box">
+            <div class="convert-row">
+                <div class="unit-card">
+                    <label>From (source unit)</label>
+                    <input type="number" class="input-styled" id="fromValue" value="1" step="any">
+                    <select class="select-styled" id="fromUnit"></select>
+                </div>
+
+                <div>
+                    <button class="swap-btn" id="swapBtn" title="Swap units">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 16V4m0 0L3 8m4-4l4 4m6 4v12m0 0l4-4m-4 4l-4-4"/></svg>
+                    </button>
+                </div>
+
+                <div class="unit-card">
+                    <label>To (converted value)</label>
+                    <input type="number" class="input-styled" id="toValue" readonly>
+                    <select class="select-styled" id="toUnit"></select>
+                </div>
+            </div>
+
+            <div style="font-size:14px; font-weight:600; color:#d4d4d8; margin-bottom:8px;">Conversions in all units:</div>
+            <div style="overflow-x: auto;">
+                <table class="all-units-table">
+                    <thead>
+                        <tr>
+                            <th>Unit name</th>
+                            <th>Converted value</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="allUnitsTbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        const UNIT_DATA = {
+            length: {
+                base: 'm',
+                units: {
+                    km: { name: 'Kilometer (km)', factor: 1000 },
+                    m: { name: 'Meter (m)', factor: 1 },
+                    dm: { name: 'Decimeter (dm)', factor: 0.1 },
+                    cm: { name: 'Centimeter (cm)', factor: 0.01 },
+                    mm: { name: 'Millimeter (mm)', factor: 0.001 },
+                    um: { name: 'Micrometer (µm)', factor: 1e-6 },
+                    nm: { name: 'Nanometer (nm)', factor: 1e-9 },
+                    mi: { name: 'Mile (mi)', factor: 1609.344 },
+                    yd: { name: 'Yard (yd)', factor: 0.9144 },
+                    ft: { name: 'Foot (ft)', factor: 0.3048 },
+                    in: { name: 'Inch (in)', factor: 0.0254 },
+                    chi: { name: 'Chi (Chinese foot)', factor: 0.333333333 }
+                }
+            },
+            weight: {
+                base: 'kg',
+                units: {
+                    t: { name: 'Tonne (t)', factor: 1000 },
+                    kg: { name: 'Kilogram (kg)', factor: 1 },
+                    g: { name: 'Gram (g)', factor: 0.001 },
+                    mg: { name: 'Milligram (mg)', factor: 1e-6 },
+                    lb: { name: 'Pound (lb)', factor: 0.45359237 },
+                    oz: { name: 'Ounce (oz)', factor: 0.028349523 },
+                    jin: { name: 'Jin (Chinese catty)', factor: 0.5 },
+                    liang: { name: 'Liang (Chinese tael)', factor: 0.05 }
+                }
+            },
+            area: {
+                base: 'm2',
+                units: {
+                    km2: { name: 'Square kilometer (km²)', factor: 1000000 },
+                    ha: { name: 'Hectare (ha)', factor: 10000 },
+                    mu: { name: 'Mu (Chinese acre)', factor: 666.666667 },
+                    m2: { name: 'Square meter (m²)', factor: 1 },
+                    dm2: { name: 'Square decimeter (dm²)', factor: 0.01 },
+                    cm2: { name: 'Square centimeter (cm²)', factor: 0.0001 },
+                    sqft: { name: 'Square foot (sq ft)', factor: 0.092903 }
+                }
+            },
+            volume: {
+                base: 'l',
+                units: {
+                    m3: { name: 'Cubic meter (m³)', factor: 1000 },
+                    dm3: { name: 'Cubic decimeter (dm³)', factor: 1 },
+                    cm3: { name: 'Cubic centimeter (cm³)', factor: 0.001 },
+                    l: { name: 'Liter (L)', factor: 1 },
+                    ml: { name: 'Milliliter (mL)', factor: 0.001 },
+                    gal_us: { name: 'US gallon (gal)', factor: 3.78541 },
+                    gal_uk: { name: 'Imperial gallon (gal)', factor: 4.54609 }
+                }
+            },
+            temp: {
+                custom: true,
+                units: {
+                    c: { name: 'Celsius (°C)' },
+                    f: { name: 'Fahrenheit (°F)' },
+                    k: { name: 'Kelvin (K)' }
+                }
+            },
+            storage: {
+                base: 'b',
+                units: {
+                    bit: { name: 'Bit (bit)', factor: 0.125 },
+                    b: { name: 'Byte (B)', factor: 1 },
+                    kb: { name: 'KB (1024 B)', factor: 1024 },
+                    mb: { name: 'MB (1024 KB)', factor: 1048576 },
+                    gb: { name: 'GB (1024 MB)', factor: 1073741824 },
+                    tb: { name: 'TB (1024 GB)', factor: 1099511627776 },
+                    pb: { name: 'PB (1024 TB)', factor: 1125899906842624 }
+                }
+            }
+        };
+
+        let currentCat = 'length';
+        const catTabs = document.getElementById('catTabs');
+        const fromValue = document.getElementById('fromValue');
+        const toValue = document.getElementById('toValue');
+        const fromUnit = document.getElementById('fromUnit');
+        const toUnit = document.getElementById('toUnit');
+        const swapBtn = document.getElementById('swapBtn');
+        const allUnitsTbody = document.getElementById('allUnitsTbody');
+
+        function initCat(cat) {
+            currentCat = cat;
+            const catObj = UNIT_DATA[cat];
+            const keys = Object.keys(catObj.units);
+
+            fromUnit.innerHTML = '';
+            toUnit.innerHTML = '';
+            keys.forEach(k => {
+                const opt1 = document.createElement('option');
+                opt1.value = k;
+                opt1.textContent = catObj.units[k].name;
+                fromUnit.appendChild(opt1);
+
+                const opt2 = document.createElement('option');
+                opt2.value = k;
+                opt2.textContent = catObj.units[k].name;
+                toUnit.appendChild(opt2);
+            });
+
+            fromUnit.selectedIndex = 0;
+            toUnit.selectedIndex = keys.length > 1 ? 1 : 0;
+            convert();
+        }
+
+        function convertTemp(val, from, to) {
+            let c = val;
+            if (from === 'f') c = (val - 32) * 5 / 9;
+            else if (from === 'k') c = val - 273.15;
+
+            if (to === 'c') return c;
+            if (to === 'f') return c * 9 / 5 + 32;
+            if (to === 'k') return c + 273.15;
+            return c;
+        }
+
+        function formatNum(n) {
+            if (isNaN(n)) return '';
+            if (Math.abs(n) < 1e-6 && n !== 0) return n.toExponential(6);
+            const str = n.toFixed(6);
+            return parseFloat(str).toString();
+        }
+
+        function convert() {
+            const val = parseFloat(fromValue.value);
+            if (isNaN(val)) {
+                toValue.value = '';
+                allUnitsTbody.innerHTML = '';
+                return;
+            }
+
+            const fromKey = fromUnit.value;
+            const toKey = toUnit.value;
+            const catObj = UNIT_DATA[currentCat];
+
+            let targetRes = 0;
+            if (catObj.custom) {
+                targetRes = convertTemp(val, fromKey, toKey);
+            } else {
+                const baseVal = val * catObj.units[fromKey].factor;
+                targetRes = baseVal / catObj.units[toKey].factor;
+            }
+            toValue.value = formatNum(targetRes);
+
+            // Fill the conversion table
+            allUnitsTbody.innerHTML = '';
+            Object.keys(catObj.units).forEach(k => {
+                let currentVal = 0;
+                if (catObj.custom) {
+                    currentVal = convertTemp(val, fromKey, k);
+                } else {
+                    const baseVal = val * catObj.units[fromKey].factor;
+                    currentVal = baseVal / catObj.units[k].factor;
+                }
+                const formatted = formatNum(currentVal);
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${catObj.units[k].name}</td>
+                    <td><strong>${formatted}</strong></td>
+                    <td><span class="copy-tag" onclick="copyNum('${formatted}')">Copy</span></td>
+                `;
+                allUnitsTbody.appendChild(tr);
+            });
+        }
+
+        window.copyNum = function(num) {
+            navigator.clipboard.writeText(num).then(() => {
+                showToast('Copied: ' + num);
+            });
+        };
+
+        catTabs.addEventListener('click', e => {
+            const btn = e.target.closest('.cat-btn');
+            if (!btn) return;
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            initCat(btn.dataset.cat);
+        });
+
+        fromValue.addEventListener('input', convert);
+        fromUnit.addEventListener('change', convert);
+        toUnit.addEventListener('change', convert);
+
+        swapBtn.addEventListener('click', () => {
+            const temp = fromUnit.value;
+            fromUnit.value = toUnit.value;
+            toUnit.value = temp;
+            convert();
+        });
+
+        initCat('length');
+    </script>
+</body>
+</html>
+
+
+

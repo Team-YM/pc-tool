@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>视频转格式</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="免费在线视频格式转换工具，支持 MP4、WebM、MOV、MKV、AVI，纯浏览器端处理。">
+    <link rel="stylesheet" href="../tool/common.css">
+    <meta property="og:title" content="视频转格式 | PC-TOOL">
+    <meta property="og:description" content="免费在线工具集合——图片转换、视频压缩、音频转格式、图片抠图……每一个功能都为效率而生，完全免费，为人民服务！">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/video-convert.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="zh_CN">
+    <style>
+        #videoInput {
+            display: none;
+        }
+
+        .preview-video {
+            width: 100%;
+            max-height: 320px;
+            border-radius: 8px;
+            display: none;
+            margin: 16px auto 10px;
+            background: #000;
+            object-fit: contain;
+        }
+
+        .option-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 14px 0;
+            flex-wrap: wrap;
+        }
+
+        .option-row label {
+            color: #a1a1aa;
+            font-size: 14px;
+        }
+
+        .option-row input[type="range"] {
+            width: 140px;
+        }
+
+        .option-row span {
+            color: #e4e4e7;
+            font-size: 14px;
+            min-width: 46px;
+            text-align: left;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 3px;
+            margin: 18px 0 8px;
+            display: none;
+            overflow: hidden;
+        }
+
+        .progress-bar .fill {
+            height: 100%;
+            background: linear-gradient(90deg, #818cf8, #34d399);
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.2s linear;
+        }
+
+        .hint-box {
+            margin-top: 18px;
+            padding: 14px 16px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            color: #a1a1aa;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .hint-box strong {
+            color: #e4e4e7;
+        }
+    </style>
+</head>
+<body>
+<canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <a href="../index.html" class="back-link">← 返回转换工具首页</a>
+
+    <div class="container">
+        <h1>视频转格式</h1>
+        <p>上传视频文件并转换为 MP4、WebM、MOV、MKV 或 AVI，纯浏览器端处理</p>
+
+        <div class="upload-area" id="uploadArea">
+            <p>点击或拖拽上传视频</p>
+            <input type="file" id="videoInput" accept="video/*,.mkv,.avi,.mov,.ts,.m2ts,.flv,.mpeg,.mpg,.3gp">
+        </div>
+
+        <div id="videoInfo" style="text-align:center; margin:15px 0; display:none;">
+            <p id="fileName" style="color:#e4e4e7;"></p>
+        </div>
+
+        <video id="previewVideo" class="preview-video" controls></video>
+
+        <div class="option-row">
+            <label>输出分辨率:</label>
+            <select class="format-select" id="resolutionSelect">
+                <option value="original">原始分辨率</option>
+                <option value="1080p">1080p (1920x1080)</option>
+                <option value="720p" selected>720p (1280x720)</option>
+                <option value="480p">480p (854x480)</option>
+                <option value="360p">360p (640x360)</option>
+            </select>
+        </div>
+
+        <div class="option-row">
+            <label>质量:</label>
+            <input type="range" id="qualityRange" min="1" max="10" value="7" step="1">
+            <span id="qualityVal">70%</span>
+        </div>
+
+        <div style="text-align:center;">
+            <select class="format-select" id="outputFormat">
+                <option value="mp4" selected>MP4 (H.264)</option>
+                <option value="webm">WebM (VP8)</option>
+                <option value="mov">MOV (H.264)</option>
+                <option value="mkv">MKV (H.264)</option>
+                <option value="avi">AVI (MPEG-4)</option>
+            </select>
+            <button class="convert-btn" id="convertBtn">开始转换</button>
+            <button class="download-btn" id="downloadBtn">下载视频</button>
+        </div>
+
+        <div class="progress-bar" id="progressBar">
+            <div class="fill" id="progressFill"></div>
+        </div>
+        <p id="progressText" style="text-align:center; color:#a1a1aa; font-size:13px; margin-top:4px; display:none;"></p>
+
+        <div class="result-box" id="resultBox">
+            <h3>转换完成</h3>
+            <div id="sizeInfo" style="color:#a1a1aa; font-size:14px; margin-top:8px;"></div>
+        </div>
+
+        <div class="hint-box">
+            <strong>说明：</strong>视频会在浏览器本地使用 FFmpeg WASM 转换，不会上传到服务器。首次转换需要加载 FFmpeg 运行组件；支持 MP4、WebM、MOV、MKV 和 AVI 等常见格式，具体取决于浏览器内存和输入编码。原始分辨率且容器兼容时会优先无损封装，此时质量滑块不生效。
+        </div>
+
+        <div class="contact-tip">面向大众，有任何想要的功能或者意见，请联系QQ交流群：<strong>1121812272</strong></div>
+    </div>
+
+    <script src="../tool/common.js"></script>
+    <script type="module">
+        const uploadArea = document.getElementById('uploadArea');
+        const videoInput = document.getElementById('videoInput');
+        const convertBtn = document.getElementById('convertBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const outputFormat = document.getElementById('outputFormat');
+        const resolutionSelect = document.getElementById('resolutionSelect');
+        const qualityRange = document.getElementById('qualityRange');
+        const qualityVal = document.getElementById('qualityVal');
+        const resultBox = document.getElementById('resultBox');
+        const sizeInfo = document.getElementById('sizeInfo');
+        const videoInfo = document.getElementById('videoInfo');
+        const fileName = document.getElementById('fileName');
+        const previewVideo = document.getElementById('previewVideo');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+
+        let videoFile = null;
+        let previewUrl = null;
+        let outputUrl = null;
+        let outputBlob = null;
+        let completedFormatKey = null;
+        let isConverting = false;
+        let ffmpeg = null;
+        let ffmpegLoadPromise = null;
+        let ffmpegFsType = 'WORKERFS';
+        let inputMountId = 0;
+        const formats = {
+            mp4: { extension: 'mp4', mime: 'video/mp4', label: 'MP4' },
+            webm: { extension: 'webm', mime: 'video/webm', label: 'WebM' },
+            mov: { extension: 'mov', mime: 'video/quicktime', label: 'MOV' },
+            mkv: { extension: 'mkv', mime: 'video/x-matroska', label: 'MKV' },
+            avi: { extension: 'avi', mime: 'video/x-msvideo', label: 'AVI' }
+        };
+
+        async function getFFmpeg() {
+            if (ffmpeg) return ffmpeg;
+            if (!ffmpegLoadPromise) {
+                ffmpegLoadPromise = (async () => {
+                    let instance;
+                    try {
+                        const assetBase = new URL('lib/ffmpeg/', location.href);
+                        const ffmpegBase = new URL('esm/', assetBase);
+                        const coreBase = new URL('core/', assetBase);
+                        const { FFmpeg, FFFSType } = await import(new URL('index.js', ffmpegBase).href);
+                        ffmpegFsType = FFFSType.WORKERFS;
+                        instance = new FFmpeg();
+                        instance.on('progress', ({ progress }) => {
+                            if (!Number.isFinite(progress)) return;
+                            const percent = Math.round(10 + Math.min(1, Math.max(0, progress)) * 85);
+                            setProgress(percent, '正在转换视频... ' + Math.max(0, percent - 10) + '%');
+                        });
+                        await instance.load({
+                            classWorkerURL: new URL('worker.js', ffmpegBase).href,
+                            coreURL: new URL('ffmpeg-core.js', coreBase).href,
+                            wasmURL: new URL('ffmpeg-core.wasm', coreBase).href
+                        });
+                        ffmpeg = instance;
+                        return instance;
+                    } catch (error) {
+                        instance?.terminate();
+                        ffmpegLoadPromise = null;
+                        throw new Error('FFmpeg 本地组件加载失败：' + (error.message || error));
+                    }
+                })();
+            }
+            return ffmpegLoadPromise;
+        }
+
+        function resetFFmpeg() {
+            ffmpeg?.terminate();
+            ffmpeg = null;
+            ffmpegLoadPromise = null;
+        }
+
+        qualityRange.oninput = () => {
+            qualityVal.textContent = (qualityRange.value * 10) + '%';
+        };
+
+        function setProgress(percent, text) {
+            progressBar.style.display = 'block';
+            progressText.style.display = 'block';
+            progressFill.style.width = Math.max(0, Math.min(100, percent)) + '%';
+            progressText.textContent = text;
+        }
+
+        function resetProgress() {
+            progressBar.style.display = 'none';
+            progressText.style.display = 'none';
+            progressFill.style.width = '0%';
+            progressText.textContent = '';
+        }
+
+        function revokeUrl(url) {
+            if (url) {
+                URL.revokeObjectURL(url);
+            }
+        }
+
+        function cleanupOutput() {
+            revokeUrl(outputUrl);
+            outputUrl = null;
+            outputBlob = null;
+            completedFormatKey = null;
+            downloadBtn.style.display = 'none';
+            resultBox.style.display = 'none';
+        }
+
+        function isVideoFile(file) {
+            return file.type.startsWith('video/') || /\.(mp4|m4v|mov|webm|mkv|avi|mpeg|mpg|3gp|ts|m2ts|flv)$/i.test(file.name);
+        }
+
+        uploadArea.onclick = () => videoInput.click();
+
+        setupDragDrop(uploadArea, (files) => {
+            if (files[0] && isVideoFile(files[0])) {
+                handleVideo(files[0]);
+                return;
+            }
+            showToast('请上传视频文件');
+        });
+
+        videoInput.onchange = (e) => {
+            const file = e.target.files[0];
+            videoInput.value = '';
+            if (file) {
+                handleVideo(file);
+            }
+        };
+
+        function handleVideo(file) {
+            if (!file || !isVideoFile(file)) {
+                showToast('请上传支持的视频文件');
+                return;
+            }
+
+            if (isConverting) {
+                showToast('请等待当前转换完成');
+                return;
+            }
+
+            revokeUrl(previewUrl);
+            cleanupOutput();
+            resetProgress();
+
+            videoFile = file;
+            previewUrl = URL.createObjectURL(file);
+            fileName.textContent = '文件名：' + file.name + '（' + formatSize(file.size) + '）';
+            videoInfo.style.display = 'block';
+            previewVideo.src = previewUrl;
+            previewVideo.style.display = 'block';
+        }
+
+        async function convertVideo(file, formatKey) {
+            setProgress(5, '正在加载 FFmpeg WASM...');
+            const ffmpegInstance = await getFFmpeg();
+            const format = formats[formatKey];
+            const mountPoint = '/input-' + (++inputMountId);
+            const inputName = mountPoint + '/' + file.name;
+            const outputName = 'output.' + format.extension;
+            const args = ['-threads', '1', '-filter_threads', '1', '-i', inputName, '-map', '0:v:0', '-map', '0:a?', '-sn', '-threads', '1'];
+            const resolution = resolutionSelect.value;
+            if (resolution !== 'original') {
+                const maxHeight = { '1080p': 1080, '720p': 720, '480p': 480, '360p': 360 }[resolution] || 720;
+                args.push('-vf', 'scale=-2:min(' + maxHeight + '\\,ih)');
+            }
+
+            const quality = Number(qualityRange.value);
+            const crf = 33 - quality * 2;
+            const encodeArgs = [];
+            if (formatKey === 'webm') {
+                encodeArgs.push('-c:v', 'libvpx', '-crf', String(crf), '-b:v', '0', '-deadline', 'realtime', '-cpu-used', '5', '-c:a', 'libopus', '-b:a', '128k');
+            } else if (formatKey === 'avi') {
+                encodeArgs.push('-c:v', 'mpeg4', '-q:v', String(Math.max(2, 11 - quality)), '-c:a', 'libmp3lame', '-q:a', '4');
+            } else {
+                encodeArgs.push('-c:v', 'libx264', '-preset', 'ultrafast', '-crf', String(crf), '-c:a', 'aac', '-b:a', '128k');
+                if (formatKey === 'mp4') encodeArgs.push('-movflags', '+faststart');
+            }
+
+            let inputMounted = false;
+            let wasmCrashed = false;
+            try {
+                await ffmpegInstance.createDir(mountPoint);
+                inputMounted = await ffmpegInstance.mount(ffmpegFsType, { files: [file] }, mountPoint);
+                if (!inputMounted) {
+                    throw new Error('当前 FFmpeg 核心不支持直接读取本地视频文件');
+                }
+                setProgress(10, '正在转换视频...');
+
+                if (resolution === 'original') {
+                    const copyArgs = [...args, '-c', 'copy'];
+                    if (formatKey === 'mp4') copyArgs.push('-movflags', '+faststart');
+                    const copyCode = await ffmpegInstance.exec([...copyArgs, outputName]);
+                    if (copyCode === 0) {
+                        const copied = await ffmpegInstance.readFile(outputName);
+                        if (copied.length) return new Blob([copied], { type: format.mime });
+                    }
+                    await ffmpegInstance.deleteFile(outputName).catch(() => {});
+                }
+
+                const exitCode = await ffmpegInstance.exec([...args, ...encodeArgs, outputName]);
+                if (exitCode !== 0) {
+                    throw new Error('当前文件的编码或格式暂不支持转换');
+                }
+                const data = await ffmpegInstance.readFile(outputName);
+                if (!data.length) {
+                    throw new Error('转换结果为空');
+                }
+                return new Blob([data], { type: format.mime });
+            } catch (error) {
+                const message = error?.message || String(error);
+                if (/memory access out of bounds/i.test(message)) {
+                    wasmCrashed = true;
+                    throw new Error('FFmpeg 处理时发生 WASM 内存越界，转换器已重置。请降低输出分辨率后重试；超大或异常编码的视频仍可能超出浏览器内存。');
+                }
+                throw error;
+            } finally {
+                if (wasmCrashed) {
+                    resetFFmpeg();
+                } else {
+                    if (inputMounted) {
+                        await ffmpegInstance.unmount(mountPoint).catch(() => {});
+                    }
+                    await ffmpegInstance.deleteDir(mountPoint).catch(() => {});
+                    await ffmpegInstance.deleteFile(outputName).catch(() => {});
+                }
+            }
+        }
+
+        convertBtn.onclick = async () => {
+            if (!videoFile) {
+                showToast('请先上传视频');
+                return;
+            }
+            if (isConverting) {
+                return;
+            }
+
+            isConverting = true;
+            cleanupOutput();
+            convertBtn.disabled = true;
+            convertBtn.textContent = '转换中...';
+
+            try {
+                const formatKey = outputFormat.value;
+                const format = formats[formatKey];
+                outputBlob = await convertVideo(videoFile, formatKey);
+                completedFormatKey = formatKey;
+                outputUrl = URL.createObjectURL(outputBlob);
+                setProgress(100, '转换完成！');
+
+                sizeInfo.innerHTML = '原始视频：' + formatSize(videoFile.size) +
+                    '<br>转换后：<span style="color:#34d399;">' + formatSize(outputBlob.size) + '</span>' +
+                    '<br>格式：<span style="color:#818cf8;">' + format.label + '</span>';
+                resultBox.style.display = 'block';
+                downloadBtn.style.display = 'inline-block';
+            } catch (error) {
+                resetProgress();
+                showToast('转换失败：' + (error.message || error));
+            } finally {
+                isConverting = false;
+                convertBtn.disabled = false;
+                convertBtn.textContent = '开始转换';
+            }
+        };
+
+        downloadBtn.onclick = () => {
+            if (!outputUrl || !outputBlob || !videoFile) {
+                return;
+            }
+            const format = formats[completedFormatKey];
+            const originalName = videoFile.name.replace(/\.[^.]+$/, '') || 'video';
+            const a = document.createElement('a');
+            a.href = outputUrl;
+            a.download = originalName + '-格式转换.' + format.extension;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        };
+
+        window.addEventListener('beforeunload', () => {
+            revokeUrl(previewUrl);
+            revokeUrl(outputUrl);
+        });
+    </script>
+</body>
+</html>

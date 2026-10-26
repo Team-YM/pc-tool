@@ -1,0 +1,1595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <script>
+    (function() {
+      var ua = navigator.userAgent || navigator.vendor || window.opera;
+      var isMobile = /Mobi|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|webOS/i.test(ua);
+      // Support iPadOS (whose UA often contains Macintosh but supports multi-touch) and tablets
+      var isTablet = /iPad|Android(?!.*Mobile)|Tablet|PlayBook|Silk/i.test(ua) || 
+                     ((/Macintosh/i.test(ua) || navigator.platform === 'MacIntel') && navigator.maxTouchPoints > 1);
+      var isSmallScreen = window.innerWidth <= 768;
+      if (isMobile || isTablet || (isSmallScreen && ('ontouchstart' in window || navigator.maxTouchPoints > 0))) {
+        window.location.replace('./mobile-en.html');
+      }
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PC-Tool — Open-Source Web Geek Toolkit, Everything in Your Browser</title>
+  <meta name="description" content="PC-Tool.cn is an open-source, front-end-only online toolkit built for professional creators and geeks. No installation required, ready to use, with fully open-source code on GitHub." />
+  <!-- Google Fonts: Inter & SF Pro / Noto -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Noto+Sans+SC:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+  <!-- GSAP & ScrollTrigger -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  
+  <style>
+    :root {
+      --bg: #000000;
+      --bg-surface: #0a0a0c;
+      --bg-card: rgba(20, 20, 24, 0.65);
+      --bg-glass: rgba(18, 18, 22, 0.72);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-specular: rgba(255, 255, 255, 0.16);
+      --border-bright: rgba(255, 255, 255, 0.28);
+      --text-main: #f5f5f7;
+      --text-muted: #86868b;
+      --text-sub: #a1a1a6;
+      --accent: #2997ff;
+      --accent-glow: rgba(41, 151, 255, 0.35);
+      --accent-grad: linear-gradient(135deg, #2997ff 0%, #a259ff 100%);
+      --apple-ease: cubic-bezier(0.16, 1, 0.3, 1);
+      --apple-impact: cubic-bezier(0.2, 0, 0, 1);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Plus Jakarta Sans", "Noto Sans SC", "Helvetica Neue", sans-serif;
+      overflow-x: hidden;
+      line-height: 1.5;
+      selection-background-color: #2997ff;
+      selection-color: #ffffff;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #050505;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #222;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #333;
+    }
+
+    /* Navigation bar - classic Apple frosted glass */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 52px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      background: rgba(0, 0, 0, 0.75);
+      border-bottom: 1px solid var(--border-subtle);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.3s ease;
+    }
+
+    .nav-inner {
+      width: 100%;
+      max-width: 1024px;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      color: var(--text-main);
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: -0.3px;
+    }
+
+    .nav-brand svg {
+      fill: #fff;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 28px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--text-sub);
+      text-decoration: none;
+      font-size: 12px;
+      letter-spacing: -0.1px;
+      transition: color 0.2s ease;
+    }
+
+    .nav-links a:hover {
+      color: var(--text-main);
+    }
+
+    .nav-cta {
+      background: #f5f5f7;
+      color: #000;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 14px;
+      border-radius: 980px;
+      text-decoration: none;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .nav-cta:hover {
+      background: #ffffff;
+      transform: scale(1.04);
+      box-shadow: 0 0 16px rgba(255, 255, 255, 0.2);
+    }
+
+    .nav-switch {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-sub);
+      font-size: 12px;
+      font-weight: 500;
+      text-decoration: none;
+      padding: 5px 14px;
+      border: 1px solid var(--border-specular);
+      border-radius: 980px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      white-space: nowrap;
+    }
+
+    .nav-switch:hover {
+      color: var(--text-main);
+      border-color: var(--border-bright);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .nav-switch svg {
+      width: 14px;
+      height: 14px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* Container baseline */
+    .container {
+      max-width: 1140px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+    }
+
+    /* Text gradients and metallic sheen */
+    .gradient-text {
+      background: linear-gradient(180deg, #ffffff 15%, #a1a1a6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .accent-gradient-text {
+      background: linear-gradient(135deg, #2997ff 0%, #9055ff 50%, #ff5284 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .shimmer-text {
+      background: linear-gradient(90deg, #86868b 0%, #ffffff 50%, #86868b 100%);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: shimmerFlow 6s ease-in-out infinite;
+    }
+
+    @keyframes shimmerFlow {
+      0% { background-position: -100% center; }
+      100% { background-position: 200% center; }
+    }
+
+    /* Apple-style text mask reveal */
+    .reveal-wrap {
+      display: inline-block;
+      overflow: hidden;
+      vertical-align: bottom;
+    }
+
+    .reveal-inner {
+      display: inline-block;
+      will-change: transform, opacity;
+    }
+
+    /* HERO section */
+    .hero-section {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding-top: 130px;
+      text-align: center;
+      position: relative;
+      background: radial-gradient(circle at 50% 18%, rgba(41, 151, 255, 0.15) 0%, rgba(0, 0, 0, 0) 65%);
+    }
+
+    .pill-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 18px;
+      border-radius: 980px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-specular);
+      color: var(--text-sub);
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 26px;
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+      transition: all 0.3s var(--apple-ease);
+    }
+
+    .pill-badge:hover {
+      border-color: rgba(41, 151, 255, 0.4);
+      background: rgba(41, 151, 255, 0.08);
+      color: #fff;
+    }
+
+    .pill-badge .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #2997ff;
+      box-shadow: 0 0 10px #2997ff;
+      animation: pulseDot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .hero-title {
+      font-size: clamp(44px, 7.5vw, 88px);
+      font-weight: 800;
+      letter-spacing: -0.045em;
+      line-height: 1.05;
+      max-width: 960px;
+      margin-bottom: 22px;
+    }
+
+    .hero-subtitle {
+      font-size: clamp(18px, 2.2vw, 24px);
+      color: var(--text-muted);
+      font-weight: 400;
+      max-width: 680px;
+      margin-bottom: 42px;
+      line-height: 1.45;
+      letter-spacing: -0.02em;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 56px;
+      z-index: 10;
+    }
+
+    .btn-primary {
+      background: #0071e3;
+      color: #fff;
+      padding: 13px 30px;
+      border-radius: 980px;
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s var(--apple-ease);
+      box-shadow: 0 4px 24px rgba(0, 113, 227, 0.4);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-primary:hover {
+      background: #0077ed;
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 8px 36px rgba(0, 113, 227, 0.6);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-main);
+      padding: 13px 30px;
+      border-radius: 980px;
+      font-size: 15px;
+      font-weight: 500;
+      text-decoration: none;
+      border: 1px solid var(--border-subtle);
+      transition: all 0.3s var(--apple-ease);
+      backdrop-filter: blur(10px);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: var(--border-bright);
+      transform: translateY(-2px);
+    }
+
+    /* Apple-style product window (Device Mockup) */
+    .hero-mockup-wrapper {
+      width: 100%;
+      max-width: 1040px;
+      margin: 0 auto;
+      perspective: 1200px;
+      padding: 0 16px 80px 16px;
+    }
+
+    .mockup-window {
+      background: #101013;
+      border-radius: 22px;
+      border: 1px solid var(--border-specular);
+      box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.95), 0 0 60px rgba(41, 151, 255, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+      overflow: hidden;
+      transform-origin: center top;
+      transition: border-color 0.4s var(--apple-ease), box-shadow 0.4s var(--apple-ease);
+      position: relative;
+    }
+
+    .mockup-window::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%);
+      pointer-events: none;
+    }
+
+    .window-header {
+      background: rgba(22, 22, 26, 0.95);
+      height: 46px;
+      display: flex;
+      align-items: center;
+      padding: 0 18px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      position: relative;
+    }
+
+    .traffic-lights {
+      display: flex;
+      gap: 8px;
+    }
+
+    .traffic-lights span {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    .traffic-red { background: #ff5f56; }
+    .traffic-yellow { background: #ffbd2e; }
+    .traffic-green { background: #27c93f; }
+
+    .window-title {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .window-body {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      min-height: 480px;
+      background: #0d0d0f;
+    }
+
+    .window-sidebar {
+      border-right: 1px solid rgba(255, 255, 255, 0.05);
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: #111115;
+    }
+
+    .sidebar-category {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #55555c;
+      padding: 8px 12px 4px;
+      font-weight: 700;
+    }
+
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      color: var(--text-sub);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .sidebar-item.active {
+      background: rgba(41, 151, 255, 0.15);
+      color: #2997ff;
+      font-weight: 600;
+    }
+
+    .sidebar-item:hover:not(.active) {
+      background: rgba(255, 255, 255, 0.04);
+      color: #fff;
+    }
+
+    .sidebar-item svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+    }
+
+    .window-content {
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .canvas-stat-bar {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .stat-card-mini {
+      background: #16161a;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 14px;
+      padding: 18px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card-mini::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .stat-num {
+      font-size: 26px;
+      font-weight: 700;
+      color: #fff;
+      font-feature-settings: "tnum";
+    }
+
+    .stat-num span {
+      font-size: 13px;
+      font-weight: 400;
+      color: #27c93f;
+      margin-left: 4px;
+    }
+
+    .canvas-hero-card {
+      background: linear-gradient(180deg, #18181f 0%, #121216 100%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+    }
+
+    .canvas-radar-box {
+      width: 120px;
+      height: 120px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .radar-circle {
+      position: absolute;
+      border-radius: 50%;
+      border: 1px dashed rgba(41, 151, 255, 0.3);
+      width: 100%;
+      height: 100%;
+      animation: spin 12s linear infinite;
+    }
+
+    .radar-core {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #2997ff 0%, #0056b3 100%);
+      box-shadow: 0 0 24px #2997ff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Classic Apple PINNED sequence gallery (Scroll Scrub Storytelling) */
+    .pinned-story-section {
+      position: relative;
+      background: #000;
+      width: 100%;
+    }
+
+    .pinned-container {
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .story-backdrop-blur {
+      position: absolute;
+      width: 700px;
+      height: 700px;
+      background: radial-gradient(circle, rgba(41, 151, 255, 0.16) 0%, rgba(162, 89, 255, 0.08) 40%, rgba(0, 0, 0, 0) 70%);
+      border-radius: 50%;
+      filter: blur(90px);
+      pointer-events: none;
+      transition: all 0.8s var(--apple-ease);
+    }
+
+    .story-timeline-nav {
+      position: absolute;
+      bottom: 40px;
+      display: flex;
+      gap: 12px;
+      z-index: 20;
+    }
+
+    .timeline-dot {
+      width: 32px;
+      height: 4px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.2);
+      transition: all 0.4s var(--apple-ease);
+    }
+
+    .timeline-dot.active {
+      background: #2997ff;
+      width: 48px;
+      box-shadow: 0 0 12px rgba(41, 151, 255, 0.6);
+    }
+
+    .story-slide {
+      position: absolute;
+      width: 100%;
+      max-width: 980px;
+      padding: 0 30px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      opacity: 0;
+      transform: translateY(50px) scale(0.94);
+      filter: blur(10px);
+      pointer-events: none;
+      transition: filter 0.5s ease;
+    }
+
+    .story-slide.active-slide {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: blur(0px);
+      pointer-events: auto;
+    }
+
+    .story-tag {
+      font-size: 13px;
+      font-weight: 700;
+      color: #2997ff;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      margin-bottom: 16px;
+      padding: 4px 14px;
+      background: rgba(41, 151, 255, 0.1);
+      border-radius: 980px;
+      border: 1px solid rgba(41, 151, 255, 0.25);
+    }
+
+    .story-heading {
+      font-size: clamp(38px, 5.8vw, 72px);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1.1;
+      margin-bottom: 22px;
+    }
+
+    .story-desc {
+      font-size: clamp(16px, 1.8vw, 21px);
+      color: var(--text-muted);
+      max-width: 660px;
+      line-height: 1.6;
+    }
+
+    .spec-badge-row {
+      display: flex;
+      gap: 14px;
+      margin-top: 30px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .spec-pill {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      padding: 10px 22px;
+      border-radius: 980px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-sub);
+      backdrop-filter: blur(12px);
+      transition: all 0.3s var(--apple-ease);
+    }
+
+    .spec-pill:hover {
+      border-color: rgba(255, 255, 255, 0.25);
+      color: #fff;
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateY(-2px);
+    }
+
+    /* BENTO GRID (Apple-style matrix section) */
+    .bento-section {
+      padding: 140px 0;
+      background: #000;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 70px;
+    }
+
+    .section-eyebrow {
+      color: var(--accent);
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: clamp(32px, 4.5vw, 56px);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+    }
+
+    .bento-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 24px;
+    }
+
+    .bento-card {
+      background: #0f0f12;
+      border: 1px solid var(--border-subtle);
+      border-radius: 28px;
+      padding: 40px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      opacity: 1;
+      visibility: visible;
+      transition: border-color 0.4s var(--apple-ease), transform 0.4s var(--apple-ease), box-shadow 0.4s var(--apple-ease);
+    }
+
+    .bento-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .bento-card:hover {
+      border-color: rgba(255, 255, 255, 0.28);
+      transform: translateY(-6px);
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7), 0 0 30px rgba(41, 151, 255, 0.08);
+    }
+
+    .bento-card:hover::before {
+      opacity: 1;
+    }
+
+    .bento-glow {
+      position: absolute;
+      width: 320px;
+      height: 320px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(41, 151, 255, 0.14) 0%, transparent 70%);
+      top: -100px;
+      right: -100px;
+      pointer-events: none;
+      transition: transform 0.6s var(--apple-ease);
+    }
+
+    .bento-card:hover .bento-glow {
+      transform: scale(1.15);
+    }
+
+    .bento-card.col-8 {
+      grid-column: span 8;
+    }
+
+    .bento-card.col-4 {
+      grid-column: span 4;
+    }
+
+    .bento-card.col-6 {
+      grid-column: span 6;
+    }
+
+    .bento-card.col-12 {
+      grid-column: span 12;
+    }
+
+    .bento-card-title {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 10px;
+      color: #fff;
+    }
+
+    .bento-card-desc {
+      font-size: 15px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      max-width: 440px;
+    }
+
+    .bento-preview-box {
+      margin-top: 30px;
+      background: #08080a;
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      padding: 24px;
+    }
+
+    /* Keyboard shortcut visualization */
+    .keyboard-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 14px;
+    }
+
+    .key-cap {
+      background: #202024;
+      border: 1px solid #323238;
+      border-bottom: 3px solid #141416;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #e1e1e6;
+      font-family: monospace;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+    }
+
+    /* Numerical performance comparison */
+    .metrics-section {
+      padding: 100px 0 140px;
+      background: #000;
+      position: relative;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 30px;
+      text-align: center;
+    }
+
+    .metric-box {
+      padding: 46px 24px;
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      transition: all 0.3s var(--apple-ease);
+    }
+
+    .metric-box::before {
+      content: '';
+      position: absolute;
+      top: -1px;
+      left: 20%;
+      right: 20%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(41, 151, 255, 0.4), transparent);
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .metric-box:hover::before {
+      opacity: 1;
+    }
+
+    .metric-value {
+      font-size: clamp(52px, 6.5vw, 84px);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      margin-bottom: 14px;
+      background: linear-gradient(180deg, #ffffff 30%, #86868b 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .metric-label {
+      font-size: 16px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+
+    .metric-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+      max-width: 260px;
+    }
+
+    /* CTA section - Apple flagship presentation */
+    .cta-section {
+      padding: 120px 0 160px;
+      position: relative;
+      background: radial-gradient(circle at 50% 50%, rgba(41, 151, 255, 0.18) 0%, rgba(0, 0, 0, 0) 65%);
+      text-align: center;
+    }
+
+    .cta-card {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 60px 30px;
+      border-radius: 36px;
+      background: rgba(18, 18, 22, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(30px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 36px;
+      padding: 1px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.25), transparent 50%, rgba(41, 151, 255, 0.3));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    .cta-title {
+      font-size: clamp(34px, 5vw, 54px);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 18px;
+    }
+
+    .cta-desc {
+      font-size: 17px;
+      color: var(--text-muted);
+      margin-bottom: 36px;
+      max-width: 520px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border-subtle);
+      background: #050507;
+      padding: 40px 0;
+      font-size: 12px;
+      color: #666;
+    }
+
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-links {
+      display: flex;
+      align-self: flex-start;
+      gap: 20px;
+    }
+
+    .footer-links a {
+      color: #777;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover {
+      color: #bbb;
+    }
+
+    .footer-records {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+      margin-top: 20px;
+      color: #666;
+      font-size: 12px;
+    }
+
+    .footer-record-line {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-records a {
+      color: #666;
+      text-decoration: none;
+    }
+
+    .footer-records a:hover {
+      color: #999;
+    }
+
+    .footer-record-primary {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+    }
+
+    .footer-notice {
+      color: #555;
+      font-size: 11px;
+      line-height: 1.6;
+    }
+
+    .footer-record-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .footer-record-item img {
+      width: 16px;
+      height: 16px;
+      object-fit: contain;
+    }
+
+    /* Responsive layout */
+    @media (max-width: 900px) {
+      .bento-card.col-8,
+      .bento-card.col-4,
+      .bento-card.col-6 {
+        grid-column: span 12;
+      }
+      .window-body {
+        grid-template-columns: 1fr;
+      }
+      .window-sidebar {
+        display: none;
+      }
+      .metrics-grid {
+        grid-template-columns: 1fr;
+      }
+      .canvas-stat-bar {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top navigation bar -->
+  <nav id="navbar">
+    <div class="nav-inner">
+      <a href="#" class="nav-brand">
+        <svg width="20" height="20" viewBox="0 0 24 24">
+          <path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6zm2 0v12h12V6H6zm3 3h6v2H9V9zm0 4h6v2H9v-2z"/>
+        </svg>
+        <span>PC-Tool.cn</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="https://en.pc-tool.cn/">Open Toolkit</a></li>
+        <li><a href="https://discord.gg/wjvS3efTj" target="_blank" rel="noopener noreferrer">Feedback</a></li>
+        <li><a href="#features">Design Philosophy</a></li>
+        <li><a href="#specs">Performance</a></li>
+        <li><a href="https://github.com/Team-YM/pc-tool" target="_blank" rel="noopener noreferrer">GitHub Repository</a></li>
+      </ul>
+      <a href="https://en.pc-tool.cn/" class="nav-cta">
+        Use Now
+      </a>
+      <a href="./index-cn.html" class="nav-switch" title="Switch to Mainland China version">
+        <svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M21 3v6h-6"/><path d="M21 9a9 9 0 0 0-9-6"/></svg>
+        Mainland China
+      </a>
+    </div>
+  </nav>
+
+  <!-- HERO section -->
+  <section class="hero-section" id="overview">
+    <div class="pill-badge" id="heroBadge">
+      <span class="dot"></span>
+      <span>100% Open Source · No Installation · Native Web Runtime</span>
+    </div>
+
+    <h1 class="hero-title" id="heroTitle">
+      <span class="reveal-wrap"><span class="reveal-inner gradient-text">In Your Browser</span></span><br>
+      <span class="reveal-wrap"><span class="reveal-inner shimmer-text" style="color: #fff;">The Ultimate Geek Workbench.</span></span>
+    </h1>
+
+    <p class="hero-subtitle" id="heroSubtitle">
+      No installers or downloads required. Built on modern Web technologies and native browser computing, it is ready to use instantly, keeps your data local, and is fully open source.
+    </p>
+
+    <div class="hero-actions" id="heroActions">
+      <a href="https://en.pc-tool.cn/" class="btn-primary">
+        <span>Enter Online Toolkit</span>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      </a>
+      <a href="https://discord.gg/wjvS3efTj" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="display: inline-flex; align-items: center; gap: 8px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.38 5.08L2.1 21.9l5.02-1.25A9.94 9.94 0 0 0 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm0-4H9V7h2v5zm4 4h-2v-2h2v2zm0-4h-2V7h2v5z"/>
+        </svg>
+        <span>Discord Community</span>
+      </a>
+      <a href="https://github.com/Team-YM/pc-tool" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="display: inline-flex; align-items: center; gap: 8px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+        </svg>
+        <span>GitHub Source</span>
+      </a>
+    </div>
+
+    <!-- Apple-style product perspective window (Web App interface mockup) -->
+    <div class="hero-mockup-wrapper" id="mockupWrapper">
+      <div class="mockup-window" id="mockupWindow">
+        <div class="window-header">
+          <div class="traffic-lights">
+            <span class="traffic-red"></span>
+            <span class="traffic-yellow"></span>
+            <span class="traffic-green"></span>
+          </div>
+          <div class="window-title">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="#666"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+            pc-tool.cn — Web Browser Edition
+          </div>
+        </div>
+        <div class="window-body">
+          <aside class="window-sidebar">
+            <div class="sidebar-category">Web Tools</div>
+            <div class="sidebar-item active">
+              <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+              Developer Converters
+            </div>
+            <div class="sidebar-item">
+              <svg viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+              Image / Media Processing
+            </div>
+            <div class="sidebar-item">
+              <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+              Text & Cryptography
+            </div>
+            <div class="sidebar-category" style="margin-top: 14px;">Open Source</div>
+            <div class="sidebar-item">
+              <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+              Open-Source Community
+            </div>
+          </aside>
+          <div class="window-content">
+            <div class="canvas-stat-bar">
+              <div class="stat-card-mini">
+                <div class="stat-label">Runtime Mode</div>
+                <div class="stat-num">Pure Web <span>Front-End Only</span></div>
+              </div>
+              <div class="stat-card-mini">
+                <div class="stat-label">Data Security</div>
+                <div class="stat-num">0 <span>No Server Uploads</span></div>
+              </div>
+              <div class="stat-card-mini">
+                <div class="stat-label">Open-Source Status</div>
+                <div class="stat-num">GitHub <span>Public Source Code</span></div>
+              </div>
+            </div>
+
+            <div class="canvas-hero-card">
+              <div>
+                <div style="font-size: 12px; color: #2997ff; font-weight: 700; margin-bottom: 4px;">WEB CLIENT ENGINE</div>
+                <div style="font-size: 20px; font-weight: 700; color: #fff;">High-Speed Browser Computing, Zero Data Leakage</div>
+                <div style="font-size: 13px; color: #86868b; margin-top: 4px;">All computing logic runs locally in the browser sandbox, with no server-side queue.</div>
+              </div>
+              <div class="canvas-radar-box">
+                <div class="radar-circle"></div>
+                <div class="radar-core">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Apple-style scrolling story gallery (PINNED SCENE) -->
+  <section class="pinned-story-section" id="storySection">
+    <div class="pinned-container" id="pinnedContainer">
+      <div class="story-backdrop-blur"></div>
+
+      <!-- Slide 1: Architectural Innovation -->
+      <div class="story-slide active-slide" id="slide1">
+        <div class="story-tag">Ready to Use · Purely Online</div>
+        <h2 class="story-heading gradient-text">No Installation.<br><span class="shimmer-text">Everything You Need in a Browser.</span></h2>
+        <p class="story-desc">
+          Break free from the download, installation, and update cycle of bloated traditional tools. Open the page and get to work instantly across operating systems.
+        </p>
+        <div class="spec-badge-row">
+          <div class="spec-pill">No-Install Access</div>
+          <div class="spec-pill">Built on Modern Web Standards</div>
+          <div class="spec-pill">Fully Open Source & Free</div>
+        </div>
+      </div>
+
+      <!-- Slide 2: Motion & Tactile Feel -->
+      <div class="story-slide" id="slide2">
+        <div class="story-tag">Security & Privacy</div>
+        <h2 class="story-heading gradient-text">Local-First Computing.<br><span style="color: #2997ff;">Your Data Never Leaves Your Device.</span></h2>
+        <p class="story-desc">
+          File conversion, password generation, and encoding are all handled in browser memory, with no private user data sent to the cloud.
+        </p>
+        <div class="spec-badge-row">
+          <div class="spec-pill">WebAssembly Hardware Acceleration</div>
+          <div class="spec-pill">Zero Server-Side Data Retention</div>
+          <div class="spec-pill">Offline PWA Support</div>
+        </div>
+      </div>
+
+      <!-- Slide 3: Geek-Level Empowerment -->
+      <div class="story-slide" id="slide3">
+        <div class="story-tag">Open-Source Collaboration</div>
+        <h2 class="story-heading gradient-text">Fully Transparent Code.<br><span class="shimmer-text">From the Community, For Geeks.</span></h2>
+        <p class="story-desc">
+          The source code is fully public on GitHub, open to review and collaboration from developers worldwide. Everyone can extend it with their own tools.
+        </p>
+        <div class="spec-badge-row">
+          <div class="spec-pill">Continuous GitHub Integration</div>
+          <div class="spec-pill">Community Modular Extensions</div>
+          <div class="spec-pill">Fully Public Source</div>
+        </div>
+      </div>
+
+      <!-- Apple-style bottom indicator -->
+      <div class="story-timeline-nav">
+        <div class="timeline-dot active" id="dot1"></div>
+        <div class="timeline-dot" id="dot2"></div>
+        <div class="timeline-dot" id="dot3"></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- BENTO GRID feature section -->
+  <section class="bento-section" id="features">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-eyebrow">Complete Control</div>
+        <h2 class="section-title gradient-text">Every Detail, Elevated to Perfection.</h2>
+      </div>
+
+      <div class="bento-grid">
+        <!-- Card 1 (Wide) -->
+        <div class="bento-card col-8">
+          <div class="bento-glow"></div>
+          <div>
+            <div class="bento-card-title">Instant Online Workbench</div>
+            <p class="bento-card-desc">
+              From code formatting and cryptography to media processing, every tool module is integrated in one place. A seamless experience, always ready when you are.
+            </p>
+          </div>
+          <div class="bento-preview-box">
+            <div style="font-size: 13px; color: #86868b; margin-bottom: 8px;">One Click to the Toolkit</div>
+            <div style="display: flex; align-items: center; gap: 12px; margin-top: 10px;">
+              <a href="https://en.pc-tool.cn/" style="background: rgba(41, 151, 255, 0.2); color: #2997ff; border: 1px solid rgba(41, 151, 255, 0.4); padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none;">➔ Open Toolkit</a>
+              <span style="font-size: 13px; color: #86868b;">No login or installation required</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="bento-card col-4">
+          <div>
+            <div class="bento-card-title">Serving Everyone · Built with Passion</div>
+            <p class="bento-card-desc">
+              Not a penny charged, with no forced fees. Guided by a pure geek spirit, we build genuinely free Web tools without strings attached.
+            </p>
+          </div>
+          <div style="margin-top: 26px; text-align: center;">
+            <div style="font-size: 42px; font-weight: 800; color: #2997ff; letter-spacing: -0.02em;">¥0.00</div>
+            <div style="font-size: 13px; color: var(--text-sub); margin-top: 6px; font-weight: 500;">Free Forever · Built with Passion</div>
+          </div>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="bento-card col-4">
+          <div>
+            <div class="bento-card-title">Community & Site Owner Contact</div>
+            <p class="bento-card-desc">
+              Have a feature suggestion or found a bug? Join the community anytime to share your feedback.
+            </p>
+          </div>
+          <div style="margin-top: 18px; padding: 14px 16px; background: #16161b; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); font-size: 13px; display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="color: var(--text-muted);">Discord Community</span>
+              <a href="https://discord.gg/wjvS3efTj" style="color: #2997ff; font-weight: 700; font-family: monospace;">discord.gg/wjvS3efTj</a>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="color: var(--text-muted);">Domain Email</span>
+              <a href="mailto:feedback@pc-tool.cn" style="color: #fff; text-decoration: none; font-size: 12px;">feedback@pc-tool.cn</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 4 (Wide) -->
+        <div class="bento-card col-8">
+          <div class="bento-glow" style="background: radial-gradient(circle, rgba(162, 89, 255, 0.15) 0%, transparent 70%);"></div>
+          <div>
+            <div class="bento-card-title">Ultra-Lightweight · Instant Startup</div>
+            <p class="bento-card-desc">
+              Zero unnecessary dependencies, powered by native browser computing and a pure front-end implementation. Leave behind the memory and resource overhead of traditional desktop software, with startup in milliseconds.
+            </p>
+          </div>
+          <div class="bento-preview-box" style="display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <div style="font-size: 12px; color: #86868b;">Cold Start</div>
+              <div style="font-size: 22px; font-weight: 700; color: #fff;">0.2s</div>
+            </div>
+            <div style="width: 1px; height: 36px; background: rgba(255,255,255,0.1);"></div>
+            <div>
+              <div style="font-size: 12px; color: #86868b;">Local Memory Usage</div>
+              <div style="font-size: 22px; font-weight: 700; color: #27c93f;">&lt; 15MB</div>
+            </div>
+            <div style="width: 1px; height: 36px; background: rgba(255,255,255,0.1);"></div>
+            <div>
+              <div style="font-size: 12px; color: #86868b;">Computation Latency</div>
+              <div style="font-size: 22px; font-weight: 700; color: #2997ff;">0 ms</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Performance metrics (METRICS) -->
+  <section class="metrics-section" id="specs">
+    <div class="container">
+      <div class="metrics-grid">
+        <div class="metric-box">
+          <div class="metric-value counter-num">0 ms</div>
+          <div class="metric-label">Installation Wait Time</div>
+          <div class="metric-sub">Enter the URL to access the toolkit in seconds, with no preliminary downloads.</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-value counter-num">100%</div>
+          <div class="metric-label">GitHub Open-Source Transparency</div>
+          <div class="metric-sub">Core algorithms and front-end code are fully open for review and advancement by geeks worldwide.</div>
+        </div>
+        <div class="metric-box">
+          <div class="metric-value counter-num">0 B</div>
+          <div class="metric-label">Cloud Data Retention</div>
+          <div class="metric-sub">We follow a client-side computing principle: your data is processed only in your browser.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA flagship experience -->
+  <section class="cta-section" id="download">
+    <div class="container">
+      <div class="cta-card">
+        <h2 class="cta-title gradient-text">
+          Experience a Pure Open-Source<br>Modern Web Toolkit.
+        </h2>
+        <p class="cta-desc">
+          Visit pc-tool.cn now or star us on GitHub, and help developers worldwide build a better Web toolkit.
+        </p>
+        <div style="display: flex; justify-content: center; gap: 16px; flex-wrap: wrap;">
+          <a href="https://en.pc-tool.cn/" class="btn-primary" style="padding: 15px 36px; font-size: 16px;">
+            <span>Launch Toolkit Now</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </a>
+          <a href="https://github.com/Team-YM/pc-tool" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="padding: 15px 30px; font-size: 16px; display: inline-flex; align-items: center; gap: 8px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+            </svg>
+            <span>GitHub Repository</span>
+          </a>
+        </div>
+        <div style="font-size: 13px; color: #888; margin-top: 24px; line-height: 1.8;">
+          <div>Serving Everyone · No Charge · Powered by Passion</div>
+          <div style="color: #666; font-size: 12px; margin-top: 4px;">
+            Discord Community: <a href="https://discord.gg/wjvS3efTj" style="color: #2997ff;">https://discord.gg/wjvS3efTj</a> ｜ Owner Email: <a href="mailto:fish@cutefish.online" style="color: #888;">fish@cutefish.online</a> ｜ Domain Email：<a href="mailto:feedback@pc-tool.cn" style="color: #888;">feedback@pc-tool.cn</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container footer-inner">
+      <div>
+        <div style="font-weight: 600; color: #eee; margin-bottom: 6px;">Serving Everyone · No Charge · Powered by Passion</div>
+        <div>© 2026 PC-Tool.cn · Owner Email:  <a href="mailto:fish@cutefish.online" style="color: #aaa; text-decoration: none;">fish@cutefish.online</a> · Domain Email:  <a href="mailto:feedback@pc-tool.cn" style="color: #aaa; text-decoration: none;">feedback@pc-tool.cn</a></div>
+        <div class="footer-records">
+          <div class="footer-record-line">
+            <a href="http://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">ICP Filing No. 2026010334</a>
+            <span class="footer-record-item">
+              <img src="beianlogo.png" alt="">
+              <span>Public Security Filing No. 22240102000516</span>
+            </span>
+          </div>
+          <span class="footer-notice">All PC-Tool tools, except third-party tools, are open source and free. Please do not misuse them. Thank you for your support!</span>
+        </div>
+      </div>
+      <div class="footer-links">
+        <a href="https://en.pc-tool.cn/">Online Tools</a>
+        <a href="https://github.com/Team-YM/pc-tool" target="_blank" rel="noopener noreferrer">GitHub Repository</a>
+        <a href="https://discord.gg/wjvS3efTj" target="_blank" rel="noopener noreferrer" style="color: #2997ff;">Discord Community</a>
+        <a href="https://discord.gg/wjvS3efTj" target="_blank" rel="noopener noreferrer">Feedback</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- GSAP animation orchestration -->
+  <script>
+    // Register the GSAP ScrollTrigger plugin
+    gsap.registerPlugin(ScrollTrigger);
+
+    window.addEventListener("DOMContentLoaded", () => {
+      // Apple core easing
+      const appleEase = "cubic-bezier(0.16, 1, 0.3, 1)";
+      const appleImpact = "cubic-bezier(0.2, 0, 0, 1)";
+
+      // 1. HERO entrance animation (Apple Stagger & Mask Reveal)
+      const heroTl = gsap.timeline({ defaults: { ease: appleEase } });
+
+      heroTl
+        .from("#heroBadge", { y: -20, opacity: 0, duration: 0.8, ease: appleEase })
+        .from(".reveal-inner", {
+          y: "115%",
+          opacity: 0,
+          stagger: 0.12,
+          duration: 1.2,
+          ease: appleEase
+        }, "-=0.5")
+        .from("#heroSubtitle", { y: 24, opacity: 0, duration: 1 }, "-=0.8")
+        .from("#heroActions", { y: 20, opacity: 0, duration: 0.9 }, "-=0.7")
+        .from("#mockupWindow", {
+          scale: 0.9,
+          y: 70,
+          opacity: 0,
+          duration: 1.4,
+          ease: appleEase
+        }, "-=0.8");
+
+      // 2. HERO product perspective window expansion on scroll (Scrub 3D depth progression)
+      gsap.to("#mockupWindow", {
+        scrollTrigger: {
+          trigger: "#overview",
+          start: "top top",
+          end: "bottom center",
+          scrub: 1.4
+        },
+        rotateX: 4,
+        scale: 1.04,
+        y: -30,
+        boxShadow: "0 60px 140px -20px rgba(0, 0, 0, 0.98), 0 0 90px rgba(41, 151, 255, 0.25)"
+      });
+
+      // Fine 3D hover and reflection response as the pointer moves over the window (Apple Spatial Tilt)
+      const mockupWrapper = document.getElementById("mockupWrapper");
+      const mockupWindow = document.getElementById("mockupWindow");
+      if (mockupWrapper && mockupWindow) {
+        mockupWrapper.addEventListener("mousemove", (e) => {
+          const rect = mockupWrapper.getBoundingClientRect();
+          const x = (e.clientX - rect.left) / rect.width - 0.5;
+          const y = (e.clientY - rect.top) / rect.height - 0.5;
+          gsap.to(mockupWindow, {
+            rotateY: x * 6,
+            rotateX: -y * 6,
+            duration: 0.6,
+            ease: "power2.out"
+          });
+        });
+        mockupWrapper.addEventListener("mouseleave", () => {
+          gsap.to(mockupWindow, {
+            rotateY: 0,
+            rotateX: 0,
+            duration: 0.8,
+            ease: appleEase
+          });
+        });
+      }
+
+      // 3. Classic Apple PINNED sequence animation (three-stage story transition + dynamic depth of field)
+      const storyTimeline = gsap.timeline({
+        scrollTrigger: {
+          trigger: "#storySection",
+          start: "top top",
+          end: "+=2800",
+          pin: true,
+          scrub: 1.2
+        }
+      });
+
+      // Slide 1 exits -> Slide 2 enters
+      storyTimeline
+        .to("#slide1", { opacity: 0, y: -50, scale: 0.94, filter: "blur(8px)", duration: 1 })
+        .call(() => {
+          document.getElementById("dot1")?.classList.remove("active");
+          document.getElementById("dot2")?.classList.add("active");
+          document.getElementById("dot3")?.classList.remove("active");
+        })
+        .to("#slide2", { opacity: 1, y: 0, scale: 1, filter: "blur(0px)", duration: 1 }, "-=0.4")
+        // Slide 2 exits -> Slide 3 enters
+        .to("#slide2", { opacity: 0, y: -50, scale: 0.94, filter: "blur(8px)", duration: 1 }, "+=0.8")
+        .call(() => {
+          document.getElementById("dot1")?.classList.remove("active");
+          document.getElementById("dot2")?.classList.remove("active");
+          document.getElementById("dot3")?.classList.add("active");
+        })
+        .to("#slide3", { opacity: 1, y: 0, scale: 1, filter: "blur(0px)", duration: 1 }, "-=0.4")
+        .to({}, { duration: 0.8 }); // Hold at the endpoint
+
+      // 4. Elegant Bento Grid card entrance (precisely triggered)
+      gsap.from(".bento-card", {
+        scrollTrigger: {
+          trigger: "#features",
+          start: "top 80%",
+          toggleActions: "play none none none"
+        },
+        opacity: 0,
+        y: 40,
+        stagger: 0.12,
+        duration: 0.9,
+        ease: appleEase,
+        clearProps: "transform,opacity"
+      });
+
+      // Track the glow intelligently as the pointer moves over Bento cards
+      document.querySelectorAll(".bento-card").forEach(card => {
+        card.addEventListener("mousemove", (e) => {
+          const rect = card.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          const glow = card.querySelector(".bento-glow");
+          if (glow) {
+            gsap.to(glow, {
+              x: x - rect.width / 2,
+              y: y - rect.height / 2,
+              duration: 0.5,
+              ease: "power2.out"
+            });
+          }
+        });
+      });
+
+      // 5. Performance data entrance on scroll
+      gsap.from(".metric-box", {
+        scrollTrigger: {
+          trigger: "#specs",
+          start: "top 85%",
+          toggleActions: "play none none none"
+        },
+        y: 40,
+        opacity: 0,
+        stagger: 0.15,
+        duration: 0.9,
+        ease: appleEase,
+        clearProps: "transform,opacity"
+      });
+
+      // 6. Dynamic navigation bar background
+      ScrollTrigger.create({
+        start: "top -80",
+        end: 99999,
+        toggleClass: { className: "nav-scrolled", targets: "#navbar" }
+      });
+    });
+  </script>
+</body>
+</html>

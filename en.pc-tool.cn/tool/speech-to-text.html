@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speech to Text ASR</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="Free online Speech to Text (ASR) tool with live microphone dictation, local audio playback transcription, one-click copy and text export.">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="Speech to Text ASR | PC-TOOL">
+    <meta property="og:description" content="Free online tools — speech to text, text to speech, audio speed and pitch conversion and more — every feature built for productivity, completely free, made for everyone!">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/speech-to-text.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="en_US">
+    <style>
+        .container {
+            max-width: 720px;
+        }
+
+        .tab-nav {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 18px;
+            justify-content: center;
+        }
+
+        .tab-item {
+            padding: 8px 18px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.04);
+            color: #a1a1aa;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab-item.active {
+            background: rgba(129, 140, 248, 0.2);
+            border-color: rgba(129, 140, 248, 0.6);
+            color: #c4b5fd;
+            font-weight: bold;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .mic-box {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 24px 20px;
+            text-align: center;
+            margin-bottom: 18px;
+        }
+
+        .mic-btn {
+            width: 76px;
+            height: 76px;
+            border-radius: 50%;
+            border: none;
+            background: #4f46e5;
+            color: #fff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4);
+            margin-bottom: 12px;
+        }
+
+        .mic-btn:hover {
+            transform: scale(1.06);
+            background: #4338ca;
+        }
+
+        .mic-btn.recording {
+            background: #ef4444;
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            animation: pulse-ring 1.5s infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 16px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        .mic-tip {
+            font-size: 13px;
+            color: #a1a1aa;
+        }
+
+        .lang-select-box {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin: 12px 0 16px;
+            color: #a1a1aa;
+            font-size: 14px;
+        }
+
+        .lang-select-box select {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #e4e4e7;
+            padding: 6px 12px;
+            border-radius: 6px;
+            outline: none;
+        }
+
+        #audioInput { display: none; }
+
+        .asr-result-area {
+            width: 100%;
+            height: 180px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            padding: 12px 14px;
+            color: #e4e4e7;
+            font-size: 15px;
+            line-height: 1.6;
+            resize: vertical;
+            outline: none;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+
+        .asr-result-area:focus {
+            border-color: rgba(129, 140, 248, 0.5);
+        }
+
+        .action-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .stat-text {
+            font-size: 12px;
+            color: #71717a;
+        }
+
+        .tool-btns {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.06);
+            color: #e4e4e7;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-sm:hover {
+            background: rgba(255, 255, 255, 0.14);
+            color: #fff;
+        }
+
+        .interim-span {
+            color: #a1a1aa;
+            font-style: italic;
+        }
+
+        .browser-alert {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 13px;
+            color: #fcd34d;
+            margin-bottom: 15px;
+            display: none;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+<canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <a href="../index.html" class="back-link">← Back to Tools</a>
+
+    <div class="container">
+        <h1>Speech to Text ASR</h1>
+        <p>Live microphone dictation and local audio transcription, accurate and fast with no privacy leaks</p>
+
+        <div class="browser-alert" id="browserAlert">
+            ⚠️ Note: speech recognition relies on the browser built-in Web Speech engine. Chrome, Edge or Safari is recommended for the best experience.
+        </div>
+
+        <div class="tab-nav">
+            <button class="tab-item active" data-tab="micTab">🎙️ Live microphone recognition</button>
+            <button class="tab-item" data-tab="fileTab">📁 Audio file recognition</button>
+        </div>
+
+        <div class="lang-select-box">
+            <label for="langSelect">Recognition language:</label>
+            <select id="langSelect">
+                <option value="en" selected>Mandarin (Mainland China)</option>
+                <option value="zh-TW">Mandarin / Traditional Chinese (Taiwan)</option>
+                <option value="zh-HK">Cantonese (Hong Kong)</option>
+                <option value="en-US">English (US)</option>
+                <option value="en-GB">English (UK)</option>
+                <option value="ja-JP">Japanese (日本語)</option>
+                <option value="ko-KR">Korean (한국어)</option>
+            </select>
+        </div>
+
+        <!-- Microphone mode -->
+        <div class="tab-content active" id="micTab">
+            <div class="mic-box">
+                <button class="mic-btn" id="micBtn" title="Click to start/stop dictation">
+                    <svg id="micIcon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>
+                </button>
+                <div class="mic-tip" id="micTip">Click the microphone to start recording and recognition</div>
+            </div>
+        </div>
+
+        <!-- File mode -->
+        <div class="tab-content" id="fileTab">
+            <div class="upload-area" id="uploadArea">
+                <p>Click or drag to upload an audio file (supports recognition during playback)</p>
+                <input type="file" id="audioInput" accept="audio/*">
+            </div>
+            <div id="fileInfoBox" style="display:none; margin: 12px 0; text-align: center;">
+                <p id="fileDesc" style="color: #e4e4e7; font-size: 14px; margin-bottom: 6px;"></p>
+                <audio id="fileAudio" controls style="width: 100%;"></audio>
+                <div style="font-size: 12px; color: #71717a; margin-top: 6px;">
+                    Tip: enable microphone recognition while playing audio to transcribe the playback in real time
+                </div>
+            </div>
+        </div>
+
+        <!-- Recognition output -->
+        <textarea id="resultTextarea" class="asr-result-area" placeholder="Recognized text will appear here in real time..."></textarea>
+
+        <div class="action-row">
+            <span class="stat-text">Characters: <span id="charCount" style="color:#e4e4e7;">0</span> | Words: <span id="wordCount" style="color:#e4e4e7;">0</span></span>
+            <div class="tool-btns">
+                <button class="btn-sm" id="copyBtn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    Copy
+                </button>
+                <button class="btn-sm" id="downloadTxtBtn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Export TXT
+                </button>
+                <button class="btn-sm" id="clearBtn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    Clear
+                </button>
+            </div>
+        </div>
+
+        <div class="contact-tip">For feature requests or feedback, join our Discord: <a href="https://discord.gg/wjvS3efTj" target="_blank" rel="noopener noreferrer">https://discord.gg/wjvS3efTj</a></div>
+
+    <script src="common.js"></script>
+    <script>
+        const tabItems = document.querySelectorAll('.tab-item');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const langSelect = document.getElementById('langSelect');
+        const micBtn = document.getElementById('micBtn');
+        const micTip = document.getElementById('micTip');
+        const resultTextarea = document.getElementById('resultTextarea');
+        const charCount = document.getElementById('charCount');
+        const wordCount = document.getElementById('wordCount');
+        const copyBtn = document.getElementById('copyBtn');
+        const downloadTxtBtn = document.getElementById('downloadTxtBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const uploadArea = document.getElementById('uploadArea');
+        const audioInput = document.getElementById('audioInput');
+        const fileInfoBox = document.getElementById('fileInfoBox');
+        const fileDesc = document.getElementById('fileDesc');
+        const fileAudio = document.getElementById('fileAudio');
+        const browserAlert = document.getElementById('browserAlert');
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition = null;
+        let isRecording = false;
+        let manualStop = false;
+        let finalTranscript = '';
+
+        if (!SpeechRecognition) {
+            browserAlert.style.display = 'block';
+            browserAlert.textContent = '⚠️ This browser does not support the native Web Speech Recognition API. Chrome or Edge is recommended.';
+            micBtn.disabled = true;
+            micBtn.style.opacity = '0.5';
+            micTip.textContent = 'This browser does not support speech recognition';
+        }
+
+        // Tab switching
+        tabItems.forEach(tab => {
+            tab.onclick = () => {
+                tabItems.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab).classList.add('active');
+            };
+        });
+
+        // Initialize recognizer
+        function initRecognition() {
+            if (!SpeechRecognition) return;
+
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = langSelect.value;
+
+            recognition.onstart = () => {
+                isRecording = true;
+                micBtn.classList.add('recording');
+                micTip.textContent = 'Listening for speech... (click to stop)';
+            };
+
+            recognition.onresult = (event) => {
+                let interimTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript;
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+                resultTextarea.value = finalTranscript + (interimTranscript ? ` [${interimTranscript}]` : '');
+                updateStats();
+            };
+
+            recognition.onerror = (event) => {
+                console.warn('ASR error:', event.error);
+                if (event.error === 'not-allowed') {
+                    showToast('Microphone permission denied. Please allow microphone access in the browser address bar.');
+                    stopListening();
+                } else if (event.error === 'no-speech') {
+                    // Temporarily mute without interrupting
+                } else {
+                    micTip.textContent = `Recognition error: ${event.error}`;
+                }
+            };
+
+            recognition.onend = () => {
+                if (isRecording && !manualStop) {
+                    // Automatically reconnect to keep listening
+                    try {
+                        recognition.start();
+                    } catch (e) {
+                        stopListening();
+                    }
+                } else {
+                    stopListening();
+                }
+            };
+        }
+
+        function startListening() {
+            if (!SpeechRecognition) {
+                showToast('This browser does not support SpeechRecognition API');
+                return;
+            }
+            manualStop = false;
+            finalTranscript = resultTextarea.value.replace(/\s*\[.*?\]$/, ''); // Clear temporary interim text
+            initRecognition();
+            try {
+                recognition.start();
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function stopListening() {
+            isRecording = false;
+            manualStop = true;
+            micBtn.classList.remove('recording');
+            micTip.textContent = 'Recognition stopped. Click the microphone to continue';
+            if (recognition) {
+                try { recognition.stop(); } catch (e) {}
+            }
+            // Clear interim text markers
+            resultTextarea.value = resultTextarea.value.replace(/\s*\[.*?\]$/, '');
+            updateStats();
+        }
+
+        micBtn.onclick = () => {
+            if (isRecording) {
+                stopListening();
+            } else {
+                startListening();
+            }
+        };
+
+        langSelect.onchange = () => {
+            if (isRecording) {
+                stopListening();
+                startListening();
+            }
+        };
+
+        // Update statistics
+        function updateStats() {
+            const txt = resultTextarea.value.trim();
+            charCount.textContent = txt.length;
+            const words = txt ? txt.split(/\s+/).filter(Boolean) : [];
+            wordCount.textContent = words.length;
+        }
+
+        resultTextarea.addEventListener('input', () => {
+            finalTranscript = resultTextarea.value;
+            updateStats();
+        });
+
+        // Copy
+        copyBtn.onclick = async () => {
+            const val = resultTextarea.value.trim();
+            if (!val) {
+                showToast('No recognition result to copy');
+                return;
+            }
+            try {
+                await navigator.clipboard.writeText(val);
+                showToast('Copied to clipboard!');
+            } catch (e) {
+                resultTextarea.select();
+                document.execCommand('copy');
+                showToast('Copied to clipboard!');
+            }
+        };
+
+        // Export TXT
+        downloadTxtBtn.onclick = () => {
+            const val = resultTextarea.value.trim();
+            if (!val) {
+                showToast('No content to export');
+                return;
+            }
+            const blob = new Blob([val], { type: 'text/plain;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `speech-recognition-${Date.now()}.txt`;
+            a.click();
+            URL.revokeObjectURL(a.href);
+        };
+
+        // Clear
+        clearBtn.onclick = () => {
+            resultTextarea.value = '';
+            finalTranscript = '';
+            updateStats();
+        };
+
+        // Audio file selection
+        uploadArea.onclick = () => audioInput.click();
+        setupDragDrop(uploadArea, (files) => {
+            if (files[0]) handleAudioFile(files[0]);
+        });
+        audioInput.onchange = (e) => {
+            if (e.target.files[0]) handleAudioFile(e.target.files[0]);
+        };
+
+        function handleAudioFile(file) {
+            fileDesc.textContent = `File: ${file.name} (${formatSize(file.size)})`;
+            if (fileAudio.src) URL.revokeObjectURL(fileAudio.src);
+            fileAudio.src = URL.createObjectURL(file);
+            fileInfoBox.style.display = 'block';
+            showToast('Audio ready. Start microphone dictation during playback to transcribe it.');
+        }
+    </script>
+</body>
+</html>
+
+
+

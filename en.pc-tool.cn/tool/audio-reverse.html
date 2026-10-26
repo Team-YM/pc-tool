@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Reverser</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="Free online audio reverser that plays your audio backwards. Browser-based processing, safe and free.">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="Audio Reverser | PC-TOOL">
+    <meta property="og:description" content="Free online tool collection — audio reversing, image conversion, video compression, audio format conversion… every feature built for productivity, completely free, made for everyone!">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/audio-reverse.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="en_US">
+    <script src="https://unpkg.com/lamejs@1.2.1/lame.min.js"></script>
+    <style>
+        #audioInput { display: none; }
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 3px;
+            margin: 15px 0;
+            display: none;
+            overflow: hidden;
+        }
+        .progress-bar .fill {
+            height: 100%;
+            background: linear-gradient(90deg, #818cf8, #34d399);
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.2s;
+        }
+        .status-text {
+            color: #a1a1aa;
+            font-size: 14px;
+            text-align: center;
+            margin-top: 5px;
+            display: none;
+        }
+        .options-box {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin: 12px 0;
+            flex-wrap: wrap;
+        }
+        .options-box label {
+            color: #a1a1aa;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .options-box select {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #e4e4e7;
+            padding: 4px 8px;
+            border-radius: 6px;
+            outline: none;
+        }
+        audio {
+            width: 100%;
+            margin: 10px 0;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <a href="../index.html" class="back-link">← Back to Tools</a>
+
+    <div class="container">
+        <h1>Audio Reverser</h1>
+        <p>Play your audio backwards</p>
+
+        <div class="upload-area" id="uploadArea">
+            <p>Click or drag to upload an audio file</p>
+            <input type="file" id="audioInput" accept="audio/*">
+        </div>
+
+        <div id="audioInfo" style="text-align:center; margin:10px 0; display:none;">
+            <p id="fileName" style="color:#e4e4e7;"></p>
+            <p id="durationInfo" style="color:#71717a; font-size:13px;"></p>
+        </div>
+
+        <div class="options-box" id="optionsBox" style="display:none;">
+            <label>Export format:
+                <select id="outputFormat">
+                    <option value="wav" selected>WAV format (lossless / recommended)</option>
+                    <option value="mp3">MP3 format (smaller size)</option>
+                </select>
+            </label>
+        </div>
+
+        <audio id="previewaudio" controls></audio>
+
+        <div class="progress-bar" id="progressBar">
+            <div class="fill" id="progressFill"></div>
+        </div>
+        <div class="status-text" id="statusText">Ready…</div>
+
+        <div style="text-align:center;">
+            <button class="convert-btn" id="reverseBtn">Start Reversing</button>
+            <button class="download-btn" id="downloadBtn">Download Reversed Audio</button>
+        </div>
+
+        <div class="result-box" id="resultBox">
+            <h3>Reversing Complete</h3>
+            <div class="size-info" id="sizeInfo"></div>
+        </div>
+
+        <div class="contact-tip">For feature requests or feedback, join our Discord: <a href="https://discord.gg/wjvS3efTj" target="_blank" rel="noopener noreferrer">https://discord.gg/wjvS3efTj</a></div>
+
+    <script src="common.js"></script>
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const audioInput = document.getElementById('audioInput');
+        const reverseBtn = document.getElementById('reverseBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const resultBox = document.getElementById('resultBox');
+        const sizeInfo = document.getElementById('sizeInfo');
+        const audioInfo = document.getElementById('audioInfo');
+        const fileName = document.getElementById('fileName');
+        const durationInfo = document.getElementById('durationInfo');
+        const previewaudio = document.getElementById('previewaudio');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        const statusText = document.getElementById('statusText');
+        const optionsBox = document.getElementById('optionsBox');
+        const outputFormat = document.getElementById('outputFormat');
+
+        let audioFile = null;
+        let reversedUrl = null;
+
+        uploadArea.onclick = () => audioInput.click();
+        setupDragDrop(uploadArea, (files) => {
+            const f = files[0];
+            if (f && (f.type.startsWith('audio/') || /\.(mp3|wav|ogg|m4a|flac|aac)$/i.test(f.name))) {
+                handleaudio(f);
+            } else {
+                showToast('Please upload an audio file');
+            }
+        });
+
+        audioInput.onchange = (e) => {
+            if (e.target.files[0]) handleaudio(e.target.files[0]);
+        };
+
+        function handleaudio(f) {
+            audioFile = f;
+            fileName.textContent = 'File name：' + f.name + ' (' + formatSize(f.size) + ')';
+            
+            if (previewaudio.src) URL.revokeObjectURL(previewaudio.src);
+            if (reversedUrl) {
+                URL.revokeObjectURL(reversedUrl);
+                reversedUrl = null;
+            }
+
+            const url = URL.createObjectURL(f);
+            previewaudio.src = url;
+            previewaudio.style.display = 'block';
+            previewaudio.onloadedmetadata = () => {
+                const d = previewaudio.duration;
+                const mins = Math.floor(d / 60);
+                const secs = Math.floor(d % 60);
+                durationInfo.textContent = 'audioDuration：' + mins + 'm ' + secs + 's (total ' + d.toFixed(1) + 's)';
+                optionsBox.style.display = 'flex';
+            };
+            audioInfo.style.display = 'block';
+            resultBox.style.display = 'none';
+            downloadBtn.style.display = 'none';
+        }
+
+        reverseBtn.onclick = async () => {
+            if (!audioFile) { showToast('Please upload audio first'); return; }
+
+            reverseBtn.disabled = true;
+            reverseBtn.textContent = 'processing...';
+            progressBar.style.display = 'block';
+            statusText.style.display = 'block';
+            progressFill.style.width = '0%';
+            resultBox.style.display = 'none';
+            downloadBtn.style.display = 'none';
+
+            try {
+                statusText.textContent = 'Reading and decoding audio…';
+                progressFill.style.width = '20%';
+
+                const arrayBuffer = await audioFile.arrayBuffer();
+                const actx = new (window.AudioContext || window.webkitAudioContext)();
+                const decodedBuffer = await actx.decodeAudioData(arrayBuffer);
+
+                statusText.textContent = 'Reversing audio data…';
+                progressFill.style.width = '50%';
+
+                // Create a same-length reversed buffer
+                const reversedBuffer = actx.createBuffer(
+                    decodedBuffer.numberOfChannels,
+                    decodedBuffer.length,
+                    decodedBuffer.sampleRate
+                );
+
+                for (let ch = 0; ch < decodedBuffer.numberOfChannels; ch++) {
+                    const srcData = decodedBuffer.getChannelData(ch);
+                    const destData = reversedBuffer.getChannelData(ch);
+                    for (let i = 0, j = srcData.length - 1; i < srcData.length; i++, j--) {
+                        destData[i] = srcData[j];
+                    }
+                }
+                actx.close();
+
+                statusText.textContent = 'Encoding and exporting…';
+                progressFill.style.width = '75%';
+
+                let blob;
+                const fmt = outputFormat.value;
+                if (fmt === 'wav') {
+                    blob = audioBufferToWavBlob(reversedBuffer);
+                } else {
+                    blob = encodeMP3(reversedBuffer);
+                }
+
+                progressFill.style.width = '100%';
+                statusText.textContent = 'Reversing complete!';
+
+                if (reversedUrl) URL.revokeObjectURL(reversedUrl);
+                reversedUrl = URL.createObjectURL(blob);
+
+                previewaudio.src = reversedUrl;
+                sizeInfo.innerHTML = 'Original audio：' + formatSize(audioFile.size) + '<br>Reversed audio：<span class="highlight">' + formatSize(blob.size) + '</span><br>Duration：<span class="highlight">' + reversedBuffer.duration.toFixed(1) + 's</span>';
+                resultBox.style.display = 'block';
+                downloadBtn.style.display = 'inline-block';
+                showToast('Reversing completed successfully!');
+
+            } catch (err) {
+                console.error(err);
+                statusText.textContent = 'Reversing failed: ' + (err.message || 'Unknown error');
+                showToast('processing Failed：' + err.message);
+            } finally {
+                reverseBtn.disabled = false;
+                reverseBtn.textContent = 'Start Reversing';
+            }
+        };
+
+        function audioBufferToWavBlob(buffer) {
+            const numChannels = buffer.numberOfChannels;
+            const length = buffer.length;
+            const sampleRate = buffer.sampleRate;
+            const bitsPerSample = 16;
+            const byteRate = sampleRate * numChannels * bitsPerSample / 8;
+            const blockAlign = numChannels * bitsPerSample / 8;
+            const dataSize = length * numChannels * bitsPerSample / 8;
+            const headerSize = 44;
+            const totalSize = headerSize + dataSize;
+            const arrayBuffer = new ArrayBuffer(totalSize);
+            const view = new DataView(arrayBuffer);
+
+            function writeString(offset, str) {
+                for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+            }
+
+            writeString(0, 'RIFF');
+            view.setUint32(4, totalSize - 8, true);
+            writeString(8, 'WAVE');
+            writeString(12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, byteRate, true);
+            view.setUint16(32, blockAlign, true);
+            view.setUint16(34, bitsPerSample, true);
+            writeString(36, 'data');
+            view.setUint32(40, dataSize, true);
+
+            let offset = 44;
+            for (let i = 0; i < length; i++) {
+                for (let ch = 0; ch < numChannels; ch++) {
+                    const sample = Math.max(-1, Math.min(1, buffer.getChannelData(ch)[i]));
+                    view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+                    offset += 2;
+                }
+            }
+            return new Blob([arrayBuffer], { type: 'audio/wav' });
+        }
+
+        function encodeMP3(buffer) {
+            const numChannels = buffer.numberOfChannels;
+            const sampleRate = buffer.sampleRate;
+            const length = buffer.length;
+
+            const mp3encoder = new lamejs.Mp3Encoder(numChannels, sampleRate, 128);
+            const mp3Data = [];
+            const blockSize = 1152;
+
+            const left = new Int16Array(length);
+            for (let i = 0; i < length; i++) {
+                const sample = Math.max(-1, Math.min(1, buffer.getChannelData(0)[i]));
+                left[i] = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+            }
+
+            if (numChannels === 1) {
+                for (let i = 0; i < length; i += blockSize) {
+                    const chunk = left.subarray(i, i + blockSize);
+                    const mp3buf = mp3encoder.encodeBuffer(chunk);
+                    if (mp3buf.length > 0) mp3Data.push(mp3buf);
+                }
+            } else {
+                const right = new Int16Array(length);
+                for (let i = 0; i < length; i++) {
+                    const sample = Math.max(-1, Math.min(1, buffer.getChannelData(1)[i]));
+                    right[i] = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+                }
+                for (let i = 0; i < length; i += blockSize) {
+                    const chunkL = left.subarray(i, i + blockSize);
+                    const chunkR = right.subarray(i, i + blockSize);
+                    const mp3buf = mp3encoder.encodeBuffer(chunkL, chunkR);
+                    if (mp3buf.length > 0) mp3Data.push(mp3buf);
+                }
+            }
+
+            const finalBuf = mp3encoder.flush();
+            if (finalBuf.length > 0) mp3Data.push(finalBuf);
+
+            return new Blob(mp3Data, { type: 'audio/mp3' });
+        }
+
+        downloadBtn.onclick = () => {
+            if (!reversedUrl) return;
+            const a = document.createElement('a');
+            a.href = reversedUrl;
+            const ext = outputFormat.value;
+            a.download = (audioFile?.name || 'audio').replace(/\.\w+$/, '') + '-reversed.' + ext;
+            a.click();
+        };
+    </script>
+</body>
+</html>

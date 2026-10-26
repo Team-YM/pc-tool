@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <script>
+    (function() {
+      var ua = navigator.userAgent || navigator.vendor || window.opera;
+      var isMobile = /Mobi|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|webOS/i.test(ua);
+      var isTablet = /iPad|Android(?!.*Mobile)|Tablet|PlayBook|Silk/i.test(ua) || 
+                     ((/Macintosh/i.test(ua) || navigator.platform === 'MacIntel') && navigator.maxTouchPoints > 1);
+      var isSmallScreen = window.innerWidth <= 768;
+      // 只有在明确不是移动端、不是iPad等触控平板、且不是小屏触控设备时，才跳回PC版
+      if (!isMobile && !isTablet && !isSmallScreen) {
+        window.location.replace('./index-cn.html');
+      }
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>PC-Tool — 移动端极客工作台</title>
+  <meta name="description" content="PC-Tool.cn 专为移动端打造的极速流体体验，免安装、纯前端运行、完全开源的现代 Web 工具箱。" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="favicon.png" />
+
+  <!-- Google Fonts: Inter & SF Pro / Noto -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #000000;
+      --bg-surface: #0e0e11;
+      --bg-card: rgba(22, 22, 27, 0.75);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-bright: rgba(255, 255, 255, 0.18);
+      --text-main: #f5f5f7;
+      --text-muted: #86868b;
+      --text-sub: #a1a1a6;
+      --accent: #2997ff;
+      --apple-ease: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Plus Jakarta Sans", "Noto Sans SC", sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding-bottom: calc(40px + env(safe-area-inset-bottom));
+      line-height: 1.45;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* 顶部导航 (极简 iOS 磨砂顶栏) */
+    .mobile-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: 54px;
+      padding: 0 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: #fff;
+    }
+
+    .brand img {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+    }
+
+    .brand-name {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .header-links {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .header-link {
+      color: var(--text-muted);
+      font-size: 13px;
+      text-decoration: none;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 5px 12px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 980px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .region-switch {
+      color: #fff;
+      border-color: rgba(41, 151, 255, 0.35);
+      background: rgba(41, 151, 255, 0.12);
+    }
+
+    .region-switch-row {
+      margin-top: 10px;
+    }
+
+    .region-switch-button {
+      width: 100%;
+      min-height: 40px;
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      color: #9ecbff;
+      background: rgba(41, 151, 255, 0.08);
+      border: 1px solid rgba(41, 151, 255, 0.25);
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .region-switch-button:active {
+      background: rgba(41, 151, 255, 0.16);
+    }
+
+    /* 主视口 Hero 区域 */
+    .mobile-hero {
+      padding: 36px 20px 24px 20px;
+      text-align: left;
+      position: relative;
+    }
+
+    .mobile-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      background: rgba(41, 151, 255, 0.1);
+      border: 1px solid rgba(41, 151, 255, 0.25);
+      border-radius: 980px;
+      font-size: 12px;
+      color: #2997ff;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      background: #2997ff;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #2997ff;
+    }
+
+    .hero-title {
+      font-size: 34px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1.15;
+      margin-bottom: 12px;
+      background: linear-gradient(180deg, #ffffff 30%, #a1a1a6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-desc {
+      font-size: 15px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-main {
+      flex: 1;
+      height: 48px;
+      background: #0071e3;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border-radius: 14px;
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      box-shadow: 0 4px 20px rgba(0, 113, 227, 0.4);
+      transition: transform 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .btn-main:active {
+      transform: scale(0.97);
+    }
+
+    .btn-group-link {
+      height: 48px;
+      padding: 0 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      color: #fff;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      transition: transform 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .btn-group-link:active {
+      transform: scale(0.95);
+    }
+
+    .btn-gh {
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      color: #fff;
+      text-decoration: none;
+      transition: transform 0.15s ease;
+      flex-shrink: 0;
+    }
+
+    .btn-gh:active {
+      transform: scale(0.95);
+    }
+
+    /* 快捷功能卡片列表 (极佳触控面积与物理动效) */
+    .section-header {
+      padding: 24px 20px 14px 20px;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .section-more {
+      font-size: 13px;
+      color: #2997ff;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    /* 宣传宣传优势卡片 (流体质感展示) */
+    .promo-section {
+      padding: 0 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .promo-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 20px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s var(--apple-ease), border-color 0.2s ease;
+    }
+
+    .promo-card:active {
+      transform: scale(0.98);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .promo-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .promo-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 6px;
+      letter-spacing: -0.01em;
+    }
+
+    .promo-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.55;
+    }
+
+    .promo-card::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      pointer-events: none;
+      filter: blur(40px);
+      opacity: 0.15;
+    }
+
+    .promo-blue::after {
+      background: #2997ff;
+    }
+
+    .promo-purple::after {
+      background: #a259ff;
+    }
+
+    .promo-green::after {
+      background: #30d158;
+    }
+
+    .promo-orange::after {
+      background: #ff9f0a;
+    }
+
+    /* 移动端核心优势横幅 */
+    .specs-banner {
+      margin: 28px 16px 10px 16px;
+      background: linear-gradient(145deg, rgba(20, 20, 24, 0.8) 0%, rgba(12, 12, 16, 0.9) 100%);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 20px;
+      display: flex;
+      justify-content: space-around;
+      text-align: center;
+    }
+
+    .spec-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .spec-val {
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .spec-lbl {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* 底部操作与交流群 */
+    .community-box {
+      margin: 20px 16px;
+      padding: 18px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .comm-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--text-sub);
+      padding: 6px 0;
+    }
+
+    .comm-tag {
+      color: #fff;
+      font-weight: 600;
+      user-select: all;
+    }
+
+    .desktop-switch-btn {
+      margin: 24px 16px 8px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      height: 44px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-sub);
+      font-size: 13px;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .desktop-switch-btn:active {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .footer-note {
+      text-align: center;
+      color: #55555c;
+      font-size: 12px;
+      margin-top: 14px;
+    }
+
+    .mobile-records {
+      margin: 14px 16px 0;
+      text-align: center;
+      color: #55555c;
+      font-size: 11px;
+      line-height: 1.6;
+    }
+
+    .mobile-record-line {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .mobile-records a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .mobile-record-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .mobile-record-item img {
+      width: 14px;
+      height: 14px;
+      object-fit: contain;
+    }
+
+    .mobile-record-notice {
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 顶部栏 -->
+  <header class="mobile-header">
+    <a href="mobile.html" class="brand">
+      <img src="favicon.png" alt="PC-Tool Logo" />
+      <span class="brand-name">PC-TOOL</span>
+    </a>
+    <div class="header-links">
+      <a href="https://qm.qq.com/q/SryrCPwRqI" target="_blank" rel="noopener noreferrer" class="header-link">
+        <span>问题反馈</span>
+      </a>
+      <a href="https://cn.pc-tool.cn/mobile.html" class="header-link">
+        <span>完整工具箱</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </a>
+    </div>
+  </header>
+
+  <!-- Hero 视口 -->
+  <section class="mobile-hero">
+    <div class="mobile-badge">
+      <span class="badge-dot"></span>
+      <span>移动适配版 · 免安装打开即用</span>
+    </div>
+    <h1 class="hero-title">
+      掌上轻量<br>极客工作台。
+    </h1>
+    <p class="hero-desc">
+      无需占用手机存储空间。所有图像、音频、PDF 与转换全部在浏览器本地完成，纯开源、保护隐私。
+    </p>
+
+    <div class="hero-actions">
+      <a href="https://cn.pc-tool.cn/mobile.html" class="btn-main">
+        <span>进入工具箱</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      </a>
+      <a href="https://qm.qq.com/q/SryrCPwRqI" target="_blank" rel="noopener noreferrer" class="btn-group-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.38 5.08L2.1 21.9l5.02-1.25A9.94 9.94 0 0 0 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm0-4H9V7h2v5zm4 4h-2v-2h2v2zm0-4h-2V7h2v5z"/>
+        </svg>
+        <span>QQ交流群</span>
+      </a>
+      <a href="https://github.com/Team-YM/pc-tool" target="_blank" rel="noopener noreferrer" class="btn-gh" aria-label="GitHub">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+        </svg>
+      </a>
+    </div>
+    <div class="region-switch-row">
+      <a href="https://www.pc-tool.cn/mobile-en.html" class="region-switch-button">前往国际版</a>
+    </div>
+  </section>
+
+  <!-- 性能三项 -->
+  <div class="specs-banner">
+    <div class="spec-item">
+      <div class="spec-val">0 B</div>
+      <div class="spec-lbl">无需下载APP</div>
+    </div>
+    <div class="spec-item">
+      <div class="spec-val" style="color: #27c93f;">100%</div>
+      <div class="spec-lbl">本地隐私计算</div>
+    </div>
+    <div class="spec-item">
+      <div class="spec-val" style="color: #2997ff;">0 广告</div>
+      <div class="spec-lbl">开源纯净体验</div>
+    </div>
+  </div>
+
+  <!-- 宣传优势版块 -->
+  <div class="section-header">
+    <div class="section-title">核心优势 · 为什么选择我们</div>
+    <a href="https://cn.pc-tool.cn/mobile.html" class="section-more">全部工具 &gt;</a>
+  </div>
+
+  <div class="promo-section">
+    <!-- 优势卡片 1 -->
+    <div class="promo-card promo-blue">
+      <span class="promo-badge" style="color: #2997ff;">100% 纯前端运行</span>
+      <div class="promo-title">零数据上传 · 极致隐私安全</div>
+      <div class="promo-desc">所有图片压缩、格式转换、PDF 处理及加密运算均直接在手机浏览器本地内存执行，无需担心任何敏感文件泄露。</div>
+    </div>
+
+    <!-- 优势卡片 2 -->
+    <div class="promo-card promo-purple">
+      <span class="promo-badge" style="color: #a259ff;">极客体验 · 免安装</span>
+      <div class="promo-title">不占 1B 存储 · 即开即用</div>
+      <div class="promo-desc">告别动辄数百兆的臃肿 App 与广告弹窗。收藏网页或添加至手机主屏幕，随时获得媲美原生应用的高性能工具体验。</div>
+    </div>
+
+    <!-- 优势卡片 3 -->
+    <div class="promo-card promo-green">
+      <span class="promo-badge" style="color: #30d158;">开放自由</span>
+      <div class="promo-title">完全开源 · 永久纯净无广告</div>
+      <div class="promo-desc">代码完全托管在 GitHub，没有会员收费墙，没有诱导分享，坚持以纯粹的技术追求为全网开发者和用户服务。</div>
+    </div>
+
+    <!-- 优势卡片 4 -->
+    <div class="promo-card promo-orange">
+      <span class="promo-badge" style="color: #ff9f0a;">全能生态</span>
+      <div class="promo-title">涵盖 50+ 专业极客工具</div>
+      <div class="promo-desc">图像处理、文字音频、开发辅助、网络探测等数十种日常高频与专业需求全覆盖，一个站点搞定一切。</div>
+    </div>
+  </div>
+
+  <!-- 交流群与联系方式 -->
+  <div class="community-box">
+    <div class="comm-row">
+      <span>QQ 交流群</span>
+      <a href="https://qm.qq.com/q/SryrCPwRqI" target="_blank" rel="noopener noreferrer" class="comm-tag" style="color: #2997ff; text-decoration: none;">1121812272</a>
+    </div>
+    <div class="comm-row">
+      <span>意见反馈</span>
+      <a href="https://qm.qq.com/q/SryrCPwRqI" target="_blank" rel="noopener noreferrer" style="color: #2997ff; text-decoration: none; font-size: 13px; font-weight: 500;">加入 QQ 群反馈 &gt;</a>
+    </div>
+    <div class="comm-row">
+      <span>站长邮箱</span>
+      <span class="comm-tag" style="font-size: 12px;">fish@cutefish.online</span>
+    </div>
+    <div class="comm-row">
+      <span>官方域名邮箱</span>
+      <span class="comm-tag" style="font-size: 12px;">feedback@pc-tool.cn</span>
+    </div>
+  </div>
+
+  <div class="footer-note">
+    © PC-TOOL · 面对大众 · 为人民服务<br>
+  </div>
+
+  <div class="mobile-records">
+    <div class="mobile-record-line">
+      <a href="http://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">吉ICP备2026010334号</a>
+      <span class="mobile-record-item">
+        <img src="beianlogo.png" alt="">
+        <span>吉公网安备22240102000516号</span>
+      </span>
+    </div>
+    <div class="mobile-record-notice">PC-Tool 中所有工具（第三方工具除外）均开源免费，请勿盗用。感谢您的支持！</div>
+  </div>
+
+</body>
+</html>

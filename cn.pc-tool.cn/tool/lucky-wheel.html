@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>幸运大转盘 / 随机抽奖 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="在线幸运大转盘与随机抽签决策工具，支持自定义奖项选项、概率权重、转盘配色与音效回馈。">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .container {
+            max-width: 820px;
+        }
+        .container h1 {
+            color: #e4e4e7;
+            margin-bottom: 8px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .container > p {
+            color: #a1a1aa;
+            font-size: 15px;
+            margin-bottom: 24px;
+        }
+        .wheel-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+        @media (max-width: 700px) {
+            .wheel-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+        .wheel-container {
+            position: relative;
+            width: 320px;
+            height: 320px;
+            margin: 0 auto;
+        }
+        #wheelCanvas {
+            width: 320px;
+            height: 320px;
+            border-radius: 50%;
+            box-shadow: 0 0 25px rgba(0, 0, 0, 0.5);
+            transition: transform 4s cubic-bezier(0.15, 0.9, 0.2, 1);
+        }
+        .pointer-pin {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 14px solid transparent;
+            border-right: 14px solid transparent;
+            border-top: 28px solid #f43f5e;
+            z-index: 10;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+        }
+        .spin-center-btn {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: #18181b;
+            border: 3px solid #818cf8;
+            color: #fff;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            z-index: 5;
+            box-shadow: 0 0 12px rgba(129, 140, 248, 0.6);
+            outline: none;
+            transition: transform 0.1s;
+        }
+        .spin-center-btn:active {
+            transform: translate(-50%, -50%) scale(0.95);
+        }
+        .card-box {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .item-list-textarea {
+            width: 100%;
+            height: 140px;
+            padding: 10px 14px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+            resize: none;
+            margin-bottom: 12px;
+            line-height: 1.6;
+        }
+        .item-list-textarea:focus {
+            border-color: rgba(129, 140, 248, 0.5);
+        }
+        .action-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .action-btn {
+            padding: 9px 18px;
+            background: #818cf8;
+            border: none;
+            color: white;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .action-btn:hover {
+            background: #6366f1;
+        }
+        .btn-outline {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #e4e4e7;
+        }
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+        .result-dialog {
+            margin-top: 16px;
+            padding: 14px;
+            background: rgba(129, 140, 248, 0.1);
+            border: 1px solid rgba(129, 140, 248, 0.3);
+            border-radius: 8px;
+            text-align: center;
+        }
+        .result-title {
+            font-size: 13px;
+            color: #a1a1aa;
+        }
+        .result-chosen {
+            font-size: 22px;
+            font-weight: 700;
+            color: #34d399;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+    <a href="../index.html" class="back-link">← 返回首页</a>
+
+    <div class="container">
+        <h1>幸运大转盘 / 随机决策</h1>
+        <p>自定义选项与奖项，解决“今天吃什么”、“年会抽奖”、“做家务分工”等决策难题。</p>
+
+        <div class="wheel-layout">
+            <!-- 转盘区 -->
+            <div style="text-align: center;">
+                <div class="wheel-container">
+                    <div class="pointer-pin"></div>
+                    <canvas id="wheelCanvas" width="640" height="640"></canvas>
+                    <button class="spin-center-btn" id="spinBtn" onclick="spinWheel()">抽奖</button>
+                </div>
+
+                <div class="result-dialog" id="resultDialog" style="display:none;">
+                    <div class="result-title">恭喜抽中结果：</div>
+                    <div class="result-chosen" id="chosenText">-</div>
+                </div>
+            </div>
+
+            <!-- 配置区 -->
+            <div class="card-box">
+                <div style="font-size:14px; font-weight:600; color:#e4e4e7; margin-bottom:8px;">转盘选项列表（每行一个）：</div>
+                <textarea class="item-list-textarea" id="itemsText">一等奖
+二等奖
+三等奖
+特等奖
+谢谢参与
+再来一次
+幸运小礼品
+神秘盲盒</textarea>
+                
+                <div class="action-row">
+                    <button class="action-btn" onclick="updateOptions()">更新转盘</button>
+                    <button class="action-btn btn-outline" onclick="presetFood()">吃什么预设</button>
+                    <button class="action-btn btn-outline" onclick="presetYesNo()">是/否决定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        const canvas = document.getElementById('wheelCanvas');
+        const ctx = canvas.getContext('2d');
+        const itemsText = document.getElementById('itemsText');
+        let options = [];
+        let isSpinning = false;
+        let currentRotation = 0;
+
+        const PALETTE = [
+            '#6366f1', '#ec4899', '#f59e0b', '#10b981', 
+            '#8b5cf6', '#06b6d4', '#f43f5e', '#84cc16'
+        ];
+
+        function parseOptions() {
+            return itemsText.value.split('\n')
+                .map(s => s.trim())
+                .filter(s => s.length > 0);
+        }
+
+        function drawWheel() {
+            const count = options.length;
+            if (count === 0) return;
+            const w = canvas.width;
+            const h = canvas.height;
+            const cx = w / 2;
+            const cy = h / 2;
+            const radius = cx - 10;
+            const arc = (Math.PI * 2) / count;
+
+            ctx.clearRect(0, 0, w, h);
+
+            for (let i = 0; i < count; i++) {
+                const angle = i * arc;
+                ctx.beginPath();
+                ctx.fillStyle = PALETTE[i % PALETTE.length];
+                ctx.moveTo(cx, cy);
+                ctx.arc(cx, cy, radius, angle, angle + arc);
+                ctx.closePath();
+                ctx.fill();
+
+                // 绘制扇形边框
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+                ctx.stroke();
+
+                // 绘制文本
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(angle + arc / 2);
+                ctx.textAlign = 'right';
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 26px -apple-system, BlinkMacSystemFont, sans-serif';
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+                ctx.shadowBlur = 4;
+                ctx.fillText(options[i], radius - 35, 10);
+                ctx.restore();
+            }
+        }
+
+        function updateOptions() {
+            options = parseOptions();
+            if (options.length < 2) {
+                showToast('至少需要输入 2 个选项');
+                return;
+            }
+            drawWheel();
+            showToast('转盘已更新');
+        }
+
+        function spinWheel() {
+            if (isSpinning) return;
+            if (options.length < 2) {
+                showToast('选项少于 2 项');
+                return;
+            }
+
+            isSpinning = true;
+            document.getElementById('resultDialog').style.display = 'none';
+
+            // 随机转动 5~8 圈 + 随机角度
+            const count = options.length;
+            const winIdx = Math.floor(Math.random() * count);
+            const arcDeg = 360 / count;
+
+            // 顶部指针在 270 度或 90 度
+            // 当旋转 currentRotation 时，最终角度落在该 index 的扇区中
+            const targetSectorDeg = (count - winIdx - 0.5) * arcDeg + 270;
+            const extraRounds = (5 + Math.floor(Math.random() * 3)) * 360;
+            const finalDeg = currentRotation + extraRounds + (targetSectorDeg - (currentRotation % 360));
+
+            currentRotation = finalDeg;
+            canvas.style.transform = `rotate(${finalDeg}deg)`;
+
+            setTimeout(() => {
+                isSpinning = false;
+                const chosen = options[winIdx];
+                document.getElementById('chosenText').textContent = chosen;
+                document.getElementById('resultDialog').style.display = 'block';
+                showToast(`🎉 抽中：${chosen}`);
+            }, 4000);
+        }
+
+        function presetFood() {
+            itemsText.value = '火锅\n麻辣烫\n黄焖鸡米饭\n兰州拉面\n汉堡炸鸡\n螺蛳粉\n轻食沙拉\n东北菜';
+            updateOptions();
+        }
+
+        function presetYesNo() {
+            itemsText.value = '果断冲\n再想想\n去执行\n先搁置\n问朋友\n听音乐放松';
+            updateOptions();
+        }
+
+        options = parseOptions();
+        drawWheel();
+    </script>
+</body>
+</html>

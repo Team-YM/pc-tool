@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chinese to Pinyin</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <link rel="stylesheet" href="common.css">
+    <script src="https://cdn.jsdelivr.net/npm/pinyin-pro@3.26.0/dist/index.js" onerror="window.pinyinLoadFailed=true"></script>
+    <style>
+        .container {
+            max-width: 920px;
+            width: 100%;
+        }
+        .header-desc {
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #a1a1aa;
+        }
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            text-align: left;
+        }
+        body.light-theme .toolbar {
+            background: rgba(255, 255, 255, 0.85);
+            border-color: rgba(0, 0, 0, 0.08);
+        }
+        .tool-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #d4d4d8;
+        }
+        body.light-theme .tool-item {
+            color: #374151;
+        }
+        .select-ctrl {
+            padding: 6px 10px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #f4f4f5;
+            border-radius: 6px;
+            font-size: 13px;
+            outline: none;
+        }
+        body.light-theme .select-ctrl {
+            background: #fff;
+            border-color: rgba(0, 0, 0, 0.15);
+            color: #111827;
+        }
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-left: auto;
+        }
+        .btn-small {
+            padding: 6px 14px;
+            font-size: 13px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #f4f4f5;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-small:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+        .btn-small.primary {
+            background: #4f46e5;
+            border-color: #6366f1;
+            color: #fff;
+        }
+        .btn-small.primary:hover {
+            background: #4338ca;
+        }
+        body.light-theme .btn-small {
+            background: rgba(0, 0, 0, 0.04);
+            border-color: rgba(0, 0, 0, 0.1);
+            color: #1f2937;
+        }
+        body.light-theme .btn-small.primary {
+            background: #4f46e5;
+            color: #fff;
+        }
+        .grid-editor {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .box-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            text-align: left;
+        }
+        .box-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: #a1a1aa;
+        }
+        .text-area {
+            width: 100%;
+            height: 260px;
+            padding: 14px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: #f4f4f5;
+            font: 14px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .text-area:focus {
+            border-color: rgba(129, 140, 248, 0.5);
+        }
+        body.light-theme .text-area {
+            background: rgba(255, 255, 255, 0.9);
+            border-color: rgba(0, 0, 0, 0.12);
+            color: #111827;
+        }
+        .notice-info {
+            font-size: 12px;
+            color: #fbbf24;
+            min-height: 18px;
+            margin-top: 8px;
+            text-align: left;
+        }
+        @media (max-width: 720px) {
+            .grid-editor {
+                grid-template-columns: 1fr;
+            }
+            .btn-group {
+                margin-left: 0;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+    <a href="../index.html" class="back-link">← Back to Home</a>
+
+    <div class="container">
+        <h1>Chinese Text to Pinyin</h1>
+        <p class="header-desc">Accurately convert Chinese characters to Pinyin, with tone marks, numeric tones, no tones, and initials-only modes.</p>
+
+        <div class="toolbar">
+            <div class="tool-item">
+                <span>Tone format:</span>
+                <select id="toneTypeSelect" class="select-ctrl">
+                    <option value="symbol" selected>Tone marks (zhōng wén)</option>
+                    <option value="num">Numeric tones (zhong1 wen2)</option>
+                    <option value="none">No tones (zhong wen)</option>
+                </select>
+            </div>
+
+            <div class="tool-item">
+                <span>Output mode:</span>
+                <select id="modeSelect" class="select-ctrl">
+                    <option value="pinyin" selected>Full Pinyin</option>
+                    <option value="initial">Initials only (zw)</option>
+                </select>
+            </div>
+
+            <div class="tool-item">
+                <label style="cursor:pointer;"><input type="checkbox" id="vCheck"> Replace ü with v</label>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn-small primary" id="btnConvert">Convert</button>
+                <button class="btn-small" id="btnClear">Clear</button>
+                <button class="btn-small" id="btnCopy">Copy Result</button>
+            </div>
+        </div>
+
+        <div class="grid-editor">
+            <div class="box-wrap">
+                <div class="box-label">
+                    <span>Input Chinese text</span>
+                    <span id="inCharCount">0 chars</span>
+                </div>
+                <textarea id="textInput" class="text-area" placeholder="Enter the Chinese text to convert here... e.g. 生活远比游戏更有趣"></textarea>
+            </div>
+
+            <div class="box-wrap">
+                <div class="box-label">
+                    <span>Conversion result</span>
+                    <span id="outCharCount">0 characters</span>
+                </div>
+                <textarea id="textOutput" class="text-area" readonly placeholder="The Pinyin result will appear here..."></textarea>
+            </div>
+        </div>
+
+        <div class="notice-info" id="noticeInfo"></div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        (function() {
+            var textInput = document.getElementById('textInput');
+            var textOutput = document.getElementById('textOutput');
+            var toneTypeSelect = document.getElementById('toneTypeSelect');
+            var modeSelect = document.getElementById('modeSelect');
+            var vCheck = document.getElementById('vCheck');
+            var btnConvert = document.getElementById('btnConvert');
+            var btnClear = document.getElementById('btnClear');
+            var btnCopy = document.getElementById('btnCopy');
+            var inCharCount = document.getElementById('inCharCount');
+            var outCharCount = document.getElementById('outCharCount');
+            var noticeInfo = document.getElementById('noticeInfo');
+
+            // Basic fallback dictionary of common Chinese characters (used offline or when the CDN fails)
+            var FALLBACK_MAP = {
+                '我':'wo', '们':'men', '这':'zhe', '个':'ge', '项':'xiang', '目':'mu',
+                '还':'hai', '能':'neng', '添':'tian', '加':'jia', '什':'shen', '么':'me',
+                '功':'gong', '能':'neng', '生':'sheng', '活':'huo', '远':'yuan', '比':'bi',
+                '游':'you', '戏':'xi', '更':'geng', '有':'you', '趣':'qu', '字':'zi',
+                '符':'fu', '艺':'yi', '术':'shu', '像':'xiang', '素':'su', '画':'hua',
+                '编':'bian', '辑':'ji', '器':'qi', '中':'zhong', '文':'wen', '拼':'pin',
+                '音':'yin', '开':'kai', '发':'fa', '工':'gong', '具':'ju', '箱':'xiang',
+                '你':'ni', '好':'hao', '谢':'xie', '在':'zai', '线':'xian', '高':'gao',
+                '效':'xiao', '网':'wang', '络':'luo', '计':'ji', '算':'suan', '代':'dai',
+                '码':'ma', '格':'ge', '式':'shi', '转':'zhuan', '换':'huan'
+            };
+
+            function convertText() {
+                var val = textInput.value;
+                if (!val) {
+                    textOutput.value = '';
+                    outCharCount.textContent = '0 characters';
+                    return;
+                }
+
+                var tone = toneTypeSelect.value;
+                var mode = modeSelect.value;
+                var useV = vCheck.checked;
+
+                var api = window.pinyinPro || window.pinyin;
+                if (api && typeof api.pinyin === 'function') {
+                    try {
+                        var options = {
+                            toneType: tone,
+                            pattern: mode === 'initial' ? 'first' : 'pinyin',
+                            v: useV,
+                            type: 'string',
+                            nonZh: 'consecutive'
+                        };
+                        var res = api.pinyin(val, options);
+                        textOutput.value = res;
+                        outCharCount.textContent = res.length + ' characters';
+                        noticeInfo.textContent = '';
+                        return;
+                    } catch (e) {
+                        console.error('pinyin-pro conversion error', e);
+                    }
+                }
+
+                // Fallback path
+                noticeInfo.textContent = 'Notice: the core Pinyin library may still be loading or the network is restricted, so the offline dictionary of common characters has been enabled.';
+                var fallbackRes = '';
+                for (var i = 0; i < val.length; i++) {
+                    var ch = val[i];
+                    if (FALLBACK_MAP[ch]) {
+                        fallbackRes += (mode === 'initial' ? FALLBACK_MAP[ch][0] : FALLBACK_MAP[ch]) + ' ';
+                    } else {
+                        fallbackRes += ch;
+                    }
+                }
+                textOutput.value = fallbackRes.trim();
+                outCharCount.textContent = textOutput.value.length + ' characters';
+            }
+
+            textInput.addEventListener('input', function() {
+                inCharCount.textContent = textInput.value.length + ' chars';
+                convertText();
+            });
+
+            toneTypeSelect.onchange = convertText;
+            modeSelect.onchange = convertText;
+            vCheck.onchange = convertText;
+            btnConvert.onclick = convertText;
+
+            btnClear.onclick = function() {
+                textInput.value = '';
+                textOutput.value = '';
+                inCharCount.textContent = '0 chars';
+                outCharCount.textContent = '0 characters';
+                noticeInfo.textContent = '';
+            };
+
+            btnCopy.onclick = function() {
+                if (!textOutput.value) return;
+                navigator.clipboard.writeText(textOutput.value).then(function() {
+                    if (typeof showToast === 'function') showToast('Pinyin result copied');
+                });
+            };
+        })();
+    </script>
+</body>
+</html>
+
+
+

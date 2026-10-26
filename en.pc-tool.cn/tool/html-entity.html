@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML Entity Encoder &amp; Decoder | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="An online HTML entity encoder and decoder that converts plain text to HTML named entities (&amp;lt; &amp;gt; &amp;amp; etc.), decimal entities (&amp;#60;) and hexadecimal entities (&amp;#x3C;), and decodes them back again.">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .container {
+            max-width: 800px;
+        }
+        .container h1 {
+            color: #e4e4e7;
+            margin-bottom: 8px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .container > p {
+            color: #a1a1aa;
+            font-size: 15px;
+            margin-bottom: 24px;
+        }
+        .card-box {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .option-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 16px;
+            align-items: center;
+        }
+        .option-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: #d4d4d8;
+            cursor: pointer;
+        }
+        .option-item input[type="radio"],
+        .option-item input[type="checkbox"] {
+            accent-color: #6366f1;
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+        }
+        .textarea-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: #e4e4e7;
+            margin-bottom: 8px;
+        }
+        .text-area {
+            width: 100%;
+            height: 130px;
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            color: #e4e4e7;
+            font-size: 14px;
+            font-family: Consolas, Monaco, "Courier New", monospace;
+            resize: vertical;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .text-area:focus {
+            border-color: #6366f1;
+        }
+        .btn-row {
+            display: flex;
+            gap: 12px;
+            margin: 16px 0;
+            flex-wrap: wrap;
+        }
+        .btn-action {
+            flex: 1;
+            min-width: 130px;
+            padding: 12px 18px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            color: #fff;
+        }
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: #e4e4e7;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.14);
+        }
+        .char-count {
+            font-size: 12px;
+            color: #71717a;
+        }
+        .reference-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+        .reference-table th, .reference-table td {
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 8px 10px;
+            text-align: left;
+        }
+        .reference-table th {
+            background: rgba(255, 255, 255, 0.04);
+            color: #a1a1aa;
+        }
+        .reference-table td {
+            color: #d4d4d8;
+            font-family: Consolas, monospace;
+        }
+        .reference-table code {
+            color: #818cf8;
+            background: rgba(99, 102, 241, 0.1);
+            padding: 2px 5px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <a href="../index.html" class="back-link">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        Back to Home
+    </a>
+
+    <div class="container">
+        <h1>HTML Entity Encoder &amp; Decoder</h1>
+        <p>Escape special characters into HTML named entities, decimal or hexadecimal character references, and decode them back into plain text.</p>
+
+        <div class="card-box">
+            <div class="option-group">
+                <span style="font-size: 14px; font-weight: 600; color: #e4e4e7;">Entity encoding mode:</span>
+                <label class="option-item">
+                    <input type="radio" name="entityMode" value="named" checked>
+                    <span>Common named entities (&amp;lt; &amp;gt; &amp;amp; &amp;quot;)</span>
+                </label>
+                <label class="option-item">
+                    <input type="radio" name="entityMode" value="decimal">
+                    <span>Decimal entities (&amp;#60;)</span>
+                </label>
+                <label class="option-item">
+                    <input type="radio" name="entityMode" value="hex">
+                    <span>Hexadecimal entities (&amp;#x3C;)</span>
+                </label>
+            </div>
+
+            <div class="option-group">
+                <label class="option-item">
+                    <input type="checkbox" id="encodeAll" value="1">
+                    <span>Encode all non-ASCII characters (CJK characters, punctuation and emoji)</span>
+                </label>
+            </div>
+
+            <div class="textarea-label">
+                <span>Input / Source text</span>
+                <span class="char-count" id="inputCount">0 characters</span>
+            </div>
+            <textarea id="inputText" class="text-area" placeholder="For example: <div class=&quot;box&quot;>PC-TOOL &amp; utilities</div>, or paste already-encoded HTML entities"></textarea>
+
+            <div class="btn-row">
+                <button id="btnEncode" class="btn-action btn-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                    Encode to entities ↓
+                </button>
+                <button id="btnDecode" class="btn-action btn-primary" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
+                    Decode to text ↓
+                </button>
+                <button id="btnExchange" class="btn-action btn-secondary">
+                    Swap input and output ⇅
+                </button>
+                <button id="btnClear" class="btn-action btn-secondary" style="flex: 0.5;">
+                    Clear
+                </button>
+            </div>
+
+            <div class="textarea-label">
+                <span>Conversion Result</span>
+                <span class="char-count" id="outputCount">0 characters</span>
+            </div>
+            <textarea id="outputText" class="text-area" readonly placeholder="The converted result will appear here..."></textarea>
+
+            <div style="margin-top: 12px; display: flex; justify-content: flex-end; gap: 8px;">
+                <button id="btnCopy" class="btn-action btn-secondary" style="min-width: 100px; padding: 8px 16px;">
+                    Copy Result
+                </button>
+            </div>
+        </div>
+
+        <div class="card-box">
+            <h3 style="color: #e4e4e7; font-size: 15px; margin-bottom: 10px;">Common HTML entities reference</h3>
+            <table class="reference-table">
+                <thead>
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Name</th>
+                        <th>Named entity</th>
+                        <th>Decimal entity</th>
+                        <th>Hex entity</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>&lt;</td>
+                        <td>Less than sign</td>
+                        <td><code>&amp;lt;</code></td>
+                        <td><code>&amp;#60;</code></td>
+                        <td><code>&amp;#x3C;</code></td>
+                    </tr>
+                    <tr>
+                        <td>&gt;</td>
+                        <td>Greater than sign</td>
+                        <td><code>&amp;gt;</code></td>
+                        <td><code>&amp;#62;</code></td>
+                        <td><code>&amp;#x3E;</code></td>
+                    </tr>
+                    <tr>
+                        <td>&amp;</td>
+                        <td>Ampersand</td>
+                        <td><code>&amp;amp;</code></td>
+                        <td><code>&amp;#38;</code></td>
+                        <td><code>&amp;#x26;</code></td>
+                    </tr>
+                    <tr>
+                        <td>&quot;</td>
+                        <td>Double quote</td>
+                        <td><code>&amp;quot;</code></td>
+                        <td><code>&amp;#34;</code></td>
+                        <td><code>&amp;#x22;</code></td>
+                    </tr>
+                    <tr>
+                        <td>&#39;</td>
+                        <td>Single quote</td>
+                        <td><code>&amp;apos;</code></td>
+                        <td><code>&amp;#39;</code></td>
+                        <td><code>&amp;#x27;</code></td>
+                    </tr>
+                    <tr>
+                        <td>&copy;</td>
+                        <td>Copyright sign</td>
+                        <td><code>&amp;copy;</code></td>
+                        <td><code>&amp;#169;</code></td>
+                        <td><code>&amp;#xA9;</code></td>
+                    </tr>
+                    <tr>
+                        <td>&reg;</td>
+                        <td>Registered trademark</td>
+                        <td><code>&amp;reg;</code></td>
+                        <td><code>&amp;#174;</code></td>
+                        <td><code>&amp;#xAE;</code></td>
+                    </tr>
+                    <tr>
+                        <td>&nbsp;</td>
+                        <td>Non-breaking space</td>
+                        <td><code>&amp;nbsp;</code></td>
+                        <td><code>&amp;#160;</code></td>
+                        <td><code>&amp;#xA0;</code></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="contact-box" style="margin-top: 24px; padding: 16px; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px dashed rgba(255,255,255,0.08); text-align: center; color: #71717a; font-size: 13px;">
+            Note: all encoding and decoding happens locally in your browser; no text is ever uploaded to any server.
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        const inputText = document.getElementById('inputText');
+        const outputText = document.getElementById('outputText');
+        const inputCount = document.getElementById('inputCount');
+        const outputCount = document.getElementById('outputCount');
+        const btnEncode = document.getElementById('btnEncode');
+        const btnDecode = document.getElementById('btnDecode');
+        const btnExchange = document.getElementById('btnExchange');
+        const btnClear = document.getElementById('btnClear');
+        const btnCopy = document.getElementById('btnCopy');
+        const encodeAll = document.getElementById('encodeAll');
+
+        const namedMap = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&apos;',
+            '©': '&copy;',
+            '®': '&reg;',
+            '™': '&trade;',
+            '¥': '&yen;',
+            '€': '&euro;',
+            '£': '&pound;',
+            '§': '&sect;',
+            '•': '&bull;',
+            '…': '&hellip;',
+            '—': '&mdash;',
+            '–': '&ndash;',
+            ' ': '&nbsp;'
+        };
+
+        function updateCounts() {
+            inputCount.textContent = `${inputText.value.length} characters`;
+            outputCount.textContent = `${outputText.value.length} characters`;
+        }
+
+        inputText.addEventListener('input', updateCounts);
+
+        function getSelectedMode() {
+            const radio = document.querySelector('input[name="entityMode"]:checked');
+            return radio ? radio.value : 'named';
+        }
+
+        function encodeHtml() {
+            const text = inputText.value;
+            if (!text) {
+                showToast('Please enter the text to encode', 'warning');
+                return;
+            }
+
+            const mode = getSelectedMode();
+            const doAll = encodeAll.checked;
+
+            let res = '';
+            for (let i = 0; i < text.length; i++) {
+                const codePoint = text.codePointAt(i);
+                const char = String.fromCodePoint(codePoint);
+
+                // Check surrogate pair
+                if (codePoint > 0xffff) {
+                    i++; // skip next surrogate unit
+                }
+
+                if (mode === 'named') {
+                    if (char !== ' ' && namedMap[char]) {
+                        res += namedMap[char];
+                    } else if (doAll && codePoint > 127) {
+                        res += `&#${codePoint};`;
+                    } else {
+                        res += char;
+                    }
+                } else if (mode === 'decimal') {
+                    if (char === '&' || char === '<' || char === '>' || char === '"' || char === "'" || (doAll && (codePoint > 126 || codePoint < 32))) {
+                        res += `&#${codePoint};`;
+                    } else {
+                        res += char;
+                    }
+                } else if (mode === 'hex') {
+                    if (char === '&' || char === '<' || char === '>' || char === '"' || char === "'" || (doAll && (codePoint > 126 || codePoint < 32))) {
+                        res += `&#x${codePoint.toString(16).toUpperCase()};`;
+                    } else {
+                        res += char;
+                    }
+                }
+            }
+
+            outputText.value = res;
+            updateCounts();
+            showToast('HTML entities encoded successfully');
+        }
+
+        function decodeHtml() {
+            const text = inputText.value;
+            if (!text) {
+                showToast('Please enter the HTML entities to decode', 'warning');
+                return;
+            }
+
+            try {
+                // Handle numeric entities (both decimal &#123; and hex &#x1F600;) and common named entities
+                let decoded = text.replace(/&#x([0-9a-fA-F]+);/g, (match, hex) => {
+                    return String.fromCodePoint(parseInt(hex, 16));
+                }).replace(/&#([0-9]+);/g, (match, dec) => {
+                    return String.fromCodePoint(parseInt(dec, 10));
+                });
+
+                // DOMParser fallback for all valid named entities
+                const doc = new DOMParser().parseFromString(decoded, 'text/html');
+                decoded = doc.documentElement.textContent;
+
+                outputText.value = decoded;
+                updateCounts();
+                showToast('HTML entities decoded successfully');
+            } catch (err) {
+                showToast('Decoding failed: ' + err.message, 'error');
+            }
+        }
+
+        btnEncode.addEventListener('click', encodeHtml);
+        btnDecode.addEventListener('click', decodeHtml);
+
+        btnExchange.addEventListener('click', () => {
+            const temp = inputText.value;
+            inputText.value = outputText.value;
+            outputText.value = temp;
+            updateCounts();
+            showToast('Input and output swapped');
+        });
+
+        btnClear.addEventListener('click', () => {
+            inputText.value = '';
+            outputText.value = '';
+            updateCounts();
+            showToast('Content cleared');
+        });
+
+        btnCopy.addEventListener('click', () => {
+            if (!outputText.value) {
+                showToast('There is nothing to copy', 'warning');
+                return;
+            }
+            navigator.clipboard.writeText(outputText.value).then(() => {
+                showToast('Result copied to clipboard');
+            }).catch(() => {
+                showToast('Copy failed. Please select and copy manually.', 'error');
+            });
+        });
+
+        updateCounts();
+    </script>
+</body>
+</html>

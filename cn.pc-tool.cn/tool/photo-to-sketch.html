@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>照片转素描/手绘线稿</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="免费在线照片转素描手绘工具，利用图像色彩减淡、高斯边缘反转与轮廓增强算法，将人像或风景一键生成精美黑白素描/铅笔画。">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="照片转素描/手绘线稿 | PC-TOOL">
+    <meta property="og:description" content="在线照片一键转铅笔素描、黑白线稿，支持线条细腻度与对比度自由调节。">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/photo-to-sketch.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="zh_CN">
+    <style>
+        .container {
+            max-width: 840px;
+            width: 100%;
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin: 18px 0;
+        }
+
+        .setting-item {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .setting-item label {
+            font-size: 13px;
+            color: #a1a1aa;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .setting-item label span.val {
+            color: #818cf8;
+            font-weight: 600;
+        }
+
+        .setting-item select,
+        .setting-item input[type="range"] {
+            outline: none;
+        }
+
+        .setting-item select {
+            height: 36px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #e4e4e7;
+            padding: 0 10px;
+            font-size: 14px;
+            border-radius: 6px;
+        }
+
+        .setting-item input[type="range"] {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            -webkit-appearance: none;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+
+        .setting-item input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #818cf8;
+        }
+
+        .preview-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 15px;
+        }
+
+        @media (max-width: 640px) {
+            .preview-columns { grid-template-columns: 1fr; }
+        }
+
+        .preview-box {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .preview-box h4 {
+            font-size: 13px;
+            color: #a1a1aa;
+            margin-bottom: 8px;
+        }
+
+        .preview-screen {
+            width: 100%;
+            height: 340px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: repeating-conic-gradient(#1c1c22 0% 25%, #141418 0% 50%) 50% / 14px 14px;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .preview-screen img,
+        .preview-screen canvas {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        .btn-center {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+    <a href="../index.html" class="back-link">← 返回转换工具首页</a>
+
+    <div class="container">
+        <h1>照片转素描 / 手绘线稿</h1>
+        <p>利用高斯模糊与颜色减淡 (Color Dodge) 混合模式算法，将照片瞬间转为高质感铅笔素描画</p>
+
+        <div class="upload-area" id="uploadArea">
+            <p>点击或拖拽上传人像、风景或静物图片</p>
+            <input type="file" id="fileInput" accept="image/*">
+        </div>
+
+        <div id="sketchWorkspace" style="display:none;">
+            <div class="settings-grid">
+                <div class="setting-item">
+                    <label>素描风格</label>
+                    <select id="sketchStyleSelect">
+                        <option value="pencil">经典铅笔素描</option>
+                        <option value="lineart">细腻白描线稿</option>
+                        <option value="dark">重铅高对比深色素描</option>
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <label>线条柔和/笔触半径 <span class="val" id="radiusVal">6</span></label>
+                    <input type="range" id="radiusRange" min="1" max="25" value="6" step="1">
+                </div>
+                <div class="setting-item">
+                    <label>线条深浅增强 <span class="val" id="contrastVal">110%</span></label>
+                    <input type="range" id="contrastRange" min="80" max="200" value="110" step="5">
+                </div>
+            </div>
+
+            <div class="preview-columns">
+                <div class="preview-box">
+                    <h4>原图</h4>
+                    <div class="preview-screen">
+                        <img id="origImg" alt="原图">
+                    </div>
+                </div>
+                <div class="preview-box">
+                    <h4>素描效果</h4>
+                    <div class="preview-screen">
+                        <canvas id="sketchCanvas"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="btn-center">
+                <button class="btn" id="downloadBtn" style="background:rgba(129,140,248,0.3);border-color:rgba(129,140,248,0.4);">下载素描照片</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        var uploadArea = document.getElementById('uploadArea');
+        var fileInput = document.getElementById('fileInput');
+        var sketchWorkspace = document.getElementById('sketchWorkspace');
+        var origImg = document.getElementById('origImg');
+        var sketchCanvas = document.getElementById('sketchCanvas');
+        var ctx = sketchCanvas.getContext('2d');
+        var sketchStyleSelect = document.getElementById('sketchStyleSelect');
+        var radiusRange = document.getElementById('radiusRange');
+        var radiusVal = document.getElementById('radiusVal');
+        var contrastRange = document.getElementById('contrastRange');
+        var contrastVal = document.getElementById('contrastVal');
+        var downloadBtn = document.getElementById('downloadBtn');
+
+        var sourceImage = null;
+
+        uploadArea.addEventListener('click', function() { fileInput.click(); });
+        uploadArea.addEventListener('dragover', function(e) { e.preventDefault(); });
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', function(e) {
+            if (e.target.files.length) handleFile(e.target.files[0]);
+        });
+
+        function handleFile(file) {
+            if (!file || !file.type.startsWith('image/')) return;
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                var img = new Image();
+                img.onload = function() {
+                    sourceImage = img;
+                    origImg.src = e.target.result;
+                    sketchWorkspace.style.display = 'block';
+                    renderSketch();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        sketchStyleSelect.addEventListener('change', renderSketch);
+
+        radiusRange.addEventListener('input', function() {
+            radiusVal.innerText = radiusRange.value;
+            renderSketch();
+        });
+
+        contrastRange.addEventListener('input', function() {
+            contrastVal.innerText = contrastRange.value + '%';
+            renderSketch();
+        });
+
+        function renderSketch() {
+            if (!sourceImage) return;
+
+            var w = sourceImage.width;
+            var h = sourceImage.height;
+            sketchCanvas.width = w;
+            sketchCanvas.height = h;
+
+            // 1. 绘制灰度图
+            var grayCanvas = document.createElement('canvas');
+            grayCanvas.width = w;
+            grayCanvas.height = h;
+            var grayCtx = grayCanvas.getContext('2d');
+            grayCtx.drawImage(sourceImage, 0, 0, w, h);
+            var grayData = grayCtx.getImageData(0, 0, w, h);
+            var gd = grayData.data;
+
+            var grayArray = new Uint8Array(w * h);
+            for (var i = 0; i < gd.length; i += 4) {
+                var g = Math.round(0.299 * gd[i] + 0.587 * gd[i + 1] + 0.114 * gd[i + 2]);
+                gd[i] = g;
+                gd[i + 1] = g;
+                gd[i + 2] = g;
+                grayArray[i / 4] = g;
+            }
+            grayCtx.putImageData(grayData, 0, 0);
+
+            // 2. 灰度反色 + 模糊 (反向后模糊作为底图与原灰度图进行Color Dodge颜色减淡)
+            var invCanvas = document.createElement('canvas');
+            invCanvas.width = w;
+            invCanvas.height = h;
+            var invCtx = invCanvas.getContext('2d');
+            var invData = invCtx.createImageData(w, h);
+            var id = invData.data;
+            for (var j = 0; j < gd.length; j += 4) {
+                var invVal = 255 - gd[j];
+                id[j] = invVal;
+                id[j + 1] = invVal;
+                id[j + 2] = invVal;
+                id[j + 3] = 255;
+            }
+            invCtx.putImageData(invData, 0, 0);
+
+            // 模糊处理反色图
+            var blurRadius = parseInt(radiusRange.value, 10);
+            var blurredCanvas = document.createElement('canvas');
+            blurredCanvas.width = w;
+            blurredCanvas.height = h;
+            var blurCtx = blurredCanvas.getContext('2d');
+            blurCtx.filter = 'blur(' + blurRadius + 'px)';
+            blurCtx.drawImage(invCanvas, 0, 0);
+
+            var blurredData = blurCtx.getImageData(0, 0, w, h).data;
+
+            // 3. 执行颜色减淡公式：Result = A + (A * B) / (255 - B)
+            var resultData = ctx.createImageData(w, h);
+            var rd = resultData.data;
+            var contrastFactor = parseInt(contrastRange.value, 10) / 100;
+            var style = sketchStyleSelect.value;
+
+            for (var k = 0; k < rd.length; k += 4) {
+                var a = gd[k];             // 原灰度像素
+                var b = blurredData[k];     // 模糊反色像素
+
+                var v = 255;
+                if (b < 255) {
+                    v = (a << 8) / (255 - b);
+                    if (v > 255) v = 255;
+                }
+
+                // 风格分支
+                if (style === 'lineart') {
+                    v = v < 220 ? Math.round(v * 0.7) : 255;
+                } else if (style === 'dark') {
+                    v = Math.round(v * 0.82);
+                }
+
+                // 对比度
+                if (contrastFactor !== 1) {
+                    v = (v - 128) * contrastFactor + 128;
+                    v = Math.max(0, Math.min(255, v));
+                }
+
+                rd[k] = v;
+                rd[k + 1] = v;
+                rd[k + 2] = v;
+                rd[k + 3] = 255;
+            }
+
+            ctx.putImageData(resultData, 0, 0);
+        }
+
+        downloadBtn.addEventListener('click', function() {
+            if (!sourceImage) return;
+            var a = document.createElement('a');
+            a.download = 'sketch.png';
+            a.href = sketchCanvas.toDataURL('image/png');
+            a.click();
+        });
+    </script>
+</body>
+</html>

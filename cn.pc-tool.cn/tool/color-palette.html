@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>配色方案生成器 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="基于 HSL 色轮算法的在线配色方案生成器，支持互补色、类似色、三角、四角、分裂互补等谐调规则，一键导出 CSS 变量、Tailwind 配置与 JSON，纯前端本地计算。">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="配色方案生成器 | PC-TOOL">
+    <meta property="og:description" content="免费在线配色方案生成工具，HSL 色轮算法生成和谐配色，支持锁定、随机与多格式导出。">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/color-palette.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="zh_CN">
+    <style>
+        .container { max-width: 720px; width: 100%; }
+
+        /* 通用分区卡片 */
+        .section-card {
+            margin-top: 24px; padding: 20px;
+            background: rgba(24, 24, 27, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+        }
+        .section-title { font-size: 0.9375rem; color: #a1a1aa; margin-bottom: 14px; }
+
+        /* 主色预览与 HEX 输入 */
+        .base-row { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+        .base-preview {
+            width: 64px; height: 64px; border-radius: 12px; flex-shrink: 0;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            transition: background 0.15s ease;
+        }
+        .hex-input {
+            flex: 1; padding: 10px 14px; font-size: 0.9375rem; border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: #e4e4e7; font-family: monospace; letter-spacing: 0.05em;
+        }
+        .hex-input:focus { outline: none; border-color: rgba(129, 140, 248, 0.5); }
+        .hex-input.invalid { border-color: rgba(239, 68, 68, 0.7); }
+
+        /* 滑块 */
+        .slider-row { margin-bottom: 14px; }
+        .slider-head {
+            display: flex; justify-content: space-between;
+            font-size: 0.8125rem; color: #71717a; margin-bottom: 6px;
+        }
+        .slider-head span:last-child { color: #a1a1aa; font-variant-numeric: tabular-nums; }
+        input[type="range"] {
+            -webkit-appearance: none; appearance: none; width: 100%;
+            height: 10px; border-radius: 5px; background: rgba(255, 255, 255, 0.1);
+            outline: none; cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+            background: #f4f4f5; border: 2px solid #818cf8;
+            cursor: pointer; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 16px; height: 16px; border-radius: 50%;
+            background: #f4f4f5; border: 2px solid #818cf8; cursor: pointer;
+        }
+
+        /* 操作按钮与下拉 */
+        .controls-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .ctrl-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #e4e4e7; padding: 8px 16px; border-radius: 8px;
+            font-size: 0.875rem; cursor: pointer; transition: all 0.2s ease;
+        }
+        .ctrl-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25); transform: translateY(-1px);
+        }
+        .ctrl-btn.primary {
+            background: rgba(99, 102, 241, 0.25);
+            border-color: rgba(129, 140, 248, 0.4); color: #c7d2fe;
+        }
+        .ctrl-btn.primary:hover {
+            background: rgba(99, 102, 241, 0.45);
+            border-color: rgba(129, 140, 248, 0.7);
+        }
+        .format-select {
+            padding: 8px 12px; font-size: 0.875rem; border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05); color: #e4e4e7;
+            cursor: pointer; appearance: none;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23a1a1aa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>');
+            background-repeat: no-repeat; background-position: right 0.6rem center;
+            background-size: 1rem; padding-right: 2rem;
+        }
+        .format-select:focus { outline: none; border-color: rgba(129, 140, 248, 0.5); }
+
+        /* 色板网格 */
+        .palette-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+        .swatch {
+            border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 12px 10px; min-height: 118px;
+            display: flex; flex-direction: column; justify-content: space-between;
+            cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .swatch:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35); }
+        .swatch-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 4px; }
+        .swatch-hex { font-family: monospace; font-size: 0.75rem; word-break: break-all; }
+        .lock-btn {
+            background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 6px; color: inherit; font-size: 0.6875rem;
+            padding: 2px 7px; cursor: pointer; white-space: nowrap;
+        }
+        .swatch-bottom { font-size: 0.6875rem; opacity: 0.85; font-variant-numeric: tabular-nums; }
+        .swatch.locked { border-color: #818cf8; box-shadow: 0 0 0 1px rgba(129, 140, 248, 0.5); }
+
+        /* 导出预览 */
+        .export-preview {
+            margin-top: 12px; padding: 14px;
+            background: rgba(15, 15, 18, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 10px;
+            color: #a1a1aa; font-family: monospace; font-size: 0.78rem;
+            line-height: 1.6; white-space: pre; max-height: 200px; overflow: auto;
+        }
+
+        /* 明暗色阶 */
+        .shade-row { display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px; }
+        .shade-cell {
+            height: 72px; border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.08); cursor: pointer;
+            display: flex; flex-direction: column; justify-content: space-between;
+            align-items: center; padding: 6px 2px; font-size: 0.625rem;
+            transition: transform 0.15s ease;
+        }
+        .shade-cell:hover { transform: translateY(-2px); }
+        .shade-cell span { font-variant-numeric: tabular-nums; }
+
+        @media (max-width: 600px) {
+            .palette-grid { grid-template-columns: repeat(2, 1fr); }
+            .shade-row { grid-template-columns: repeat(5, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <!-- 统一位置返回首页按钮 -->
+    <a href="../index.html" class="back-link">← 返回转换工具首页</a>
+
+    <div class="container">
+        <h1>配色方案生成器</h1>
+        <p>基于 HSL 色轮算法生成和谐配色方案，支持锁定色块、随机灵感与多格式导出，纯前端本地计算</p>
+
+        <!-- 主色调节 -->
+        <div class="section-card">
+            <div class="section-title">主色调节</div>
+            <div class="base-row">
+                <div class="base-preview" id="basePreview"></div>
+                <input type="text" class="hex-input" id="hexInput" maxlength="7" spellcheck="false" placeholder="#818CF8">
+            </div>
+            <div class="slider-row">
+                <div class="slider-head"><span>色相 Hue</span><span id="hueVal">245</span></div>
+                <input type="range" id="hueSlider" min="0" max="360" value="245">
+            </div>
+            <div class="slider-row">
+                <div class="slider-head"><span>饱和度 Saturation</span><span id="satVal">70%</span></div>
+                <input type="range" id="satSlider" min="0" max="100" value="70">
+            </div>
+            <div class="slider-row">
+                <div class="slider-head"><span>明度 Lightness</span><span id="lightVal">60%</span></div>
+                <input type="range" id="lightSlider" min="0" max="100" value="60">
+            </div>
+        </div>
+
+        <!-- 谐调规则与随机 -->
+        <div class="section-card">
+            <div class="section-title">谐调规则</div>
+            <div class="controls-row">
+                <select class="format-select" id="ruleSelect">
+                    <option value="complementary">互补色 Complementary</option>
+                    <option value="analogous">类似色 Analogous</option>
+                    <option value="triadic">三角 Triadic</option>
+                    <option value="tetradic">四角 Tetradic</option>
+                    <option value="split">分裂互补 Split-Complementary</option>
+                </select>
+                <button class="ctrl-btn primary" id="randomBtn">随机方案</button>
+            </div>
+        </div>
+
+        <!-- 生成的方案 -->
+        <div class="section-card">
+            <div class="section-title">生成的方案（点击色块复制 HEX，右上角按钮锁定）</div>
+            <div class="palette-grid" id="paletteGrid"></div>
+        </div>
+
+        <!-- 导出 -->
+        <div class="section-card">
+            <div class="section-title">导出</div>
+            <div class="controls-row">
+                <select class="format-select" id="exportSelect">
+                    <option value="css">CSS 变量</option>
+                    <option value="tailwind">Tailwind 配置</option>
+                    <option value="json">JSON 数组</option>
+                </select>
+                <button class="ctrl-btn primary" id="copyExportBtn">复制</button>
+            </div>
+            <pre class="export-preview" id="exportPreview"></pre>
+        </div>
+
+        <!-- 明暗变体 -->
+        <div class="section-card">
+            <div class="section-title">明暗变体（基于主色的 50~900 色阶，点击复制）</div>
+            <div class="shade-row" id="shadeRow"></div>
+        </div>
+
+        <p class="contact-tip">配色方案生成器由 <strong>PC-TOOL</strong> 提供，纯本地计算不上传任何数据</p>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        (function() {
+            // ---------- DOM 引用 ----------
+            const $ = (id) => document.getElementById(id);
+            const basePreview = $('basePreview'), hexInput = $('hexInput');
+            const hueSlider = $('hueSlider'), satSlider = $('satSlider'), lightSlider = $('lightSlider');
+            const hueVal = $('hueVal'), satVal = $('satVal'), lightVal = $('lightVal');
+            const ruleSelect = $('ruleSelect'), randomBtn = $('randomBtn'), paletteGrid = $('paletteGrid');
+            const exportSelect = $('exportSelect'), copyExportBtn = $('copyExportBtn');
+            const exportPreview = $('exportPreview'), shadeRow = $('shadeRow');
+
+            // ---------- 状态 ----------
+            const base = { h: 245, s: 70, l: 60 }; // 主色 HSL
+            let palette = [];                      // 方案 5 色，每项 { h, s, l, locked }
+
+            // 谐调规则：色相偏移 + 饱和度/明度微调（保证 5 色有层次）
+            const RULE_OFFSETS = {
+                complementary: [{ dh: 0, ds: 0, dl: 0 }, { dh: 180, ds: 0, dl: 0 }, { dh: 0, ds: -15, dl: 14 }, { dh: 180, ds: -15, dl: -12 }, { dh: 0, ds: -28, dl: -6 }],
+                analogous: [{ dh: -40 }, { dh: -20 }, { dh: 0 }, { dh: 20 }, { dh: 40 }],
+                triadic: [{ dh: 0 }, { dh: 120 }, { dh: 240 }, { dh: 120, ds: -14, dl: 12 }, { dh: 240, ds: -14, dl: -12 }],
+                tetradic: [{ dh: 0 }, { dh: 90 }, { dh: 180 }, { dh: 270 }, { dh: 45, ds: -18, dl: 8 }],
+                split: [{ dh: 0 }, { dh: 150 }, { dh: 210 }, { dh: 150, ds: -12, dl: 12 }, { dh: 210, ds: -12, dl: -12 }]
+            };
+            // 色阶明度映射（类 Tailwind 50~900）
+            const SHADE_STEPS = [[50, 97], [100, 94], [200, 86], [300, 77], [400, 64], [500, 52], [600, 44], [700, 36], [800, 28], [900, 21]];
+
+            // ---------- 颜色转换 ----------
+            function clamp(v, min, max) { return Math.min(max, Math.max(min, v)); }
+
+            // HSL 转 RGB（0-255）
+            function hslToRgb(h, s, l) {
+                h = ((h % 360) + 360) % 360;
+                s = clamp(s, 0, 100) / 100;
+                l = clamp(l, 0, 100) / 100;
+                const c = (1 - Math.abs(2 * l - 1)) * s;
+                const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+                const m = l - c / 2;
+                let r, g, b;
+                if (h < 60)       { r = c; g = x; b = 0; }
+                else if (h < 120) { r = x; g = c; b = 0; }
+                else if (h < 180) { r = 0; g = c; b = x; }
+                else if (h < 240) { r = 0; g = x; b = c; }
+                else if (h < 300) { r = x; g = 0; b = c; }
+                else              { r = c; g = 0; b = x; }
+                return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)];
+            }
+
+            // RGB 转 HSL（s/l 为 0-100）
+            function rgbToHsl(r, g, b) {
+                r /= 255; g /= 255; b /= 255;
+                const max = Math.max(r, g, b), min = Math.min(r, g, b);
+                const l = (max + min) / 2;
+                let h = 0, s = 0;
+                if (max !== min) {
+                    const d = max - min;
+                    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                    if (max === r)      h = ((g - b) / d + (g < b ? 6 : 0)) * 60;
+                    else if (max === g) h = ((b - r) / d + 2) * 60;
+                    else                h = ((r - g) / d + 4) * 60;
+                }
+                return [h, Math.round(s * 100), Math.round(l * 100)];
+            }
+
+            function rgbToHex(r, g, b) {
+                return '#' + [r, g, b].map(v => clamp(Math.round(v), 0, 255).toString(16).padStart(2, '0')).join('');
+            }
+            function hslToHex(h, s, l) { return rgbToHex.apply(null, hslToRgb(h, s, l)); }
+
+            // HEX 转 RGB，非法返回 null（支持 3/6 位）
+            function hexToRgb(str) {
+                const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(str.trim());
+                if (!m) return null;
+                let hex = m[1];
+                if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+                return [parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16)];
+            }
+
+            // 感知亮度（0-100），用于文本黑/白切换
+            function brightness(r, g, b) { return Math.round((r * 299 + g * 587 + b * 114) / 2550); }
+            function textColorOf(r, g, b) { return brightness(r, g, b) > 60 ? '#18181b' : '#f4f4f5'; }
+
+            // ---------- 复制工具（含降级方案） ----------
+            function copyText(text, onDone) {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(onDone).catch(() => fallbackCopy(text, onDone));
+                } else {
+                    fallbackCopy(text, onDone);
+                }
+            }
+            function fallbackCopy(text, onDone) {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                try { document.execCommand('copy'); onDone(); } catch (e) { alert('复制失败，请手动复制'); }
+                document.body.removeChild(ta);
+            }
+
+            // 按钮复制成功反馈
+            function flashBtn(el, text) {
+                const old = el.textContent;
+                el.textContent = text;
+                setTimeout(() => { el.textContent = old; }, 1200);
+            }
+
+            // ---------- 核心逻辑 ----------
+            // 按当前规则重算未锁定的色块
+            function regenerate() {
+                const offsets = RULE_OFFSETS[ruleSelect.value];
+                for (let i = 0; i < 5; i++) {
+                    if (palette[i] && palette[i].locked) continue;
+                    const o = offsets[i];
+                    palette[i] = {
+                        h: base.h + (o.dh || 0),
+                        s: clamp(base.s + (o.ds || 0), 0, 100),
+                        l: clamp(base.l + (o.dl || 0), 0, 100),
+                        locked: false
+                    };
+                }
+            }
+
+            // 渲染 5 色方案
+            function renderPalette() {
+                paletteGrid.innerHTML = '';
+                palette.forEach((c) => {
+                    const rgb = hslToRgb(c.h, c.s, c.l);
+                    const hex = rgbToHex.apply(null, rgb).toUpperCase();
+                    const fg = textColorOf.apply(null, rgb);
+
+                    const swatch = document.createElement('div');
+                    swatch.className = 'swatch' + (c.locked ? ' locked' : '');
+                    swatch.style.background = hex;
+                    swatch.style.color = fg;
+                    swatch.innerHTML =
+                        '<div class="swatch-top"><span class="swatch-hex">' + hex + '</span>' +
+                        '<button class="lock-btn" type="button">' + (c.locked ? '已锁' : '锁定') + '</button></div>' +
+                        '<div class="swatch-bottom">亮度 ' + brightness.apply(null, rgb) + '%</div>';
+
+                    // 点击色块复制 HEX
+                    swatch.addEventListener('click', () => {
+                        copyText(hex, () => flashBtn(swatch.querySelector('.lock-btn'), '已复制'));
+                    });
+                    // 锁定切换（阻止冒泡触发复制）
+                    swatch.querySelector('.lock-btn').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        c.locked = !c.locked;
+                        renderPalette();
+                    });
+                    paletteGrid.appendChild(swatch);
+                });
+            }
+
+            // 渲染明暗色阶
+            function renderShades() {
+                shadeRow.innerHTML = '';
+                SHADE_STEPS.forEach(([step, l]) => {
+                    const rgb = hslToRgb(base.h, base.s, l);
+                    const hex = rgbToHex.apply(null, rgb).toUpperCase();
+                    const cell = document.createElement('div');
+                    cell.className = 'shade-cell';
+                    cell.style.background = hex;
+                    cell.style.color = textColorOf.apply(null, rgb);
+                    cell.innerHTML = '<span>' + step + '</span><span class="shade-hex" style="font-family:monospace">' + hex + '</span>';
+                    cell.addEventListener('click', () => {
+                        copyText(hex, () => flashBtn(cell.querySelector('.shade-hex'), '已复制'));
+                    });
+                    shadeRow.appendChild(cell);
+                });
+            }
+
+            // 当前方案 HEX 数组
+            function paletteHexes() { return palette.map(c => hslToHex(c.h, c.s, c.l).toUpperCase()); }
+
+            // 渲染导出预览
+            function renderExport() {
+                const hexes = paletteHexes();
+                const fmt = exportSelect.value;
+                let text = '';
+                if (fmt === 'css') {
+                    text = ':root {\n' + hexes.map((h, i) => '    --color-' + (i + 1) + ': ' + h.toLowerCase() + ';').join('\n') + '\n}';
+                } else if (fmt === 'tailwind') {
+                    text = '// tailwind.config.js\nmodule.exports = {\n    theme: {\n        extend: {\n            colors: {\n                palette: {\n' +
+                        hexes.map((h, i) => '                    ' + (i + 1) + ": '" + h.toLowerCase() + "',").join('\n') +
+                        '\n                }\n            }\n        }\n    }\n};';
+                } else {
+                    text = JSON.stringify(hexes.map(h => h.toLowerCase()), null, 4);
+                }
+                exportPreview.textContent = text;
+            }
+
+            // 更新滑块背景渐变与数值显示
+            function renderSliders() {
+                hueVal.textContent = Math.round(((base.h % 360) + 360) % 360);
+                satVal.textContent = Math.round(base.s) + '%';
+                lightVal.textContent = Math.round(base.l) + '%';
+                hueSlider.value = hueVal.textContent;
+                satSlider.value = base.s;
+                lightSlider.value = base.l;
+                const stops = [];
+                for (let a = 0; a <= 360; a += 60) stops.push('hsl(' + a + ',80%,55%)'); // 色相：彩虹渐变
+                hueSlider.style.background = 'linear-gradient(to right,' + stops.join(',') + ')';
+                // 饱和度：灰到纯色
+                satSlider.style.background = 'linear-gradient(to right,hsl(' + base.h + ',0%,' + base.l + '%),hsl(' + base.h + ',100%,' + base.l + '%))';
+                // 明度：黑-纯色-白
+                lightSlider.style.background = 'linear-gradient(to right,hsl(' + base.h + ',' + base.s + '%,0%),hsl(' + base.h + ',' + base.s + '%,50%),hsl(' + base.h + ',' + base.s + '%,100%))';
+            }
+
+            // 主色预览与 HEX 输入框
+            function renderBase() {
+                const hex = hslToHex(base.h, base.s, base.l).toUpperCase();
+                basePreview.style.background = hex;
+                if (document.activeElement !== hexInput) hexInput.value = hex;
+            }
+
+            // 全量刷新
+            function renderAll() {
+                renderSliders();
+                renderBase();
+                regenerate();
+                renderPalette();
+                renderShades();
+                renderExport();
+            }
+
+            // ---------- 事件绑定 ----------
+            // 三个滑块：实时更新主色
+            function onSlider() {
+                base.h = +hueSlider.value;
+                base.s = +satSlider.value;
+                base.l = +lightSlider.value;
+                hexInput.classList.remove('invalid');
+                renderAll();
+            }
+            hueSlider.addEventListener('input', onSlider);
+            satSlider.addEventListener('input', onSlider);
+            lightSlider.addEventListener('input', onSlider);
+
+            // HEX 输入：解析后同步主色
+            hexInput.addEventListener('change', () => {
+                const rgb = hexToRgb(hexInput.value);
+                if (!rgb) { hexInput.classList.add('invalid'); return; }
+                hexInput.classList.remove('invalid');
+                const [h, s, l] = rgbToHsl.apply(null, rgb);
+                base.h = h; base.s = s; base.l = l;
+                renderAll();
+            });
+
+            // 规则切换
+            ruleSelect.addEventListener('change', renderAll);
+
+            // 随机方案：随机主色，保留锁定色块
+            randomBtn.addEventListener('click', () => {
+                base.h = Math.floor(Math.random() * 360);
+                base.s = 45 + Math.floor(Math.random() * 50);
+                base.l = 35 + Math.floor(Math.random() * 30);
+                hexInput.classList.remove('invalid');
+                renderAll();
+            });
+
+            // 导出格式切换与复制
+            exportSelect.addEventListener('change', renderExport);
+            copyExportBtn.addEventListener('click', () => {
+                copyText(exportPreview.textContent, () => flashBtn(copyExportBtn, '已复制'));
+            });
+
+            // ---------- 初始化 ----------
+            renderAll();
+        })();
+    </script>
+</body>
+</html>

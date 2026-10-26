@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>image Stitcher</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="Free online image stitcher. Combine multiple images into a range of layouts, with custom output resolution and stretch or crop fitting. Everything runs in your browser.">
+    <link rel="stylesheet" href="common.css">
+    <!-- OGP social sharing tags -->
+    <meta property="og:title" content="image Stitcher | PC-TOOL">
+    <meta property="og:description" content="Free online tools — image conversion, video compression, audio format conversion, background removal… every feature built for productivity, completely free, made for everyone!">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/image-stitch.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="en_US">
+    <style>
+
+        .container {
+            width: 100%;
+            max-width: 700px;
+            z-index: 1;
+            background: rgba(24, 24, 27, 0.3);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 40px;
+            border-radius: 16px;
+            animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .container h1 {
+            color: #e4e4e7;
+            margin-bottom: 25px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .container > p {
+            color: #a1a1aa;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        #stitchFileInput { display: none; }
+
+        .stitch-btn, .download-btn {
+            padding: 12px 25px;
+            background: rgba(24, 24, 27, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        .stitch-btn:hover, .download-btn:hover {
+            background: rgba(39, 39, 42, 0.6);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .stitch-btn:active, .download-btn:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        .download-btn {
+            background: rgba(39, 174, 96, 0.3);
+            border-color: rgba(39, 174, 96, 0.3);
+            display: none;
+        }
+
+        .download-btn:hover {
+            background: rgba(39, 174, 96, 0.5);
+            border-color: rgba(39, 174, 96, 0.5);
+        }
+
+        .stitch-preview-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            min-height: 100px;
+        }
+
+        .stitch-preview-item {
+            width: 100px;
+            height: 100px;
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stitch-preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .stitch-preview-item .remove-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            width: 20px;
+            height: 20px;
+            background: rgba(239, 68, 68, 0.7);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .stitch-result-img {
+            max-width: 100%;
+            max-height: 600px;
+            margin: 20px auto;
+            border-radius: 8px;
+            display: none;
+            object-fit: contain;
+        }
+
+        .layout-selector {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 15px 0;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+
+        .layout-option {
+            flex-shrink: 0;
+            width: 80px;
+            height: 80px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .layout-option:hover { border-color: rgba(129, 140, 248, 0.5); }
+        .layout-option.active {
+            border-color: #818cf8;
+            background: rgba(129, 140, 248, 0.1);
+        }
+
+        .layout-preview {
+            width: 50px;
+            height: 50px;
+            display: grid;
+            gap: 2px;
+        }
+
+        .layout-preview div { background: #a1a1aa; border-radius: 2px; }
+
+        .resolution-inputs {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+            margin: 10px 0;
+            color: #a1a1aa;
+        }
+
+        .res-input {
+            width: 100px;
+            padding: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            color: #e4e4e7;
+        }
+
+        .res-input:focus { outline: none; border-color: rgba(129, 140, 248, 0.5); }
+
+        .fit-mode-group {
+            display: none;
+            justify-content: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .fit-mode-btn {
+            padding: 8px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.05);
+            color: #a1a1aa;
+            transition: all 0.3s;
+        }
+
+        .fit-mode-btn:hover { border-color: rgba(255, 255, 255, 0.2); color: #e4e4e7; }
+        .fit-mode-btn.active {
+            background: rgba(129, 140, 248, 0.2);
+            border-color: #818cf8;
+            color: #e4e4e7;
+        }
+    </style>
+</head>
+<body>
+<canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+    <script src="common.js"></script>
+
+    <a href="../index.html" class="back-link">← Back to Tools</a>
+
+    <div class="container">
+        <h1>image Stitcher</h1>
+        <p>Stitch multiple images in several layouts with custom output resolution, stretch, or crop modes.</p>
+
+        <div class="resolution-inputs">
+            <input type="number" class="res-input" id="outWidth" placeholder="Width" min="0">
+            <span>×</span>
+            <input type="number" class="res-input" id="outHeight" placeholder="Height" min="0">
+        </div>
+
+        <div class="fit-mode-group" id="fitModeGroup">
+            <button class="fit-mode-btn" data-mode="stretch">Stretch</button>
+            <button class="fit-mode-btn" data-mode="cover">Crop</button>
+        </div>
+
+        <div class="layout-selector" id="layoutSelector">
+            Please upload an image
+        </div>
+
+        <div class="upload-area" id="stitchUploadArea">
+            <p>Click or drag to upload multiple images</p>
+            <input type="file" id="stitchFileInput" accept="image/*" multiple>
+        </div>
+        <div class="stitch-preview-list" id="stitchpreviewList">
+            <p style="color: #71717a; width: 100%; text-align: center;">No images uploaded</p>
+        </div>
+        <div style="text-align:center; margin:20px 0;">
+            <select class="format-select" id="stitchOutputFormat">
+                <option value="jpg">JPG</option>
+                <option value="png">PNG</option>
+                <option value="webp">WebP</option>
+                <option value="gif">GIF</option>
+                <option value="bmp">BMP</option>
+                <option value="pdf">PDF</option>
+            </select>
+            <button class="stitch-btn" id="stitchBtn">Stitch images</button>
+            <button class="download-btn" id="stitchDownloadBtn">Download stitched image</button>
+        </div>
+        <div class="result-box" id="stitchResultBox">
+            <h3>Stitching complete</h3>
+            <img id="stitchedimage" class="stitch-result-img">
+        </div>
+        <div class="contact-tip">For feature requests or feedback, join our Discord: <a href="https://discord.gg/wjvS3efTj" target="_blank" rel="noopener noreferrer">https://discord.gg/wjvS3efTj</a></div>
+
+    <script>
+        const stitchUploadArea = document.getElementById('stitchUploadArea');
+        const stitchFileInput = document.getElementById('stitchFileInput');
+        const stitchpreviewList = document.getElementById('stitchpreviewList');
+        const stitchBtn = document.getElementById('stitchBtn');
+        const stitchDownloadBtn = document.getElementById('stitchDownloadBtn');
+        const stitchOutputFormat = document.getElementById('stitchOutputFormat');
+        const stitchResultBox = document.getElementById('stitchResultBox');
+        const stitchedimage = document.getElementById('stitchedimage');
+        const layoutSelector = document.getElementById('layoutSelector');
+
+        const outWidthEl = document.getElementById('outWidth');
+        const outHeightEl = document.getElementById('outHeight');
+        const fitModeGroup = document.getElementById('fitModeGroup');
+        const fitModeBtns = document.querySelectorAll('.fit-mode-btn');
+
+        let stitchimages = [];
+        let stitchedUrl = null;
+        let currentLayout = null;
+        let fitMode = 'none';
+
+        const layoutTemplates = {
+            1: [{ name: 'Single image', cols: 1, rows: 1, calc: () => [{ x: 0, y: 0, w: 1, h: 1 }] }],
+            2: [
+                { name: 'Side by side', cols: 2, rows: 1, calc: () => [{ x: 0, y: 0, w: 0.5, h: 1 }, { x: 0.5, y: 0, w: 0.5, h: 1 }] },
+                { name: 'Stacked vertically', cols: 1, rows: 2, calc: () => [{ x: 0, y: 0, w: 1, h: 0.5 }, { x: 0, y: 0.5, w: 1, h: 0.5 }] }
+            ],
+            3: [
+                { name: 'Three across', cols: 3, rows: 1, calc: () => [{ x: 0, y: 0, w: 1 / 3, h: 1 }, { x: 1 / 3, y: 0, w: 1 / 3, h: 1 }, { x: 2 / 3, y: 0, w: 1 / 3, h: 1 }] },
+                { name: 'Three down', cols: 1, rows: 3, calc: () => [{ x: 0, y: 0, w: 1, h: 1 / 3 }, { x: 0, y: 1 / 3, w: 1, h: 1 / 3 }, { x: 0, y: 2 / 3, w: 1, h: 1 / 3 }] },
+                { name: 'One left, two right', cols: 2, rows: 2, calc: () => [{ x: 0, y: 0, w: 0.5, h: 1 }, { x: 0.5, y: 0, w: 0.5, h: 0.5 }, { x: 0.5, y: 0.5, w: 0.5, h: 0.5 }] },
+                { name: 'Two left, one right', cols: 2, rows: 2, calc: () => [{ x: 0, y: 0, w: 0.5, h: 0.5 }, { x: 0, y: 0.5, w: 0.5, h: 0.5 }, { x: 0.5, y: 0, w: 0.5, h: 1 }] },
+                { name: 'One top, two bottom', cols: 2, rows: 2, calc: () => [{ x: 0, y: 0, w: 1, h: 0.5 }, { x: 0, y: 0.5, w: 0.5, h: 0.5 }, { x: 0.5, y: 0.5, w: 0.5, h: 0.5 }] },
+                { name: 'Two top, one bottom', cols: 2, rows: 2, calc: () => [{ x: 0, y: 0, w: 0.5, h: 0.5 }, { x: 0.5, y: 0, w: 0.5, h: 0.5 }, { x: 0, y: 0.5, w: 1, h: 0.5 }] }
+            ],
+            4: [
+                { name: 'Four-grid', cols: 2, rows: 2, calc: () => [{ x: 0, y: 0, w: 0.5, h: 0.5 }, { x: 0.5, y: 0, w: 0.5, h: 0.5 }, { x: 0, y: 0.5, w: 0.5, h: 0.5 }, { x: 0.5, y: 0.5, w: 0.5, h: 0.5 }] },
+                { name: 'Horizontal strip', cols: 4, rows: 1, calc: n => Array(n).fill(0).map((_, k) => ({ x: k / n, y: 0, w: 1 / n, h: 1 })) },
+                { name: 'Vertical strip', cols: 1, rows: 4, calc: n => Array(n).fill(0).map((_, k) => ({ x: 0, y: k / n, w: 1, h: 1 / n })) }
+            ],
+            5: [
+                { name: '5-image grid', cols: 3, rows: 2, calc: () => [{ x: 0, y: 0, w: 1 / 3, h: 1 / 2 }, { x: 1 / 3, y: 0, w: 1 / 3, h: 1 / 2 }, { x: 2 / 3, y: 0, w: 1 / 3, h: 1 / 2 }, { x: 0, y: 1 / 2, w: 1 / 3, h: 1 / 2 }, { x: 1 / 3, y: 1 / 2, w: 1 / 3, h: 1 / 2 }] },
+                { name: 'Horizontal strip', cols: 5, rows: 1, calc: n => Array(n).fill(0).map((_, k) => ({ x: k / n, y: 0, w: 1 / n, h: 1 })) },
+                { name: 'Vertical strip', cols: 1, rows: 5, calc: n => Array(n).fill(0).map((_, k) => ({ x: 0, y: k / n, w: 1, h: 1 / n })) }
+            ],
+            6: [
+                { name: '6-image grid', cols: 3, rows: 2, calc: () => [{ x: 0, y: 0, w: 1 / 3, h: 1 / 2 }, { x: 1 / 3, y: 0, w: 1 / 3, h: 1 / 2 }, { x: 2 / 3, y: 0, w: 1 / 3, h: 1 / 2 }, { x: 0, y: 1 / 2, w: 1 / 3, h: 1 / 2 }, { x: 1 / 3, y: 1 / 2, w: 1 / 3, h: 1 / 2 }, { x: 2 / 3, y: 1 / 2, w: 1 / 3, h: 1 / 2 }] },
+                { name: 'Horizontal strip', cols: 6, rows: 1, calc: n => Array(n).fill(0).map((_, k) => ({ x: k / n, y: 0, w: 1 / n, h: 1 })) },
+                { name: 'Vertical strip', cols: 1, rows: 6, calc: n => Array(n).fill(0).map((_, k) => ({ x: 0, y: k / n, w: 1, h: 1 / n })) }
+            ],
+            7: [
+                { name: '7-image grid', cols: 3, rows: 3, calc: () => [{ x: 0, y: 0, w: 1 / 3, h: 1 / 3 }, { x: 1 / 3, y: 0, w: 1 / 3, h: 1 / 3 }, { x: 2 / 3, y: 0, w: 1 / 3, h: 1 / 3 }, { x: 0, y: 1 / 3, w: 1 / 3, h: 1 / 3 }, { x: 1 / 3, y: 1 / 3, w: 1 / 3, h: 1 / 3 }, { x: 0, y: 2 / 3, w: 1 / 3, h: 1 / 3 }, { x: 1 / 3, y: 2 / 3, w: 1 / 3, h: 1 / 3 }] },
+                { name: 'Horizontal strip', cols: 7, rows: 1, calc: n => Array(n).fill(0).map((_, k) => ({ x: k / n, y: 0, w: 1 / n, h: 1 })) },
+                { name: 'Vertical strip', cols: 1, rows: 7, calc: n => Array(n).fill(0).map((_, k) => ({ x: 0, y: k / n, w: 1, h: 1 / n })) }
+            ],
+            8: [
+                { name: '8-image grid', cols: 4, rows: 2, calc: () => [{ x: 0, y: 0, w: 1 / 4, h: 1 / 2 }, { x: 1 / 4, y: 0, w: 1 / 4, h: 1 / 2 }, { x: 2 / 4, y: 0, w: 1 / 4, h: 1 / 2 }, { x: 3 / 4, y: 0, w: 1 / 4, h: 1 / 2 }, { x: 0, y: 1 / 2, w: 1 / 4, h: 1 / 2 }, { x: 1 / 4, y: 1 / 2, w: 1 / 4, h: 1 / 2 }, { x: 2 / 4, y: 1 / 2, w: 1 / 4, h: 1 / 2 }, { x: 3 / 4, y: 1 / 2, w: 1 / 4, h: 1 / 2 }] },
+                { name: 'Horizontal strip', cols: 8, rows: 1, calc: n => Array(n).fill(0).map((_, k) => ({ x: k / n, y: 0, w: 1 / n, h: 1 })) },
+                { name: 'Vertical strip', cols: 1, rows: 8, calc: n => Array(n).fill(0).map((_, k) => ({ x: 0, y: k / n, w: 1, h: 1 / n })) }
+            ],
+            9: [
+                { name: 'Nine-grid', cols: 3, rows: 3, calc: () => [{ x: 0, y: 0, w: 1 / 3, h: 1 / 3 }, { x: 1 / 3, y: 0, w: 1 / 3, h: 1 / 3 }, { x: 2 / 3, y: 0, w: 1 / 3, h: 1 / 3 }, { x: 0, y: 1 / 3, w: 1 / 3, h: 1 / 3 }, { x: 1 / 3, y: 1 / 3, w: 1 / 3, h: 1 / 3 }, { x: 2 / 3, y: 1 / 3, w: 1 / 3, h: 1 / 3 }, { x: 0, y: 2 / 3, w: 1 / 3, h: 1 / 3 }, { x: 1 / 3, y: 2 / 3, w: 1 / 3, h: 1 / 3 }, { x: 2 / 3, y: 2 / 3, w: 1 / 3, h: 1 / 3 }] },
+                { name: 'Horizontal strip', cols: 9, rows: 1, calc: n => Array(n).fill(0).map((_, k) => ({ x: k / n, y: 0, w: 1 / n, h: 1 })) },
+                { name: 'Vertical strip', cols: 1, rows: 9, calc: n => Array(n).fill(0).map((_, k) => ({ x: 0, y: k / n, w: 1, h: 1 / n })) }
+            ]
+        };
+
+        function renderLayouts() {
+            const count = stitchimages.length;
+            layoutSelector.innerHTML = '';
+            if (count < 1) { layoutSelector.textContent = 'Please upload an image'; currentLayout = null; return; }
+            const key = Math.min(count, 9);
+            const layouts = layoutTemplates[key] || layoutTemplates[4];
+            layouts.forEach((layout, idx) => {
+                const opt = document.createElement('div');
+                opt.className = 'layout-option ' + (idx === 0 ? 'active' : '');
+                const prev = document.createElement('div');
+                prev.className = 'layout-preview';
+                prev.style.gridTemplateColumns = 'repeat(' + layout.cols + ', 1fr)';
+                prev.style.gridTemplateRows = 'repeat(' + layout.rows + ', 1fr)';
+                for (let i = 0; i < count; i++) { const dot = document.createElement('div'); prev.appendChild(dot); }
+                opt.appendChild(prev);
+                opt.onclick = () => {
+                    document.querySelectorAll('.layout-option').forEach(e => e.classList.remove('active'));
+                    opt.classList.add('active');
+                    currentLayout = layout;
+                };
+                layoutSelector.appendChild(opt);
+            });
+            currentLayout = layouts[0];
+        }
+
+        function updateFitModeGroup() {
+            const w = parseInt(outWidthEl.value) || 0;
+            const h = parseInt(outHeightEl.value) || 0;
+            fitModeGroup.style.display = (w > 0 && h > 0) ? 'flex' : 'none';
+        }
+        outWidthEl.addEventListener('input', updateFitModeGroup);
+        outHeightEl.addEventListener('input', updateFitModeGroup);
+
+        fitModeBtns.forEach(btn => {
+            btn.onclick = () => {
+                const mode = btn.dataset.mode;
+                if (fitMode === mode) {
+                    fitMode = 'none';
+                    btn.classList.remove('active');
+                } else {
+                    fitMode = mode;
+                    fitModeBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                }
+            };
+        });
+
+        stitchUploadArea.onclick = () => { stitchFileInput.value = ''; stitchFileInput.click(); };
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(e => { stitchUploadArea.addEventListener(e, ev => { ev.preventDefault(); ev.stopPropagation(); }); });
+        stitchUploadArea.ondrop = e => {
+            const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+            if (files.length) addStitchimages(files);
+        };
+        stitchFileInput.onchange = e => addStitchimages(Array.from(e.target.files));
+
+        function addStitchimages(files) {
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    stitchimages.push({ id: Math.random(), url: e.target.result });
+                    updateStitchpreview();
+                    renderLayouts();
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function updateStitchpreview() {
+            if (stitchimages.length === 0) {
+                stitchpreviewList.innerHTML = '<p style="width:100%;text-align:center;color:#888">No images yet</p>';
+                return;
+            }
+            stitchpreviewList.innerHTML = '';
+            stitchimages.forEach(img => {
+                const item = document.createElement('div');
+                item.className = 'stitch-preview-item';
+                item.innerHTML = '<img src="' + img.url + '"><div class="remove-btn" data-id="' + img.id + '">×</div>';
+                stitchpreviewList.appendChild(item);
+            });
+        }
+
+        stitchpreviewList.onclick = e => {
+            if (e.target.classList.contains('remove-btn')) {
+                const id = parseFloat(e.target.dataset.id);
+                stitchimages = stitchimages.filter(i => i.id !== id);
+                updateStitchpreview();
+                renderLayouts();
+            }
+        };
+
+        stitchBtn.onclick = async () => {
+            if (stitchimages.length < 1) return alert('Add at least 1 image');
+            if (!currentLayout) return alert('Please select a layout');
+            stitchResultBox.style.display = 'none';
+            stitchedimage.style.display = 'none';
+            stitchDownloadBtn.style.display = 'none';
+
+            try {
+                const imgs = await Promise.all(stitchimages.map(i => loadImg(i.url)));
+                const n = imgs.length;
+                const cells = currentLayout.calc(n);
+                const targetW = parseInt(outWidthEl.value) || 0;
+                const targetH = parseInt(outHeightEl.value) || 0;
+                const useCustom = targetW > 0 && targetH > 0;
+
+                const canvas2 = document.createElement('canvas');
+                const maxW = Math.max(...imgs.map(i => i.width));
+                const maxH = Math.max(...imgs.map(i => i.height));
+
+                if (useCustom) {
+                    canvas2.width = targetW;
+                    canvas2.height = targetH;
+                } else {
+                    if (layoutIsHorizontal(currentLayout)) {
+                        canvas2.width = imgs.reduce((s, i) => s + i.width, 0);
+                        canvas2.height = maxH;
+                    } else if (layoutIsVertical(currentLayout)) {
+                        canvas2.width = maxW;
+                        canvas2.height = imgs.reduce((s, i) => s + i.height, 0);
+                    } else {
+                        canvas2.width = maxW * 3;
+                        canvas2.height = maxH * 3;
+                    }
+                }
+
+                const ctx3 = canvas2.getContext('2d');
+                ctx3.fillStyle = '#fff';
+                ctx3.fillRect(0, 0, canvas2.width, canvas2.height);
+                const CW = canvas2.width, CH = canvas2.height;
+
+                imgs.forEach((img, i) => {
+                    const cell = cells[i];
+                    const x = cell.x * CW;
+                    const y = cell.y * CH;
+                    const w = cell.w * CW;
+                    const h = cell.h * CH;
+
+                    if (fitMode === 'stretch') {
+                        ctx3.drawImage(img, x, y, w, h);
+                    } else if (fitMode === 'cover') {
+                        const ratio = Math.max(w / img.width, h / img.height);
+                        const iw = img.width * ratio;
+                        const ih = img.height * ratio;
+                        const ix = x + (w - iw) / 2;
+                        const iy = y + (h - ih) / 2;
+                        ctx3.drawImage(img, ix, iy, iw, ih);
+                    } else {
+                        const ratio = Math.min(w / img.width, h / img.height);
+                        const iw = img.width * ratio;
+                        const ih = img.height * ratio;
+                        const ix = x + (w - iw) / 2;
+                        const iy = y + (h - ih) / 2;
+                        ctx3.drawImage(img, ix, iy, iw, ih);
+                    }
+                });
+
+                const fmt = stitchOutputFormat.value.toLowerCase();
+                if (fmt === 'pdf') {
+                    const { jsPDF } = jspdf;
+                    const pdf = new jsPDF({
+                        orientation: CW > CH ? 'landscape' : 'portrait',
+                        unit: 'px',
+                        format: [CW, CH]
+                    });
+                    pdf.addimage(canvas2.toDataURL('image/png'), 'PNG', 0, 0, CW, CH);
+                    stitchedUrl = pdf.output('bloburl');
+                    stitchResultBox.innerHTML = '<h3>PDF stitching complete</h3><p>Click download to view the result.</p>';
+                } else {
+                    stitchedUrl = canvas2.toDataURL('image/' + fmt, 0.95);
+                    stitchedimage.src = stitchedUrl;
+                    stitchedimage.style.display = 'block';
+                }
+                stitchResultBox.style.display = 'block';
+                stitchDownloadBtn.style.display = 'inline-block';
+            } catch (e) {
+                alert('Stitching failed: ' + e.message);
+            }
+        };
+
+        function layoutIsHorizontal(layout) { return layout.rows === 1; }
+        function layoutIsVertical(layout) { return layout.cols === 1; }
+
+        stitchDownloadBtn.onclick = () => {
+            const a = document.createElement('a');
+            a.href = stitchedUrl;
+            a.download = 'stitched-result.' + stitchOutputFormat.value;
+            a.click();
+        };
+
+        function loadImg(url) {
+            return new Promise((res, rej) => {
+                const i = new Image();
+                i.onload = () => res(i);
+                i.onerror = rej;
+                i.src = url;
+            });
+        }
+
+        renderLayouts();
+        updateFitModeGroup();
+    </script>
+</body>
+</html>

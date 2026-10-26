@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>函数图像可视化绘制 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="在线多函数图像绘制与数学可视化工具，支持正弦、余弦、幂函数、对数、高斯分布等多函数同屏对比、鼠标拖拽缩放与坐标点探查。">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .container {
+            max-width: 1040px;
+            width: 100%;
+            padding: 32px;
+        }
+        .graph-layout {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 20px;
+            margin-top: 18px;
+        }
+        @media (max-width: 860px) {
+            .graph-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+        .panel-box {
+            background: rgba(18, 18, 20, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .panel-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #e4e4e7;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .func-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 280px;
+            overflow-y: auto;
+        }
+        .func-item {
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .func-color-indicator {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .func-input-wrap {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 6px;
+            padding: 4px 8px;
+        }
+        .func-prefix {
+            font-family: 'Consolas', monospace;
+            font-size: 13px;
+            color: #818cf8;
+            margin-right: 4px;
+            user-select: none;
+        }
+        .func-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #fff;
+            font-family: 'Consolas', monospace;
+            font-size: 13px;
+        }
+        .func-del-btn {
+            background: transparent;
+            border: none;
+            color: #71717a;
+            cursor: pointer;
+            padding: 4px;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+        .func-del-btn:hover {
+            color: #f87171;
+        }
+        .btn-styled {
+            background: rgba(129, 140, 248, 0.15);
+            border: 1px solid rgba(129, 140, 248, 0.3);
+            color: #818cf8;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        .btn-styled:hover {
+            background: rgba(129, 140, 248, 0.25);
+            border-color: rgba(129, 140, 248, 0.5);
+            color: #fff;
+        }
+        .preset-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .preset-chip {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 11px;
+            color: #a1a1aa;
+            cursor: pointer;
+            font-family: monospace;
+            transition: all 0.15s;
+        }
+        .preset-chip:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        .canvas-card {
+            background: #0d0d11;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6);
+        }
+        .canvas-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            font-size: 12px;
+            color: #a1a1aa;
+        }
+        .canvas-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .canvas-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #e4e4e7;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .canvas-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+        #graphCanvas {
+            width: 100%;
+            height: 480px;
+            cursor: crosshair;
+            display: block;
+        }
+        .hover-coord-tooltip {
+            position: absolute;
+            bottom: 12px;
+            right: 14px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 12px;
+            font-family: 'Consolas', monospace;
+            color: #38bdf8;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+    <a href="../index.html" class="back-link">← 返回首页</a>
+
+    <div class="container">
+        <h1 style="font-size: 24px; color: #f4f4f5; margin-bottom: 6px;">函数图像可视化</h1>
+        <p style="color: #a1a1aa; font-size: 14px; margin-bottom: 8px;">支持常规初等函数、三角函数、复合函数等同时绘制与交互式图像探查。支持鼠标拖拽平移与滚轮缩放。</p>
+
+        <div class="graph-layout">
+            <!-- 左侧控制面板 -->
+            <div class="panel-box">
+                <div class="panel-title">
+                    <span>函数表达式列表</span>
+                    <button class="btn-styled" style="padding: 4px 10px; font-size: 12px;" onclick="addFunction()">+ 添加函数</button>
+                </div>
+
+                <div class="func-list" id="funcList">
+                    <!-- 函数项动态生成 -->
+                </div>
+
+                <div class="panel-title">
+                    <span>快捷常用函数</span>
+                </div>
+                <div class="preset-tags">
+                    <span class="preset-chip" onclick="applyPreset('sin(x)')">sin(x)</span>
+                    <span class="preset-chip" onclick="applyPreset('cos(x)')">cos(x)</span>
+                    <span class="preset-chip" onclick="applyPreset('tan(x)')">tan(x)</span>
+                    <span class="preset-chip" onclick="applyPreset('x^2')">x²</span>
+                    <span class="preset-chip" onclick="applyPreset('x^3 - 3*x')">x³ - 3x</span>
+                    <span class="preset-chip" onclick="applyPreset('sqrt(x)')">√x</span>
+                    <span class="preset-chip" onclick="applyPreset('1/x')">1/x</span>
+                    <span class="preset-chip" onclick="applyPreset('abs(x)')">|x|</span>
+                    <span class="preset-chip" onclick="applyPreset('exp(-x^2)')">e^(-x²)</span>
+                    <span class="preset-chip" onclick="applyPreset('ln(x)')">ln(x)</span>
+                    <span class="preset-chip" onclick="applyPreset('sin(x)/x')">sinc(x)</span>
+                </div>
+
+                <div style="font-size: 12px; color: #71717a; line-height: 1.6; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 10px;">
+                    <b>支持语法：</b><br>
+                    • 基础：+ - * / ^ (如 <code>x^2 + 2*x</code>)<br>
+                    • 函数：sin, cos, tan, sqrt, abs, ln, exp<br>
+                    • 常数：pi, e<br>
+                    • 操作：按住鼠标左键拖拽平移，鼠标滚轮放大/缩小
+                </div>
+            </div>
+
+            <!-- 右侧画布 -->
+            <div class="canvas-card">
+                <div class="canvas-toolbar">
+                    <span id="canvasRangeText">X: [-10, 10] | Y: [-7, 7]</span>
+                    <div class="canvas-actions">
+                        <button class="canvas-btn" onclick="zoom(0.8)">放大 +</button>
+                        <button class="canvas-btn" onclick="zoom(1.25)">缩小 -</button>
+                        <button class="canvas-btn" onclick="resetView()">复位视图</button>
+                    </div>
+                </div>
+                <div style="position: relative; width: 100%;">
+                    <canvas id="graphCanvas"></canvas>
+                    <div class="hover-coord-tooltip" id="hoverCoord">X: 0.00, Y: 0.00</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        const COLOR_PALETTE = [
+            '#38bdf8', // 天蓝
+            '#f43f5e', // 玫瑰红
+            '#10b981', // 翡翠绿
+            '#fbbf24', // 暖黄
+            '#a855f7', // 亮紫
+            '#ec4899'  // 粉红
+        ];
+
+        let functions = [
+            { id: 1, expr: 'sin(x)', color: '#38bdf8' },
+            { id: 2, expr: 'cos(x)', color: '#f43f5e' }
+        ];
+
+        // 视口坐标范围
+        let originX = 0; // 屏幕中心相对的世界坐标偏移
+        let originY = 0;
+        let scale = 40; // 像素 / 单位
+
+        const canvas = document.getElementById('graphCanvas');
+        const ctx = canvas.getContext('2d');
+        const funcListEl = document.getElementById('funcList');
+        const hoverCoordEl = document.getElementById('hoverCoord');
+        const canvasRangeText = document.getElementById('canvasRangeText');
+
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * window.devicePixelRatio;
+            canvas.height = rect.height * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            draw();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        function renderFunctionList() {
+            funcListEl.innerHTML = '';
+            functions.forEach((fn, index) => {
+                const item = document.createElement('div');
+                item.className = 'func-item';
+                item.innerHTML = `
+                    <span class="func-color-indicator" style="background: ${fn.color};"></span>
+                    <div class="func-input-wrap">
+                        <span class="func-prefix">f${index + 1}(x)=</span>
+                        <input type="text" class="func-input" value="${fn.expr}" data-id="${fn.id}">
+                    </div>
+                    ${functions.length > 1 ? `<button class="func-del-btn" onclick="removeFunction(${fn.id})">✕</button>` : ''}
+                `;
+                const input = item.querySelector('.func-input');
+                input.addEventListener('input', (e) => {
+                    fn.expr = e.target.value.trim();
+                    draw();
+                });
+                funcListEl.appendChild(item);
+            });
+        }
+
+        function addFunction(initialExpr = '') {
+            const nextColor = COLOR_PALETTE[functions.length % COLOR_PALETTE.length];
+            functions.push({
+                id: Date.now(),
+                expr: initialExpr || 'x',
+                color: nextColor
+            });
+            renderFunctionList();
+            draw();
+        }
+
+        function removeFunction(id) {
+            functions = functions.filter(f => f.id !== id);
+            renderFunctionList();
+            draw();
+        }
+
+        function applyPreset(expr) {
+            if (functions.length === 1 && (!functions[0].expr || functions[0].expr === 'x')) {
+                functions[0].expr = expr;
+            } else {
+                addFunction(expr);
+            }
+            renderFunctionList();
+            draw();
+        }
+
+        function parseExpression(expr) {
+            if (!expr) return null;
+            try {
+                let code = expr;
+                // 常数
+                code = code.replace(/\bpi\b/gi, 'Math.PI').replace(/\be\b/g, 'Math.E');
+                // 乘方 ^
+                while (code.includes('^')) {
+                    code = code.replace(/([a-zA-Z0-9_.]+|\([^()]+\))\^([a-zA-Z0-9_.]+|\([^()]+\))/g, 'Math.pow($1,$2)');
+                }
+                // 常见函数映射
+                const funcs = ['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'sqrt', 'abs', 'exp', 'floor', 'ceil'];
+                funcs.forEach(f => {
+                    const reg = new RegExp(`\\b${f}\\(`, 'g');
+                    code = code.replace(reg, `Math.${f}(`);
+                });
+                code = code.replace(/\bln\(/g, 'Math.log(');
+                code = code.replace(/\blog\(/g, 'Math.log10(');
+
+                return new Function('x', `"use strict"; try { return (${code}); } catch(e) { return NaN; }`);
+            } catch (err) {
+                return null;
+            }
+        }
+
+        function toScreen(x, y, w, h) {
+            return {
+                sx: w / 2 + (x - originX) * scale,
+                sy: h / 2 - (y - originY) * scale
+            };
+        }
+
+        function toWorld(sx, sy, w, h) {
+            return {
+                x: (sx - w / 2) / scale + originX,
+                y: (h / 2 - sy) / scale + originY
+            };
+        }
+
+        function draw() {
+            const rect = canvas.getBoundingClientRect();
+            const W = rect.width;
+            const H = rect.height;
+
+            ctx.clearRect(0, 0, W, H);
+
+            // 背景色
+            ctx.fillStyle = '#0c0c0f';
+            ctx.fillRect(0, 0, W, H);
+
+            // 计算视口范围
+            const topLeft = toWorld(0, 0, W, H);
+            const bottomRight = toWorld(W, H, W, H);
+            canvasRangeText.textContent = `X: [${topLeft.x.toFixed(1)}, ${bottomRight.x.toFixed(1)}] | Y: [${bottomRight.y.toFixed(1)}, ${topLeft.y.toFixed(1)}]`;
+
+            // 动态网格步长
+            let step = 1;
+            if (scale < 15) step = 5;
+            if (scale < 5) step = 10;
+            if (scale > 100) step = 0.5;
+            if (scale > 250) step = 0.2;
+
+            // 绘制精细网格线
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+
+            const startX = Math.floor(topLeft.x / step) * step;
+            for (let x = startX; x <= bottomRight.x; x += step) {
+                const sx = toScreen(x, 0, W, H).sx;
+                ctx.beginPath();
+                ctx.moveTo(sx, 0);
+                ctx.lineTo(sx, H);
+                ctx.stroke();
+            }
+
+            const startY = Math.floor(bottomRight.y / step) * step;
+            for (let y = startY; y <= topLeft.y; y += step) {
+                const sy = toScreen(0, y, W, H).sy;
+                ctx.beginPath();
+                ctx.moveTo(0, sy);
+                ctx.lineTo(W, sy);
+                ctx.stroke();
+            }
+
+            // 绘制坐标主轴
+            const axis = toScreen(0, 0, W, H);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+            ctx.lineWidth = 1.5;
+
+            // X 轴
+            if (axis.sy >= 0 && axis.sy <= H) {
+                ctx.beginPath();
+                ctx.moveTo(0, axis.sy);
+                ctx.lineTo(W, axis.sy);
+                ctx.stroke();
+            }
+            // Y 轴
+            if (axis.sx >= 0 && axis.sx <= W) {
+                ctx.beginPath();
+                ctx.moveTo(axis.sx, 0);
+                ctx.lineTo(axis.sx, H);
+                ctx.stroke();
+            }
+
+            // 绘制刻度数值
+            ctx.fillStyle = '#71717a';
+            ctx.font = '10px Consolas, monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+
+            for (let x = startX; x <= bottomRight.x; x += step) {
+                if (Math.abs(x) < 0.0001) continue;
+                const sx = toScreen(x, 0, W, H).sx;
+                const labelY = Math.min(Math.max(axis.sy + 4, 10), H - 18);
+                ctx.fillText(Number(x.toFixed(2)), sx, labelY);
+            }
+
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            for (let y = startY; y <= topLeft.y; y += step) {
+                if (Math.abs(y) < 0.0001) continue;
+                const sy = toScreen(0, y, W, H).sy;
+                const labelX = Math.min(Math.max(axis.sx - 6, 30), W - 6);
+                ctx.fillText(Number(y.toFixed(2)), labelX, sy);
+            }
+
+            // 绘制各个函数图像
+            functions.forEach(fn => {
+                if (!fn.expr) return;
+                const evalFunc = parseExpression(fn.expr);
+                if (!evalFunc) return;
+
+                ctx.strokeStyle = fn.color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+
+                let isDrawing = false;
+                const pixelStep = 1; // 逐像素平滑采样
+
+                for (let sx = 0; sx <= W; sx += pixelStep) {
+                    const worldX = toWorld(sx, 0, W, H).x;
+                    const worldY = evalFunc(worldX);
+
+                    if (typeof worldY === 'number' && !isNaN(worldY) && isFinite(worldY)) {
+                        const sy = toScreen(worldX, worldY, W, H).sy;
+                        // 过滤间断点激变
+                        if (!isDrawing || Math.abs(sy - (ctx.lastSy || sy)) > H * 1.5) {
+                            ctx.moveTo(sx, sy);
+                            isDrawing = true;
+                        } else {
+                            ctx.lineTo(sx, sy);
+                        }
+                        ctx.lastSy = sy;
+                    } else {
+                        isDrawing = false;
+                    }
+                }
+                ctx.stroke();
+            });
+        }
+
+        // 交互：平移与缩放
+        let isDragging = false;
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+
+        canvas.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
+                const sx = e.clientX - rect.left;
+                const sy = e.clientY - rect.top;
+                const world = toWorld(sx, sy, rect.width, rect.height);
+                hoverCoordEl.textContent = `X: ${world.x.toFixed(2)}, Y: ${world.y.toFixed(2)}`;
+            }
+
+            if (!isDragging) return;
+            const dx = e.clientX - lastMouseX;
+            const dy = e.clientY - lastMouseY;
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+
+            originX -= dx / scale;
+            originY += dy / scale;
+            draw();
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const mouseWorldBefore = toWorld(e.clientX - rect.left, e.clientY - rect.top, rect.width, rect.height);
+
+            const zoomFactor = e.deltaY < 0 ? 1.15 : 0.85;
+            scale = Math.min(Math.max(scale * zoomFactor, 2), 2000);
+
+            const mouseWorldAfter = toWorld(e.clientX - rect.left, e.clientY - rect.top, rect.width, rect.height);
+            originX += mouseWorldBefore.x - mouseWorldAfter.x;
+            originY += mouseWorldBefore.y - mouseWorldAfter.y;
+
+            draw();
+        }, { passive: false });
+
+        function zoom(factor) {
+            scale = Math.min(Math.max(scale / factor, 2), 2000);
+            draw();
+        }
+
+        function resetView() {
+            originX = 0;
+            originY = 0;
+            scale = 40;
+            draw();
+        }
+
+        renderFunctionList();
+        setTimeout(resizeCanvas, 50);
+    </script>
+</body>
+</html>

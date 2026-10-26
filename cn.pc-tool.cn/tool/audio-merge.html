@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>音频合并</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="免费在线音频合并工具，多段音频首尾拼接，纯浏览器端处理，安全免费。">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="音频合并 | PC-TOOL">
+    <meta property="og:description" content="免费在线工具集合——图片转换、视频压缩、音频转格式、图片抠图……每一个功能都为效率而生，完全免费，为人民服务！">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/audio-merge.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="zh_CN">
+    <script src="https://unpkg.com/lamejs@1.2.1/lame.min.js"></script>
+    <style>
+        #audioInput { display: none; }
+        .file-list {
+            margin: 15px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 8px;
+            gap: 10px;
+        }
+        .file-item .name {
+            flex: 1;
+            color: #e4e4e7;
+            font-size: 14px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .file-item .size {
+            color: #71717a;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+        .file-item .remove-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: #a1a1aa;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+        .file-item .remove-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+        }
+        .file-item .drag-handle {
+            cursor: grab;
+            color: #52525b;
+            font-size: 16px;
+            flex-shrink: 0;
+            user-select: none;
+        }
+        .file-item.dragging {
+            opacity: 0.5;
+        }
+        .file-item.drag-over {
+            border-color: rgba(129, 140, 248, 0.5);
+            background: rgba(129, 140, 248, 0.08);
+        }
+    </style>
+</head>
+<body>
+<canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <a href="../index.html" class="back-link">← 返回转换工具首页</a>
+
+    <div class="container">
+        <h1>音频合并</h1>
+        <p>多段音频首尾拼接，拖拽调整顺序</p>
+
+        <div class="upload-area" id="uploadArea">
+            <p>点击或拖拽上传多个音频文件</p>
+            <input type="file" id="audioInput" accept="audio/*" multiple>
+        </div>
+
+        <div class="file-list" id="fileList"></div>
+
+        <div style="text-align:center;">
+            <select class="format-select" id="outputFormat">
+                <option value="wav">WAV 格式</option>
+                <option value="mp3">MP3 格式</option>
+            </select>
+            <button class="convert-btn" id="mergeBtn">开始合并</button>
+            <button class="download-btn" id="downloadBtn">下载合并音频</button>
+        </div>
+
+        <div class="result-box" id="resultBox">
+            <h3>合并完成</h3>
+            <div class="size-info" id="sizeInfo"></div>
+            <audio id="audioPreview" controls style="width:100%; margin-top:10px;"></audio>
+        </div>
+
+        <div class="contact-tip">面向大众，有任何想要的功能或者意见，请联系QQ交流群：<strong>1121812272</strong></div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const audioInput = document.getElementById('audioInput');
+        const mergeBtn = document.getElementById('mergeBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const resultBox = document.getElementById('resultBox');
+        const sizeInfo = document.getElementById('sizeInfo');
+        const audioPreview = document.getElementById('audioPreview');
+        const fileList = document.getElementById('fileList');
+        const outputFormat = document.getElementById('outputFormat');
+
+        let audioFiles = [];
+        let audioUrl = null;
+
+        uploadArea.onclick = () => audioInput.click();
+        setupDragDrop(uploadArea, (files) => {
+            const audioFiles = Array.from(files).filter(f => f.type.startsWith('audio/') || /\.(mp3|wav|ogg|m4a|flac|aac)$/i.test(f.name));
+            if (audioFiles.length > 0) addFiles(audioFiles);
+            else showToast('请上传音频文件');
+        });
+
+        audioInput.onchange = (e) => addFiles(Array.from(e.target.files));
+        audioInput.value = '';
+
+        function addFiles(files) {
+            audioFiles.push(...files);
+            renderFileList();
+        }
+
+        function removeFile(index) {
+            audioFiles.splice(index, 1);
+            renderFileList();
+            resultBox.style.display = 'none';
+            downloadBtn.style.display = 'none';
+        }
+
+        function renderFileList() {
+            fileList.innerHTML = audioFiles.map((f, i) => `
+                <div class="file-item" draggable="true" data-index="${i}">
+                    <span class="drag-handle">⋮⋮</span>
+                    <span class="name">${f.name}</span>
+                    <span class="size">${formatSize(f.size)}</span>
+                    <button class="remove-btn" data-index="${i}">✕</button>
+                </div>
+            `).join('');
+
+            fileList.querySelectorAll('.remove-btn').forEach(btn => {
+                btn.onclick = () => removeFile(parseInt(btn.dataset.index));
+            });
+
+            // Drag and drop reorder
+            let dragIdx = -1;
+            fileList.querySelectorAll('.file-item').forEach(item => {
+                item.ondragstart = (e) => {
+                    dragIdx = parseInt(item.dataset.index);
+                    item.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                };
+                item.ondragend = () => item.classList.remove('dragging');
+                item.ondragover = (e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    item.classList.add('drag-over');
+                };
+                item.ondragleave = () => item.classList.remove('drag-over');
+                item.ondrop = (e) => {
+                    e.preventDefault();
+                    item.classList.remove('drag-over');
+                    const targetIdx = parseInt(item.dataset.index);
+                    if (dragIdx !== targetIdx) {
+                        const [moved] = audioFiles.splice(dragIdx, 1);
+                        audioFiles.splice(targetIdx, 0, moved);
+                        renderFileList();
+                    }
+                };
+            });
+        }
+
+        function audioBufferToWavBlob(buffer) {
+            const numChannels = buffer.numberOfChannels;
+            const length = buffer.length;
+            const sampleRate = buffer.sampleRate;
+            const bitsPerSample = 16;
+            const byteRate = sampleRate * numChannels * bitsPerSample / 8;
+            const blockAlign = numChannels * bitsPerSample / 8;
+            const dataSize = length * numChannels * bitsPerSample / 8;
+            const headerSize = 44;
+            const totalSize = headerSize + dataSize;
+            const arrayBuffer = new ArrayBuffer(totalSize);
+            const view = new DataView(arrayBuffer);
+
+            function writeString(offset, str) {
+                for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+            }
+
+            writeString(0, 'RIFF');
+            view.setUint32(4, totalSize - 8, true);
+            writeString(8, 'WAVE');
+            writeString(12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, byteRate, true);
+            view.setUint16(32, blockAlign, true);
+            view.setUint16(34, bitsPerSample, true);
+            writeString(36, 'data');
+            view.setUint32(40, dataSize, true);
+
+            let offset = 44;
+            for (let i = 0; i < length; i++) {
+                for (let ch = 0; ch < numChannels; ch++) {
+                    const sample = Math.max(-1, Math.min(1, buffer.getChannelData(ch)[i]));
+                    view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+                    offset += 2;
+                }
+            }
+            return new Blob([arrayBuffer], { type: 'audio/wav' });
+        }
+
+        mergeBtn.onclick = async () => {
+            if (audioFiles.length < 2) { showToast('请至少添加2个音频文件'); return; }
+
+            mergeBtn.disabled = true;
+            mergeBtn.textContent = '合并中...';
+
+            try {
+                // Decode all audio files
+                const buffers = [];
+                let maxChannels = 0;
+                let sampleRate = 44100;
+
+                for (const file of audioFiles) {
+                    const ab = await file.arrayBuffer();
+                    const actx = new (window.AudioContext || window.webkitAudioContext)();
+                    const buf = await actx.decodeAudioData(ab);
+                    buffers.push(buf);
+                    if (buf.numberOfChannels > maxChannels) maxChannels = buf.numberOfChannels;
+                    sampleRate = buf.sampleRate;
+                    actx.close();
+                }
+
+                // Calculate total length
+                let totalLength = 0;
+                for (const buf of buffers) totalLength += buf.length;
+
+                // Create merged buffer
+                const mergedCtx = new OfflineAudioContext(maxChannels, totalLength, sampleRate);
+                let timeOffset = 0;
+
+                for (const buf of buffers) {
+                    // Resample if needed
+                    let useBuf = buf;
+                    if (buf.sampleRate !== sampleRate) {
+                        const resampleCtx = new OfflineAudioContext(buf.numberOfChannels, Math.ceil(buf.duration * sampleRate), sampleRate);
+                        const src = resampleCtx.createBufferSource();
+                        src.buffer = buf;
+                        src.connect(resampleCtx.destination);
+                        src.start();
+                        useBuf = await resampleCtx.startRendering();
+                    }
+
+                    const source = mergedCtx.createBufferSource();
+                    source.buffer = useBuf;
+                    // If fewer channels, mono gets upmixed by browser
+                    source.connect(mergedCtx.destination);
+                    source.start(timeOffset);
+                    timeOffset += useBuf.duration;
+                }
+
+                const mergedBuffer = await mergedCtx.startRendering();
+
+                let blob;
+                const fmt = outputFormat.value;
+                if (fmt === 'wav') {
+                    blob = audioBufferToWavBlob(mergedBuffer);
+                } else {
+                    // MP3 via lamejs
+                    blob = encodeMP3(mergedBuffer);
+                }
+
+                if (audioUrl) URL.revokeObjectURL(audioUrl);
+                audioUrl = URL.createObjectURL(blob);
+
+                const totalSize = audioFiles.reduce((s, f) => s + f.size, 0);
+                sizeInfo.innerHTML = '文件数：<span class="highlight">' + audioFiles.length + '</span><br>合并前总大小：' + formatSize(totalSize) + '<br>合并后大小：<span class="highlight">' + formatSize(blob.size) + '</span><br>总时长：<span class="highlight">' + mergedBuffer.duration.toFixed(1) + 's</span>';
+                audioPreview.src = audioUrl;
+                resultBox.style.display = 'block';
+                downloadBtn.style.display = 'inline-block';
+            } catch (e) {
+                showToast('合并失败：' + e.message);
+            } finally {
+                mergeBtn.disabled = false;
+                mergeBtn.textContent = '开始合并';
+            }
+        };
+
+        function encodeMP3(buffer) {
+            // 使用 lamejs 编码 AudioBuffer → MP3
+            const numChannels = buffer.numberOfChannels;
+            const sampleRate = buffer.sampleRate;
+            const length = buffer.length;
+
+            const mp3encoder = new lamejs.Mp3Encoder(numChannels, sampleRate, 128);
+            const mp3Data = [];
+            const blockSize = 1152;
+
+            const left = new Int16Array(length);
+            for (let i = 0; i < length; i++) {
+                const sample = Math.max(-1, Math.min(1, buffer.getChannelData(0)[i]));
+                left[i] = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+            }
+
+            if (numChannels === 1) {
+                for (let i = 0; i < length; i += blockSize) {
+                    const chunk = left.subarray(i, i + blockSize);
+                    const mp3buf = mp3encoder.encodeBuffer(chunk);
+                    if (mp3buf.length > 0) mp3Data.push(mp3buf);
+                }
+            } else {
+                const right = new Int16Array(length);
+                for (let i = 0; i < length; i++) {
+                    const sample = Math.max(-1, Math.min(1, buffer.getChannelData(1)[i]));
+                    right[i] = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+                }
+                for (let i = 0; i < length; i += blockSize) {
+                    const chunkL = left.subarray(i, i + blockSize);
+                    const chunkR = right.subarray(i, i + blockSize);
+                    const mp3buf = mp3encoder.encodeBuffer(chunkL, chunkR);
+                    if (mp3buf.length > 0) mp3Data.push(mp3buf);
+                }
+            }
+
+            const finalBuf = mp3encoder.flush();
+            if (finalBuf.length > 0) mp3Data.push(finalBuf);
+
+            return new Blob(mp3Data, { type: 'audio/mp3' });
+        }
+
+        downloadBtn.onclick = () => {
+            const a = document.createElement('a');
+            a.href = audioUrl;
+            const ext = outputFormat.value;
+            a.download = '合并音频.' + ext;
+            a.click();
+        };
+    </script>
+</body>
+</html>

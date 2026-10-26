@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>倒计时器 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .container { max-width: 680px; }
+        .container h1 { margin-bottom: 8px; }
+        .container > p { margin-bottom: 24px; }
+        .form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 22px; }
+        .input-group label { display: block; color: #a1a1aa; font-size: 13px; margin-bottom: 6px; }
+        .input-styled { width: 100%; padding: 12px; border: 1px solid rgba(255,255,255,.1); border-radius: 8px; background: rgba(255,255,255,.05); color: #f4f4f5; font-size: 16px; outline: none; }
+        .input-styled:focus { border-color: rgba(129,140,248,.6); }
+        .display { padding: 28px 16px; margin-bottom: 20px; border: 1px solid rgba(129,140,248,.18); border-radius: 12px; background: rgba(129,140,248,.06); text-align: center; font-size: clamp(42px, 11vw, 72px); line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: .04em; color: #c7d2fe; }
+        .display.done { color: #fda4af; }
+        .actions { display: flex; justify-content: center; flex-wrap: wrap; margin: -10px; }
+        .hint { text-align: center; color: #71717a; font-size: 13px; margin-top: 18px; }
+        @media (max-width: 480px) { .form-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+    <a href="../index.html" class="back-link">← 返回首页</a>
+    <main class="container">
+        <h1>倒计时器</h1>
+        <p>设置时间后开始倒计时，适合学习、烹饪和会议提醒。</p>
+        <div class="form-grid">
+            <div class="input-group"><label for="hours">小时</label><input class="input-styled" id="hours" type="number" min="0" max="99" value="0"></div>
+            <div class="input-group"><label for="minutes">分钟</label><input class="input-styled" id="minutes" type="number" min="0" max="59" value="5"></div>
+            <div class="input-group"><label for="seconds">秒</label><input class="input-styled" id="seconds" type="number" min="0" max="59" value="0"></div>
+        </div>
+        <div class="display" id="display">00:05:00</div>
+        <div class="actions"><button class="btn" id="startBtn">开始</button><button class="btn" id="pauseBtn" disabled>暂停</button><button class="btn" id="resetBtn">重置</button></div>
+        <div class="hint">倒计时结束后会发出提示音并显示通知</div>
+    </main>
+    <script src="common.js"></script>
+    <script>
+        var timer = null;
+        var remaining = 300;
+        var initial = 300;
+        var display = document.getElementById('display');
+        var startBtn = document.getElementById('startBtn');
+        var pauseBtn = document.getElementById('pauseBtn');
+        var inputs = ['hours', 'minutes', 'seconds'];
+
+        function pad(value) { return String(value).padStart(2, '0'); }
+        function formatTime(total) {
+            var hours = Math.floor(total / 3600);
+            var minutes = Math.floor(total % 3600 / 60);
+            var seconds = total % 60;
+            return pad(hours) + ':' + pad(minutes) + ':' + pad(seconds);
+        }
+        function readTime() {
+            var hours = Number(document.getElementById('hours').value) || 0;
+            var minutes = Number(document.getElementById('minutes').value) || 0;
+            var seconds = Number(document.getElementById('seconds').value) || 0;
+            if (hours < 0 || hours > 99 || minutes < 0 || minutes > 59 || seconds < 0 || seconds > 59 || hours + minutes + seconds === 0) return null;
+            return hours * 3600 + minutes * 60 + seconds;
+        }
+        function render() { display.textContent = formatTime(remaining); }
+        function finish() {
+            clearInterval(timer); timer = null; remaining = 0; render(); display.classList.add('done');
+            startBtn.disabled = false; pauseBtn.disabled = true; showToast('倒计时结束');
+            if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+            var AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (AudioContext) { var context = new AudioContext(); var oscillator = context.createOscillator(); var gain = context.createGain(); oscillator.connect(gain); gain.connect(context.destination); oscillator.frequency.value = 880; gain.gain.value = .08; oscillator.start(); oscillator.stop(context.currentTime + .35); }
+        }
+        startBtn.onclick = function () {
+            if (!timer) {
+                if (remaining === 0) { var value = readTime(); if (!value) { showToast('请输入大于 0 的有效时间'); return; } remaining = initial = value; }
+                display.classList.remove('done'); timer = setInterval(function () { remaining--; if (remaining <= 0) finish(); else render(); }, 1000);
+                startBtn.disabled = true; pauseBtn.disabled = false;
+            }
+        };
+        pauseBtn.onclick = function () { clearInterval(timer); timer = null; startBtn.disabled = false; pauseBtn.disabled = true; };
+        document.getElementById('resetBtn').onclick = function () { clearInterval(timer); timer = null; var value = readTime(); remaining = initial = value || 0; display.classList.remove('done'); render(); startBtn.disabled = false; pauseBtn.disabled = true; };
+        inputs.forEach(function (id) { document.getElementById(id).oninput = function () { if (!timer) { var value = readTime(); remaining = initial = value || 0; display.classList.remove('done'); render(); } }; });
+        render();
+    </script>
+</body>
+</html>

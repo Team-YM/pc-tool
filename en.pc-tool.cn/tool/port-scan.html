@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Port Scan and Connectivity Test | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="Online port scan and connectivity test for common services including HTTP (80), HTTPS (443), SSH (22), FTP (21), MySQL (3306), Redis (6379), and Remote Desktop (3389), with custom port scanning.">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .container {
+            max-width: 840px;
+        }
+
+        .container h1 {
+            color: #e4e4e7;
+            margin-bottom: 8px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .container > p {
+            color: #a1a1aa;
+            font-size: 15px;
+            margin-bottom: 24px;
+        }
+
+        .scan-inputs {
+            display: grid;
+            grid-template-columns: 2fr 1.2fr auto;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        @media (max-width: 650px) {
+            .scan-inputs {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .input-field {
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+            padding: 12px 16px;
+            color: #f4f4f5;
+            font-size: 15px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .input-field:focus {
+            border-color: #818cf8;
+            box-shadow: 0 0 10px rgba(129, 140, 248, 0.2);
+        }
+
+        .btn-scan {
+            background: #818cf8;
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            padding: 0 24px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .btn-scan:hover {
+            background: #6366f1;
+            transform: translateY(-1px);
+        }
+
+        .btn-scan:disabled {
+            background: rgba(255, 255, 255, 0.1);
+            color: #71717a;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Preset ports and protocol labels */
+        .port-presets {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            font-size: 13px;
+            color: #71717a;
+            text-align: left;
+        }
+
+        .port-preset-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #a1a1aa;
+            padding: 4px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .port-preset-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #e4e4e7;
+        }
+
+        /* Progress bar */
+        .progress-bar-wrap {
+            display: none;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            height: 6px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .progress-bar-inner {
+            height: 100%;
+            background: #818cf8;
+            width: 0%;
+            transition: width 0.2s ease;
+        }
+
+        /* Scan result cards and table */
+        .result-panel {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            overflow: hidden;
+            text-align: left;
+        }
+
+        .table-header {
+            display: grid;
+            grid-template-columns: 100px 140px 140px 1fr;
+            padding: 12px 18px;
+            background: rgba(0, 0, 0, 0.3);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            font-size: 13px;
+            color: #a1a1aa;
+            font-weight: 600;
+        }
+
+        .table-body {
+            max-height: 420px;
+            overflow-y: auto;
+        }
+
+        .port-row {
+            display: grid;
+            grid-template-columns: 100px 140px 140px 1fr;
+            padding: 12px 18px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            font-size: 14px;
+            align-items: center;
+            transition: background 0.2s;
+        }
+
+        .port-row:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .port-row:last-child {
+            border-bottom: none;
+        }
+
+        .port-num {
+            font-family: monospace;
+            font-weight: 600;
+            color: #f4f4f5;
+        }
+
+        .service-name {
+            color: #d4d4d8;
+            font-size: 13px;
+        }
+
+        .status-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 4px;
+            width: fit-content;
+        }
+
+        .tag-open {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .tag-closed {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .tag-filtered {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .tag-scanning {
+            background: rgba(129, 140, 248, 0.15);
+            color: #a5b4fc;
+            border: 1px solid rgba(129, 140, 248, 0.3);
+        }
+
+        .port-desc {
+            font-size: 13px;
+            color: #71717a;
+        }
+
+        .notice-info {
+            margin-top: 16px;
+            font-size: 12px;
+            color: #71717a;
+            line-height: 1.6;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <a href="../index.html" class="back-link">← Back</a>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <div class="container">
+        <h1>Port Scan and Connectivity Test</h1>
+        <p>Quickly check whether common service ports on a host or server are open or listening, and diagnose firewall and network connectivity.</p>
+
+        <div class="scan-inputs">
+            <input type="text" id="hostInput" class="input-field" placeholder="Target host / domain (e.g. localhost or 127.0.0.1)..." value="127.0.0.1" autofocus>
+            <input type="text" id="portsInput" class="input-field" placeholder="Port list (separated by commas)" value="80, 443, 3000, 8080, 8888, 3306">
+            <button class="btn-scan" id="scanBtn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
+                Start Scan
+            </button>
+        </div>
+
+        <div class="port-presets">
+            <span>Quick port groups:</span>
+            <button class="port-preset-btn" data-ports="80, 443, 8080, 8443, 3000, 5173">Web Apps (80/443/Vite)</button>
+            <button class="port-preset-btn" data-ports="21, 22, 23, 3389, 5900">Remote administration (SSH/FTP/RDP)</button>
+            <button class="port-preset-btn" data-ports="3306, 5432, 6379, 27017, 9200">Databases (MySQL/Redis and more)</button>
+            <button class="port-preset-btn" data-ports="80, 443, 22, 21, 3306, 6379, 8080, 8888, 3389">All common core ports (9)</button>
+        </div>
+
+        <div class="progress-bar-wrap" id="progressBarWrap">
+            <div class="progress-bar-inner" id="progressBarInner"></div>
+        </div>
+
+        <div class="result-panel">
+            <div class="table-header">
+                <div>Port</div>
+                <div>Service / protocol</div>
+                <div>Status</div>
+                <div>Diagnostic note</div>
+            </div>
+            <div class="table-body" id="tableBody">
+                <div style="text-align: center; color: #71717a; padding: 30px; font-size: 13px;">
+                    Enter the host and target ports, then click Start Scan.
+                </div>
+            </div>
+        </div>
+
+        <div class="notice-info">
+            * Note: port probing on the web uses the modern browser Fetch API and the TCP handshake mechanism to establish a safe probe connection. Works for local loopback (localhost/127.0.0.1) and devices on the same LAN. A response dropped by a firewall is reported as closed or filtered.
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        const hostInput = document.getElementById('hostInput');
+        const portsInput = document.getElementById('portsInput');
+        const scanBtn = document.getElementById('scanBtn');
+        const progressBarWrap = document.getElementById('progressBarWrap');
+        const progressBarInner = document.getElementById('progressBarInner');
+        const tableBody = document.getElementById('tableBody');
+
+        const KNOWN_SERVICES = {
+            21: 'FTP file transfer',
+            22: 'SSH remote terminal',
+            23: 'Telnet plaintext terminal',
+            25: 'SMTP email sending',
+            53: 'DNS domain system',
+            80: 'HTTP hypertext transfer',
+            110: 'POP3 email receiving',
+            143: 'IMAP email service',
+            443: 'HTTPS secure transfer',
+            445: 'SMB file sharing',
+            1433: 'MS SQL Server',
+            1521: 'Oracle database',
+            3000: 'Node / React development server',
+            3306: 'MySQL database',
+            3389: 'RDP remote desktop',
+            5000: 'Flask / ASP.NET',
+            5173: 'Vite development server',
+            5432: 'PostgreSQL database',
+            5900: 'VNC remote desktop',
+            6379: 'Redis cache database',
+            8000: 'HTTP alternate port / Django',
+            8080: 'Tomcat / SpringBoot',
+            8443: 'HTTPS alternate port',
+            8888: 'BT panel / Jupyter',
+            9200: 'Elasticsearch search engine',
+            27017: 'MongoDB database'
+        };
+
+        let isScanning = false;
+
+        function cleanHost(host) {
+            host = host.trim();
+            host = host.replace(/^https?:\/\//i, '');
+            host = host.split('/')[0];
+            host = host.split(':')[0];
+            return host;
+        }
+
+        async function checkPort(host, port) {
+            const timeout = 2500;
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeout);
+            const start = performance.now();
+
+            const isHttps = (port === 443 || port === 8443);
+            const protocol = isHttps ? 'https' : 'http';
+            const testUrl = `${protocol}://${host}:${port}/`;
+
+            try {
+                await fetch(testUrl, {
+                    mode: 'no-cors',
+                    signal: controller.signal,
+                    cache: 'no-cache'
+                });
+                clearTimeout(timer);
+                const latency = Math.round(performance.now() - start);
+                return { status: 'open', desc: `Open (handshake successful, latency about ${latency} ms)` };
+            } catch (err) {
+                clearTimeout(timer);
+                const duration = Math.round(performance.now() - start);
+                if (duration >= (timeout - 100)) {
+                    return { status: 'filtered', desc: 'Timed out / blocked by firewall or no response' };
+                }
+                // In modern browsers, a closed port triggers a TypeError immediately via TCP RST — very fast (< 40 ms local, < 300 ms over the public internet)
+                // If the port is open but not an HTTP service (e.g. SSH / MySQL), a protocol error occurs after the handshake — usually slightly slower or reported as a network rejection
+                if (duration < 50 && (host === 'localhost' || host === '127.0.0.1')) {
+                    return { status: 'closed', desc: 'Closed / no service listening on this port' };
+                }
+                if (duration < 350) {
+                    return { status: 'open', desc: `Active response (host port answered in about ${duration} ms)` };
+                }
+                return { status: 'closed', desc: 'No valid response detected' };
+            }
+        }
+
+        async function startScan() {
+            if (isScanning) return;
+            const host = cleanHost(hostInput.value);
+            if (!host) {
+                alert('Please enter a valid target host or domain!');
+                return;
+            }
+
+            const rawPorts = portsInput.value.split(/[,，\s]+/).map(p => parseInt(p.trim())).filter(p => !isNaN(p) && p > 0 && p <= 65535);
+            // Deduplicate
+            const ports = [...new Set(rawPorts)];
+            if (ports.length === 0) {
+                alert('Please enter at least one port number in the range 1-65535!');
+                return;
+            }
+
+            isScanning = true;
+            scanBtn.disabled = true;
+            progressBarWrap.style.display = 'block';
+            progressBarInner.style.width = '0%';
+
+            tableBody.innerHTML = ports.map(port => `
+                <div class="port-row" id="port-row-${port}">
+                    <div class="port-num">${port}</div>
+                    <div class="service-name">${KNOWN_SERVICES[port] || 'Custom Port'}</div>
+                    <div><span class="status-tag tag-scanning">Scanning...</span></div>
+                    <div class="port-desc">Sending TCP/HTTP handshake probe...</div>
+                </div>
+            `).join('');
+
+            let completed = 0;
+            for (let i = 0; i < ports.length; i++) {
+                const port = ports[i];
+                const res = await checkPort(host, port);
+
+                const row = document.getElementById(`port-row-${port}`);
+                if (row) {
+                    let tagHtml = '';
+                    if (res.status === 'open') {
+                        tagHtml = '<span class="status-tag tag-open">● Open</span>';
+                    } else if (res.status === 'filtered') {
+                        tagHtml = '<span class="status-tag tag-filtered">▲ Filtered / timed out</span>';
+                    } else {
+                        tagHtml = '<span class="status-tag tag-closed">✕ Closed</span>';
+                    }
+
+                    row.children[2].innerHTML = tagHtml;
+                    row.children[3].textContent = res.desc;
+                }
+
+                completed++;
+                progressBarInner.style.width = `${Math.round((completed / ports.length) * 100)}%`;
+            }
+
+            setTimeout(() => {
+                progressBarWrap.style.display = 'none';
+            }, 600);
+
+            isScanning = false;
+            scanBtn.disabled = false;
+        }
+
+        scanBtn.addEventListener('click', startScan);
+
+        hostInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') startScan();
+        });
+
+        portsInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') startScan();
+        });
+
+        document.querySelectorAll('.port-preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                portsInput.value = btn.dataset.ports;
+            });
+        });
+    </script>
+</body>
+</html>
+
+
+

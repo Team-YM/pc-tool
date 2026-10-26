@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Visualizer</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="Online waveform and spectrum visualizer for audio and video. Upload audio or video to render bar spectrums, symmetric waveforms, circular radiating spectrums, particle rings and full-track waveform images in real time, with one-click export of PNG images and WebM/MP4 animated videos.">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="Audio & Video Waveform Visualizer | PC-TOOL">
+    <meta property="og:description" content="Client-side waveform and dynamic spectrum renderer with multiple visual effects and HD image/video export.">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/audio-visualizer.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="en_US">
+    <style>
+        .container {
+            max-width: 880px;
+            width: 100%;
+        }
+
+        #mediaInput {
+            display: none;
+        }
+
+        .workspace-panel {
+            display: none;
+            margin-top: 20px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        /* Viewport canvas container */
+        .stage-card {
+            background: rgba(12, 12, 15, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: 380px;
+            background: #09090c;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        #visualizerCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .stage-overlay-info {
+            position: absolute;
+            top: 14px;
+            left: 16px;
+            font-size: 13px;
+            color: rgba(244, 244, 245, 0.75);
+            background: rgba(0, 0, 0, 0.55);
+            padding: 4px 10px;
+            border-radius: 6px;
+            pointer-events: none;
+            backdrop-filter: blur(4px);
+        }
+
+        /* Hidden native media playback controls (used to sync the timeline) */
+        #hiddenaudio {
+            display: none;
+        }
+
+        /* Playback control bar */
+        .playback-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: rgba(24, 24, 27, 0.6);
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .ctrl-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #f4f4f5;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .ctrl-btn:hover {
+            background: rgba(255, 255, 255, 0.16);
+            border-color: rgba(255, 255, 255, 0.24);
+        }
+
+        .ctrl-btn.primary {
+            background: #818cf8;
+            border-color: #818cf8;
+            color: #09090b;
+            font-weight: 600;
+        }
+
+        .ctrl-btn.primary:hover {
+            background: #9ca3af;
+            border-color: #9ca3af;
+        }
+
+        .time-label {
+            font-size: 12px;
+            color: #a1a1aa;
+            font-variant-numeric: tabular-nums;
+            min-width: 90px;
+        }
+
+        .progress-slider {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.12);
+            outline: none;
+            cursor: pointer;
+            -webkit-appearance: none;
+        }
+
+        .progress-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #818cf8;
+            cursor: pointer;
+            box-shadow: 0 0 6px rgba(129, 140, 248, 0.8);
+        }
+
+        /* Options settings panel */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 14px;
+            margin-top: 16px;
+        }
+
+        .setting-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            padding: 12px 14px;
+        }
+
+        .setting-card label {
+            display: block;
+            font-size: 12px;
+            color: #a1a1aa;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        .setting-card select,
+        .setting-card input[type="range"],
+        .setting-card input[type="color"],
+        .setting-card input[type="text"] {
+            width: 100%;
+            padding: 6px 10px;
+            background: rgba(18, 18, 22, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 6px;
+            color: #f4f4f5;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .setting-card select:focus,
+        .setting-card input:focus {
+            border-color: #818cf8;
+        }
+
+        .range-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .range-val {
+            font-size: 12px;
+            color: #d4d4d8;
+            min-width: 38px;
+            text-align: right;
+        }
+
+        /* Export actions area */
+        .actions-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 20px;
+            align-items: center;
+            justify-content: flex-end;
+        }
+
+        /* Export progress bar */
+        .record-progress {
+            display: none;
+            margin-top: 14px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 12px 16px;
+            border-radius: 8px;
+        }
+
+        .record-progress-bar {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .record-progress-fill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #818cf8, #34d399);
+            border-radius: 3px;
+            transition: width 0.15s;
+        }
+
+        /* Full-track static waveform container */
+        .waveform-static-section {
+            margin-top: 24px;
+            background: rgba(24, 24, 27, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .waveform-static-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .waveform-static-header h3 {
+            font-size: 15px;
+            font-weight: 600;
+            color: #e4e4e7;
+        }
+
+        #staticWaveformCanvas {
+            width: 100%;
+            height: 90px;
+            background: #09090b;
+            border-radius: 6px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <a href="../index.html" class="back-link">← Back to Tools</a>
+
+    <div class="container">
+        <h1>Audio & Video Waveform Visualizer</h1>
+        <p>Parse audio and video files entirely in your browser, render dynamic spectrums and waveforms in real time, and export static HD waveform images or animated videos.</p>
+
+        <!-- Upload area -->
+        <div class="upload-area" id="uploadArea">
+            <p>Click or drag to upload an audio or video file</p>
+            <p style="font-size: 12px; color: #71717a; margin-top: 6px;">Supports common media formats such as MP3 / WAV / OGG / AAC / FLAC / MP4 / WebM</p>
+            <input type="file" id="mediaInput" accept="audio/*,video/*">
+        </div>
+
+        <!-- Hidden audio source element -->
+        <audio id="hiddenaudio" preload="auto"></audio>
+
+        <!-- Workspace main panel -->
+        <div class="workspace-panel" id="workspacePanel">
+            <!-- Viewport container -->
+            <div class="stage-card">
+                <div class="canvas-container">
+                    <canvas id="visualizerCanvas"></canvas>
+                    <div class="stage-overlay-info" id="mediaTitle">No file selected</div>
+                </div>
+
+                <!-- Playback and progress bar -->
+                <div class="playback-bar">
+                    <button class="ctrl-btn primary" id="playBtn">
+                        <span id="playIcon">▶</span> <span id="playText">Play</span>
+                    </button>
+                    <span class="time-label" id="timeDisplay">00:00 / 00:00</span>
+                    <input type="range" class="progress-slider" id="timelineSlider" min="0" max="100" value="0" step="0.1">
+                    <button class="ctrl-btn" id="loopBtn" title="Loop playback">🔁 Loop</button>
+                </div>
+            </div>
+
+            <!-- Visualization settings -->
+            <div class="settings-grid">
+                <div class="setting-card">
+                    <label>Visualization Mode</label>
+                    <select id="visualMode">
+                        <option value="bars">Spectrum Bars</option>
+                        <option value="wave">Mirror Wave</option>
+                        <option value="circle">Radial Pulse</option>
+                        <option value="particle">Particle Halo</option>
+                    </select>
+                </div>
+
+                <div class="setting-card">
+                    <label>Color Theme</label>
+                    <select id="colorTheme">
+                        <option value="neon">Indigo Neon</option>
+                        <option value="cyber">Emerald Cyber</option>
+                        <option value="sunset">Sunset Orange</option>
+                        <option value="monochrome">Pure White</option>
+                        <option value="custom">Custom Color</option>
+                    </select>
+                </div>
+
+                <div class="setting-card" id="customColorBox" style="display:none;">
+                    <label>Custom Primary Color</label>
+                    <input type="color" id="customColorPicker" value="#818cf8">
+                </div>
+
+                <div class="setting-card">
+                    <label>Sensitivity (Smoothing Damping)</label>
+                    <div class="range-wrapper">
+                        <input type="range" id="fftSmoothRange" min="0.6" max="0.95" step="0.05" value="0.85">
+                        <span class="range-val" id="smoothVal">0.85</span>
+                    </div>
+                </div>
+
+                <div class="setting-card">
+                    <label>Canvas Background</label>
+                    <select id="bgTheme">
+                        <option value="dark">Pure Dark</option>
+                        <option value="grid">Sci-Fi Grid</option>
+                        <option value="gradient">Subtle Radial Gradient</option>
+                    </select>
+                </div>
+
+                <div class="setting-card">
+                    <label>Video Export Duration (s)</label>
+                    <div class="range-wrapper">
+                        <input type="range" id="exportDurationRange" min="5" max="60" step="5" value="15">
+                        <span class="range-val" id="exportDurationVal">15s</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export action buttons -->
+            <div class="actions-group">
+                <button class="ctrl-btn" id="exportPngBtn">
+                    📷 Capture Current Spectrum (PNG)
+                </button>
+                <button class="ctrl-btn primary" id="recordvideoBtn">
+                    🎬 Record and Export Spectrum Video (WebM)
+                </button>
+            </div>
+
+            <!-- Recording progress display -->
+            <div class="record-progress" id="recordProgressBox">
+                <div style="display:flex; justify-content:space-between; font-size:13px; color:#e4e4e7;">
+                    <span id="recordstatusText">Recording audio spectrum animation...</span>
+                    <span id="recordPercentText">0%</span>
+                </div>
+                <div class="record-progress-bar">
+                    <div class="record-progress-fill" id="recordProgressFill"></div>
+                </div>
+            </div>
+
+            <!-- Static full-track waveform section -->
+            <div class="waveform-static-section">
+                <div class="waveform-static-header">
+                    <h3>Full-Track Waveform (Whole Audio Overview)</h3>
+                    <button class="ctrl-btn" id="exportWaveformPngBtn">📥 Export Full-Track Waveform Image</button>
+                </div>
+                <canvas id="staticWaveformCanvas"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        (function() {
+            // Element references
+            const uploadArea = document.getElementById('uploadArea');
+            const mediaInput = document.getElementById('mediaInput');
+            const workspacePanel = document.getElementById('workspacePanel');
+            const hiddenaudio = document.getElementById('hiddenaudio');
+            const visualizerCanvas = document.getElementById('visualizerCanvas');
+            const staticWaveformCanvas = document.getElementById('staticWaveformCanvas');
+            const mediaTitle = document.getElementById('mediaTitle');
+            const playBtn = document.getElementById('playBtn');
+            const playIcon = document.getElementById('playIcon');
+            const playText = document.getElementById('playText');
+            const timeDisplay = document.getElementById('timeDisplay');
+            const timelineSlider = document.getElementById('timelineSlider');
+            const loopBtn = document.getElementById('loopBtn');
+            const visualMode = document.getElementById('visualMode');
+            const colorTheme = document.getElementById('colorTheme');
+            const customColorBox = document.getElementById('customColorBox');
+            const customColorPicker = document.getElementById('customColorPicker');
+            const fftSmoothRange = document.getElementById('fftSmoothRange');
+            const smoothVal = document.getElementById('smoothVal');
+            const bgTheme = document.getElementById('bgTheme');
+            const exportDurationRange = document.getElementById('exportDurationRange');
+            const exportDurationVal = document.getElementById('exportDurationVal');
+            const exportPngBtn = document.getElementById('exportPngBtn');
+            const recordvideoBtn = document.getElementById('recordvideoBtn');
+            const recordProgressBox = document.getElementById('recordProgressBox');
+            const recordProgressFill = document.getElementById('recordProgressFill');
+            const recordstatusText = document.getElementById('recordstatusText');
+            const recordPercentText = document.getElementById('recordPercentText');
+            const exportWaveformPngBtn = document.getElementById('exportWaveformPngBtn');
+
+            // Web Audio API context
+            let audioCtx = null;
+            let analyserNode = null;
+            let audioSourceNode = null;
+            let decodedaudioBuffer = null;
+            let isLooping = false;
+            let animationFrameId = null;
+            let currentFileName = 'visualizer';
+
+            // Particle ring state
+            let particles = [];
+            for (let i = 0; i < 72; i++) {
+                particles.push({
+                    angle: (i / 72) * Math.PI * 2,
+                    dist: 80,
+                    size: Math.random() * 2 + 2,
+                    speed: Math.random() * 0.01 + 0.005
+                });
+            }
+
+            // Responsive canvas sizing
+            function resizeCanvas() {
+                const rect = visualizerCanvas.parentElement.getBoundingClientRect();
+                visualizerCanvas.width = rect.width * (window.devicePixelRatio || 1);
+                visualizerCanvas.height = rect.height * (window.devicePixelRatio || 1);
+                const staticRect = staticWaveformCanvas.getBoundingClientRect();
+                staticWaveformCanvas.width = staticRect.width * (window.devicePixelRatio || 1);
+                staticWaveformCanvas.height = 90 * (window.devicePixelRatio || 1);
+                if (decodedaudioBuffer) {
+                    drawStaticWaveform(decodedaudioBuffer);
+                }
+            }
+            window.addEventListener('resize', resizeCanvas);
+
+            // Initialize the AudioContext and its nodes
+            function initaudioContext() {
+                if (!audioCtx) {
+                    const audioContextClass = window.AudioContext || window.webkitAudioContext;
+                    audioCtx = new audioContextClass();
+                    analyserNode = audioCtx.createAnalyser();
+                    analyserNode.fftSize = 512;
+                    analyserNode.smoothingtimeConstant = parseFloat(fftSmoothRange.value);
+
+                    audioSourceNode = audioCtx.createMediaElementSource(hiddenaudio);
+                    audioSourceNode.connect(analyserNode);
+                    analyserNode.connect(audioCtx.destination);
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+            }
+
+            // File drag-and-drop and click to upload
+            uploadArea.addEventListener('click', () => mediaInput.click());
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = '#818cf8';
+            });
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.style.borderColor = '';
+            });
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = '';
+                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    handleFile(e.dataTransfer.files[0]);
+                }
+            });
+            mediaInput.addEventListener('change', (e) => {
+                if (e.target.files && e.target.files[0]) {
+                    handleFile(e.target.files[0]);
+                }
+            });
+
+            // Handle the loaded audio or video file
+            function handleFile(file) {
+                currentFileName = file.name.replace(/\.[^/.]+$/, '');
+                mediaTitle.textContent = file.name;
+
+                const fileUrl = URL.createObjectURL(file);
+                hiddenaudio.src = fileUrl;
+                workspacePanel.style.display = 'block';
+                resizeCanvas();
+
+                // Use FileReader to decode and build the full-track static waveform
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const arrayBuffer = e.target.result;
+                    const offlineContextClass = window.OfflineaudioContext || window.AudioContext || window.webkitAudioContext;
+                    const tempCtx = new offlineContextClass(2, 44100, 44100);
+                    tempCtx.decodeAudioData(arrayBuffer).then(buffer => {
+                        decodedaudioBuffer = buffer;
+                        drawStaticWaveform(buffer);
+                    }).catch(err => {
+                        console.warn('Static waveform decode warning:', err);
+                    });
+                };
+                reader.readAsArrayBuffer(file);
+
+                startRendering();
+            }
+
+            // Format seconds as mm:ss
+            function formattime(sec) {
+                if (isNaN(sec)) return '00:00';
+                const m = Math.floor(sec / 60);
+                const s = Math.floor(sec % 60);
+                return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+            }
+
+            // Audio playback time and progress control
+            hiddenaudio.addEventListener('loadedmetadata', () => {
+                timeDisplay.textContent = `00:00 / ${formattime(hiddenaudio.duration)}`;
+                timelineSlider.max = hiddenaudio.duration || 100;
+                timelineSlider.value = 0;
+            });
+
+            hiddenaudio.addEventListener('timeupdate', () => {
+                if (!timelineSlider.matches(':active')) {
+                    timelineSlider.value = hiddenaudio.currentTime;
+                }
+                timeDisplay.textContent = `${formattime(hiddenaudio.currentTime)} / ${formattime(hiddenaudio.duration)}`;
+            });
+
+            timelineSlider.addEventListener('input', () => {
+                hiddenaudio.currentTime = parseFloat(timelineSlider.value);
+            });
+
+            hiddenaudio.addEventListener('ended', () => {
+                if (!isLooping) {
+                    playIcon.textContent = '▶';
+                    playText.textContent = 'Play';
+                }
+            });
+
+            playBtn.addEventListener('click', () => {
+                initaudioContext();
+                if (hiddenaudio.paused) {
+                    hiddenaudio.play().then(() => {
+                        playIcon.textContent = '⏸';
+                        playText.textContent = 'Pause';
+                    }).catch(err => console.error(err));
+                } else {
+                    hiddenaudio.pause();
+                    playIcon.textContent = '▶';
+                    playText.textContent = 'Play';
+                }
+            });
+
+            loopBtn.addEventListener('click', () => {
+                isLooping = !isLooping;
+                hiddenaudio.loop = isLooping;
+                loopBtn.style.color = isLooping ? '#818cf8' : '#f4f4f5';
+                loopBtn.style.borderColor = isLooping ? '#818cf8' : 'rgba(255, 255, 255, 0.12)';
+            });
+
+            // Listen for settings changes
+            fftSmoothRange.addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value);
+                smoothVal.textContent = val.toFixed(2);
+                if (analyserNode) {
+                    analyserNode.smoothingtimeConstant = val;
+                }
+            });
+
+            exportDurationRange.addEventListener('input', (e) => {
+                exportDurationVal.textContent = `${e.target.value}s`;
+            });
+
+            colorTheme.addEventListener('change', () => {
+                customColorBox.style.display = colorTheme.value === 'custom' ? 'block' : 'none';
+            });
+
+            // Get the theme color scheme
+            function getThemeColors() {
+                const theme = colorTheme.value;
+                if (theme === 'neon') {
+                    return {
+                        primary: '#818cf8',
+                        secondary: '#c084fc',
+                        highlight: '#38bdf8',
+                        glow: 'rgba(129, 140, 248, 0.5)'
+                    };
+                } else if (theme === 'cyber') {
+                    return {
+                        primary: '#10b981',
+                        secondary: '#06b6d4',
+                        highlight: '#a7f3d0',
+                        glow: 'rgba(16, 185, 129, 0.5)'
+                    };
+                } else if (theme === 'sunset') {
+                    return {
+                        primary: '#f97316',
+                        secondary: '#e11d48',
+                        highlight: '#fde047',
+                        glow: 'rgba(249, 115, 22, 0.5)'
+                    };
+                } else if (theme === 'monochrome') {
+                    return {
+                        primary: '#f4f4f5',
+                        secondary: '#a1a1aa',
+                        highlight: '#ffffff',
+                        glow: 'rgba(255, 255, 255, 0.3)'
+                    };
+                } else {
+                    const c = customColorPicker.value;
+                    return {
+                        primary: c,
+                        secondary: c,
+                        highlight: '#ffffff',
+                        glow: c
+                    };
+                }
+            }
+
+            // Draw the background
+            function drawCanvasBackground(ctx, w, h) {
+                const bg = bgTheme.value;
+                ctx.clearRect(0, 0, w, h);
+                if (bg === 'gradient') {
+                    const rad = ctx.createRadialGradient(w / 2, h / 2, 10, w / 2, h / 2, Math.max(w, h) / 1.4);
+                    rad.addColorStop(0, '#1c1b26');
+                    rad.addColorStop(1, '#09090c');
+                    ctx.fillStyle = rad;
+                    ctx.fillRect(0, 0, w, h);
+                } else if (bg === 'grid') {
+                    ctx.fillStyle = '#09090c';
+                    ctx.fillRect(0, 0, w, h);
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+                    ctx.lineWidth = 1;
+                    const step = 28;
+                    ctx.beginPath();
+                    for (let x = 0; x < w; x += step) {
+                        ctx.moveTo(x, 0); ctx.lineTo(x, h);
+                    }
+                    for (let y = 0; y < h; y += step) {
+                        ctx.moveTo(0, y); ctx.lineTo(w, y);
+                    }
+                    ctx.stroke();
+                } else {
+                    ctx.fillStyle = '#09090c';
+                    ctx.fillRect(0, 0, w, h);
+                }
+            }
+
+            // Main render loop
+            function startRendering() {
+                if (animationFrameId) cancelAnimationFrame(animationFrameId);
+
+                const ctx = visualizerCanvas.getContext('2d');
+
+                function render() {
+                    const w = visualizerCanvas.width;
+                    const h = visualizerCanvas.height;
+                    drawCanvasBackground(ctx, w, h);
+
+                    const colors = getThemeColors();
+                    const mode = visualMode.value;
+
+                    if (analyserNode) {
+                        const bufferLength = analyserNode.frequencyBinCount;
+                        const freqData = new Uint8Array(bufferLength);
+                        const timeData = new Uint8Array(bufferLength);
+                        analyserNode.getByteFrequencyData(freqData);
+                        analyserNode.getByteTimeDomainData(timeData);
+
+                        if (mode === 'bars') {
+                            // Spectrum bars
+                            const barCount = 64;
+                            const barWidth = (w / barCount) * 0.72;
+                            const spacing = (w / barCount) * 0.28;
+                            const step = Math.floor(bufferLength / barCount);
+
+                            for (let i = 0; i < barCount; i++) {
+                                const val = freqData[i * step] || 0;
+                                const barHeight = (val / 255) * (h * 0.72) + 4;
+                                const x = i * (barWidth + spacing) + spacing / 2;
+                                const y = h - barHeight;
+
+                                const grad = ctx.createLinearGradient(0, y, 0, h);
+                                grad.addColorStop(0, colors.highlight);
+                                grad.addColorStop(0.3, colors.secondary);
+                                grad.addColorStop(1, colors.primary);
+
+                                ctx.fillStyle = grad;
+                                ctx.shadowColor = colors.glow;
+                                ctx.shadowBlur = 8;
+                                ctx.fillRect(x, y, barWidth, barHeight);
+                                ctx.shadowBlur = 0;
+
+                                // Small highlight on top
+                                ctx.fillStyle = colors.highlight;
+                                ctx.fillRect(x, y - 3, barWidth, 2);
+                            }
+                        } else if (mode === 'wave') {
+                            // Symmetric smooth curve
+                            const centerY = h / 2;
+                            ctx.beginPath();
+                            ctx.lineWidth = 3;
+                            ctx.strokeStyle = colors.primary;
+                            ctx.shadowColor = colors.glow;
+                            ctx.shadowBlur = 10;
+
+                            const sliceWidth = w / bufferLength;
+                            let x = 0;
+
+                            for (let i = 0; i < bufferLength; i++) {
+                                const v = timeData[i] / 128.0;
+                                const y = v * (centerY * 0.75) + (centerY * 0.25);
+                                if (i === 0) ctx.moveTo(x, y);
+                                else ctx.lineTo(x, y);
+                                x += sliceWidth;
+                            }
+                            ctx.stroke();
+
+                            // Mirrored lower half of the wave
+                            ctx.beginPath();
+                            ctx.strokeStyle = colors.secondary;
+                            x = 0;
+                            for (let i = 0; i < bufferLength; i++) {
+                                const v = timeData[i] / 128.0;
+                                const y = h - (v * (centerY * 0.75) + (centerY * 0.25));
+                                if (i === 0) ctx.moveTo(x, y);
+                                else ctx.lineTo(x, y);
+                                x += sliceWidth;
+                            }
+                            ctx.stroke();
+                            ctx.shadowBlur = 0;
+                        } else if (mode === 'circle') {
+                            // Radial pulse spectrum
+                            const centerX = w / 2;
+                            const centerY = h / 2;
+                            const radius = Math.min(w, h) * 0.22;
+                            const barCount = 72;
+                            const step = Math.floor(bufferLength / barCount);
+
+                            ctx.save();
+                            ctx.translate(centerX, centerY);
+
+                            // Inner ring
+                            ctx.beginPath();
+                            ctx.arc(0, 0, radius, 0, Math.PI * 2);
+                            ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+                            ctx.lineWidth = 2;
+                            ctx.stroke();
+
+                            for (let i = 0; i < barCount; i++) {
+                                const angle = (i / barCount) * Math.PI * 2;
+                                const val = freqData[i * step] || 0;
+                                const barLen = (val / 255) * (Math.min(w, h) * 0.24) + 6;
+
+                                const x1 = Math.cos(angle) * radius;
+                                const y1 = Math.sin(angle) * radius;
+                                const x2 = Math.cos(angle) * (radius + barLen);
+                                const y2 = Math.sin(angle) * (radius + barLen);
+
+                                ctx.beginPath();
+                                ctx.moveTo(x1, y1);
+                                ctx.lineTo(x2, y2);
+                                ctx.strokeStyle = (i % 2 === 0) ? colors.primary : colors.secondary;
+                                ctx.lineWidth = 3;
+                                ctx.shadowColor = colors.glow;
+                                ctx.shadowBlur = 6;
+                                ctx.stroke();
+                            }
+                            ctx.restore();
+                            ctx.shadowBlur = 0;
+                        } else if (mode === 'particle') {
+                            // Particle halo pulse
+                            const centerX = w / 2;
+                            const centerY = h / 2;
+                            let avgEnergy = 0;
+                            for (let i = 0; i < 40; i++) avgEnergy += freqData[i];
+                            avgEnergy = avgEnergy / 40 / 255; // Low-frequency energy in the 0-1 range
+
+                            const baseR = Math.min(w, h) * 0.2;
+                            const dynamicR = baseR + avgEnergy * 60;
+
+                            // Center glow
+                            const grad = ctx.createRadialGradient(centerX, centerY, 10, centerX, centerY, dynamicR * 1.5);
+                            grad.addColorStop(0, colors.glow);
+                            grad.addColorStop(1, 'rgba(0,0,0,0)');
+                            ctx.fillStyle = grad;
+                            ctx.fillRect(0, 0, w, h);
+
+                            // Particle rotation and emission
+                            particles.forEach((p, idx) => {
+                                p.angle += p.speed;
+                                const dist = dynamicR + Math.sin(p.angle * 4) * (avgEnergy * 40);
+                                const px = centerX + Math.cos(p.angle) * dist;
+                                const py = centerY + Math.sin(p.angle) * dist;
+
+                                ctx.beginPath();
+                                ctx.arc(px, py, p.size * (1 + avgEnergy * 1.2), 0, Math.PI * 2);
+                                ctx.fillStyle = idx % 2 === 0 ? colors.primary : colors.highlight;
+                                ctx.shadowColor = colors.glow;
+                                ctx.shadowBlur = 8;
+                                ctx.fill();
+                            });
+                            ctx.shadowBlur = 0;
+                        }
+                    }
+
+                    animationFrameId = requestAnimationFrame(render);
+                }
+
+                render();
+            }
+
+            // Draw the static waveform image (based on the whole audio track)
+            function drawStaticWaveform(audioBuffer) {
+                const ctx = staticWaveformCanvas.getContext('2d');
+                const w = staticWaveformCanvas.width;
+                const h = staticWaveformCanvas.height;
+                ctx.clearRect(0, 0, w, h);
+
+                ctx.fillStyle = '#09090b';
+                ctx.fillRect(0, 0, w, h);
+
+                const channelData = audioBuffer.getChannelData(0);
+                const step = Math.ceil(channelData.length / w);
+                const amp = h / 2;
+
+                ctx.fillStyle = 'rgba(129, 140, 248, 0.75)';
+                for (let i = 0; i < w; i++) {
+                    let min = 1.0;
+                    let max = -1.0;
+                    for (let j = 0; j < step; j++) {
+                        const datum = channelData[(i * step) + j];
+                        if (datum < min) min = datum;
+                        if (datum > max) max = datum;
+                    }
+                    const y1 = (1 + min) * amp;
+                    const y2 = Math.max(1, (max - min) * amp);
+                    ctx.fillRect(i, y1, 1, y2);
+                }
+
+                // Center reference dashed line
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath();
+                ctx.moveTo(0, h / 2);
+                ctx.lineTo(w, h / 2);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // Export a single-frame PNG snapshot
+            exportPngBtn.addEventListener('click', () => {
+                const dataUrl = visualizerCanvas.toDataURL('image/png');
+                downloadFile(dataUrl, `${currentFileName}_spectrum_${Date.now()}.png`);
+            });
+
+            // Export the static full-track waveform image as PNG
+            exportWaveformPngBtn.addEventListener('click', () => {
+                const dataUrl = staticWaveformCanvas.toDataURL('image/png');
+                downloadFile(dataUrl, `${currentFileName}_waveform_${Date.now()}.png`);
+            });
+
+            // Record video as WebM (MediaRecorder API)
+            recordvideoBtn.addEventListener('click', () => {
+                if (!window.MediaRecorder) {
+                    alert('This browser does not support the MediaRecorder API.');
+                    return;
+                }
+                initaudioContext();
+
+                // Capture the canvas video stream and the audio stream
+                const canvasStream = visualizerCanvas.captureStream(30);
+                let combinedStream = canvasStream;
+
+                try {
+                    const dest = audioCtx.createMediaStreamDestination();
+                    audioSourceNode.connect(dest);
+                    const audioTracks = dest.stream.getaudioTracks();
+                    if (audioTracks.length > 0) {
+                        combinedStream = new MediaStream([
+                            ...canvasStream.getvideoTracks(),
+                            ...audioTracks
+                        ]);
+                    }
+                } catch (e) {
+                    console.warn('Audio stream mixing warning:', e);
+                }
+
+                let mimeType = 'video/webm;codecs=vp9';
+                if (!MediaRecorder.isTypeSupported(mimeType)) {
+                    mimeType = 'video/webm';
+                }
+
+                const recorder = new MediaRecorder(combinedStream, {
+                    mimeType: mimeType,
+                    videoBitsPerSecond: 4000000
+                });
+
+                const chunks = [];
+                recorder.ondataavailable = (e) => {
+                    if (e.data && e.data.size > 0) chunks.push(e.data);
+                };
+
+                const durationSec = parseInt(exportDurationRange.value, 10);
+                let elapsedSec = 0;
+
+                recordProgressBox.style.display = 'block';
+                recordvideoBtn.disabled = true;
+                recordvideoBtn.style.opacity = '0.6';
+
+                // Start audio playback and recording
+                hiddenaudio.currentTime = 0;
+                hiddenaudio.play();
+                recorder.start(100);
+
+                const progressInterval = setInterval(() => {
+                    elapsedSec += 0.5;
+                    const percent = Math.min(100, Math.floor((elapsedSec / durationSec) * 100));
+                    recordProgressFill.style.width = `${percent}%`;
+                    recordPercentText.textContent = `${percent}%`;
+                    recordstatusText.textContent = `Recording dynamic spectrum (${elapsedSec.toFixed(1)}s / ${durationSec}s)...`;
+
+                    if (elapsedSec >= durationSec) {
+                        clearInterval(progressInterval);
+                        if (recorder.state !== 'inactive') {
+                            recorder.stop();
+                        }
+                    }
+                }, 500);
+
+                recorder.onstop = () => {
+                    hiddenaudio.pause();
+                    playIcon.textContent = '▶';
+                    playText.textContent = 'Play';
+                    recordProgressFill.style.width = '100%';
+                    recordPercentText.textContent = '100%';
+                    recordstatusText.textContent = 'Recording complete. Generating video file...';
+
+                    const blob = new Blob(chunks, { type: 'video/webm' });
+                    const url = URL.createObjectURL(blob);
+                    downloadFile(url, `${currentFileName}_spectrum_${durationSec}s.webm`);
+
+                    setTimeout(() => {
+                        recordProgressBox.style.display = 'none';
+                        recordvideoBtn.disabled = false;
+                        recordvideoBtn.style.opacity = '1';
+                        recordProgressFill.style.width = '0%';
+                    }, 2500);
+                };
+            });
+        })();
+    </script>
+</body>
+</html>

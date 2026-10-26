@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Image DPI Editor</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="Free online image DPI editor — change the DPI metadata without altering pixels, custom DPI values, one-click download, fully browser-based.">
+    <link rel="stylesheet" href="common.css">
+    <!-- OGP social sharing tags -->
+    <meta property="og:title" content="Image DPI Editor | PC-TOOL">
+    <meta property="og:description" content="Free online tools — image conversion, video compression, audio conversion, background removal and more — every feature built for productivity, completely free, made for everyone!">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/photo-dpi.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="en_US">
+    <style>
+        .card {
+            width: 100%;
+            max-width: 560px;
+            background: rgba(24, 24, 27, 0.3);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 40px;
+            border-radius: 16px;
+            animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .title-section {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        .title-section h1 {
+            color: #e4e4e7;
+            margin-bottom: 8px;
+            font-size: 28px;
+            font-weight: 700;
+            background: none;
+        }
+        .title-section p {
+            color: #a1a1aa;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        /* upload zone */
+        .upload-zone {
+            border: 2px dashed rgba(255, 255, 255, 0.1);
+            padding: 36px;
+            border-radius: 10px;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: 0.3s;
+            background: rgba(255, 255, 255, 0.02);
+            text-align: center;
+            color: #a1a1aa;
+        }
+        .upload-zone:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        .upload-icon {
+            font-size: 2.2rem;
+            margin-bottom: 0.4rem;
+        }
+        .upload-text {
+            font-weight: 500;
+            color: #d4d4d8;
+            font-size: 0.95rem;
+        }
+        .upload-hint {
+            font-size: 0.75rem;
+            color: #71717a;
+            margin-top: 8px;
+        }
+        #fileInput {
+            display: none;
+        }
+
+        /* preview */
+        .preview-box {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1.4rem;
+            display: flex;
+            flex-direction: column;
+        }
+        .preview-header {
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            color: #a1a1aa;
+            margin-bottom: 0.6rem;
+            padding-left: 0.3rem;
+        }
+        .image-wrapper {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            padding: 0.8rem;
+        }
+        #previewImg {
+            max-width: 100%;
+            max-height: 230px;
+            object-fit: contain;
+            border-radius: 10px;
+        }
+        .empty-preview {
+            color: #71717a;
+            text-align: center;
+            padding: 2rem 0;
+            font-size: 0.85rem;
+        }
+
+        /* dpi panel */
+        .dpi-panel {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-bottom: 1.4rem;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .dpi-label {
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: #d4d4d8;
+        }
+        .dpi-control-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .dpi-input-wrap {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 0.2rem 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        #dpiNumber {
+            width: 75px;
+            border: none;
+            background: transparent;
+            font-size: 1rem;
+            font-weight: 500;
+            padding: 0.45rem 0;
+            outline: none;
+            text-align: center;
+            color: #e4e4e7;
+        }
+        .preset-group {
+            display: flex;
+            gap: 6px;
+        }
+        .preset {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            padding: 0.3rem 0.7rem;
+            font-size: 0.7rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #a1a1aa;
+        }
+        .preset:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(129, 140, 248, 0.4);
+            color: #e4e4e7;
+        }
+
+        /* buttons */
+        .action-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            margin-bottom: 1rem;
+            justify-content: center;
+        }
+        .btn {
+            padding: 12px 25px;
+            background: rgba(24, 24, 27, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            flex: 1;
+            min-width: 120px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .btn:hover {
+            background: rgba(39, 39, 42, 0.6);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        .btn:active {
+            transform: translateY(0) scale(0.98);
+        }
+        .btn-primary {
+            background: rgba(24, 24, 27, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        .btn-primary:hover {
+            background: rgba(39, 39, 42, 0.6);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        .btn-secondary {
+            background: rgba(39, 174, 96, 0.3);
+            border-color: rgba(39, 174, 96, 0.3);
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: rgba(39, 174, 96, 0.5);
+            border-color: rgba(39, 174, 96, 0.5);
+        }
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .info-tip {
+            font-size: 0.75rem;
+            text-align: center;
+            color: #71717a;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-top: 1.2rem;
+            margin-top: 0.5rem;
+        }
+
+        footer {
+            font-size: 0.75rem;
+            text-align: center;
+            color: #52525b;
+            padding: 1.2rem 0 0;
+        }
+    </style>
+</head>
+<body>
+<canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <a href="../index.html" class="back-link">← Back to Tools</a>
+
+<div class="card">
+    <div class="title-section">
+            <h1>DPI Adjuster</h1>
+            <p>Adjust image DPI · pixels unchanged · one-click download</p>
+        </div>
+
+        <!-- Upload area -->
+        <div class="upload-zone" id="uploadZone">
+            <div class="upload-icon">Image upload</div>
+            <div class="upload-text">Click to upload or drag an image</div>
+            <div class="upload-hint">Supports JPG, PNG, and WebP (max 20 MB)</div>
+            <input type="file" id="fileInput" accept="image/jpeg, image/png, image/webp, image/jpg">
+        </div>
+
+        <!-- Preview area -->
+        <div class="preview-box" id="previewBox">
+            <div class="preview-header">Current preview</div>
+            <div class="image-wrapper">
+                <img id="previewImg" alt="Preview" style="display: none;">
+                <div id="emptyPreviewMsg" class="empty-preview">No image. Please upload one </div>
+            </div>
+        </div>
+
+        <!-- DPI settings -->
+        <div class="dpi-panel">
+            <span class="dpi-label">Target DPI</span>
+            <div class="dpi-control-group">
+                <div class="dpi-input-wrap">
+                    <input type="number" id="dpiNumber" value="300" step="10" min="72" max="2400">
+                    <span style="color:#a1a1aa;">DPI</span>
+                </div>
+                <div class="preset-group">
+                    <button class="preset" data-dpi="72">72</button>
+                    <button class="preset" data-dpi="150">150</button>
+                    <button class="preset" data-dpi="300">300</button>
+                    <button class="preset" data-dpi="600">600</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="action-group">
+            <button class="btn btn-primary" id="applyDpiBtn">Change DPI</button>
+            <button class="btn btn-secondary" id="downloadBtn" disabled>Download Image</button>
+        </div>
+        <div class="info-tip">
+            Uses the original pixels to regenerate the image and writes DPI print metadata.<br>
+            - Ideal for printing, layout and document embedding while keeping the original quality.
+        </div>
+    <footer>Edit DPI metadata / pixel size stays unchanged</footer>
+
+        <div class="contact-tip">For feature requests or feedback, join our Discord: <a href="https://discord.gg/wjvS3efTj" target="_blank" rel="noopener noreferrer">https://discord.gg/wjvS3efTj</a></div>
+
+<script src="common.js"></script>
+
+<script>
+    (function(){
+        // DOM elements
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        const previewImg = document.getElementById('previewImg');
+        const emptyMsg = document.getElementById('emptyPreviewMsg');
+        const dpiNumber = document.getElementById('dpiNumber');
+        const presetBtns = document.querySelectorAll('.preset');
+        const applyBtn = document.getElementById('applyDpiBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        // State variables
+        let originalFile = null;          // The original image file uploaded by the user
+        let originalImageUrl = null;      // Original Preview blob url
+        let processedBlob = null;          // The blob of the image with modified DPI
+        let processedUrl = null;           // The preview URL of the modified image
+        let originalWidth = 0, originalHeight = 0;  // Original pixel dimensions
+        let sourceFileName = '';
+
+        // Release URL resources
+        function revokeUrls() {
+            if (originalImageUrl) {
+                URL.revokeObjectURL(originalImageUrl);
+                originalImageUrl = null;
+            }
+            if (processedUrl) {
+                URL.revokeObjectURL(processedUrl);
+                processedUrl = null;
+            }
+        }
+
+        // Reset the processed state
+        function resetProcessed() {
+            if (processedUrl) {
+                URL.revokeObjectURL(processedUrl);
+                processedUrl = null;
+            }
+            processedBlob = null;
+            downloadBtn.disabled = true;
+            // Restore the preview to the original image (if any)
+            if (originalImageUrl) {
+                previewImg.src = originalImageUrl;
+                previewImg.style.display = 'block';
+                emptyMsg.style.display = 'none';
+            } else {
+                previewImg.style.display = 'none';
+                emptyMsg.style.display = 'block';
+            }
+        }
+
+        // Show the original image preview
+        function showOriginalPreview(file) {
+            if (originalImageUrl) URL.revokeObjectURL(originalImageUrl);
+            const url = URL.createObjectURL(file);
+            originalImageUrl = url;
+            previewImg.src = url;
+            previewImg.style.display = 'block';
+            emptyMsg.style.display = 'none';
+            // Get the real size of the original image (keep canvas pixels unchanged)
+            const imgTmp = new Image();
+            imgTmp.onload = () => {
+                originalWidth = imgTmp.width;
+                originalHeight = imgTmp.height;
+            };
+            imgTmp.src = url;
+        }
+
+        // Handle the uploaded file
+        function handleFile(file) {
+            if (!file) return;
+            if (file.size > 20 * 1024 * 1024) {
+                alert('Image exceeds 20MB, please choose a smaller image');
+                return;
+            }
+            if (!file.type.startsWith('image/')) {
+                alert('Please select a valid image file (JPG, PNG, WebP)');
+                return;
+            }
+            originalFile = file;
+            sourceFileName = file.name.replace(/\.[^.]+$/, '');
+            // Clear the previous processed state
+            revokeUrls();
+            showOriginalPreview(file);
+            resetProcessed();
+        }
+
+        // Upload area click
+        uploadZone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) handleFile(e.target.files[0]);
+        });
+
+        // drag-and-dropUpload
+        uploadZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadZone.style.borderColor = 'rgba(129,140,248,0.5)';
+            uploadZone.style.background = 'rgba(129,140,248,0.1)';
+        });
+        uploadZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            uploadZone.style.borderColor = '';
+            uploadZone.style.background = '';
+        });
+        uploadZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadZone.style.borderColor = '';
+            uploadZone.style.background = '';
+            const files = e.dataTransfer.files;
+            if (files && files.length > 0) {
+                const file = files[0];
+                if (file.type.startsWith('image/')) {
+                    handleFile(file);
+                    fileInput.files = files; // Sync
+                } else {
+                    alert('Please drop an image file');
+                }
+            }
+        });
+
+        // Preset values
+        presetBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const dpiVal = parseInt(btn.getAttribute('data-dpi'), 10);
+                if (!isNaN(dpiVal)) dpiNumber.value = dpiVal;
+            });
+        });
+
+        // Core feature: change image DPI (use Canvas to keep original pixels, set physical resolution on export)
+        // Note: canvas.toBlob does not directly write DPI metadata, so we do the following:
+        // For JPEG images we can use the quality parameter on export and inject EXIF info:
+        // To make the DPI change truly effective (updating the print-size metadata), we use a reliable and compatible approach:
+        // Draw the original image on canvas and export via blob; exif-js is too heavy, so instead we use
+        // A standard approach: after generating the image, patch the JPEG APP0 marker (the previous version had a high failure rate)
+        // For 100% stability, re-encode with canvas plus a DPI-writing helper library? No — new method:
+        // We draw with canvas to produce a new Blob, then use FileReader and binary patching to change only the DPI region (for JPEG, more reliable)
+        // To be fully safe we built in two flows: if the original image is JPEG, use reliable binary patching (earlier failures came from images lacking a JFIF header — handled with a fallback)
+        // To make it work for every image, browser-image-compression would help but is too heavy, so I implemented a clean wrapper:
+        // For any image type, the final DPI change draws to JPEG (or keeps PNG) via canvas, then precisely writes the DPI — pixels stay unchanged and the DPI is written successfully.
+        // Below is a dedicated function to change the DPI of any image (supports PNG/JPEG, writes correct density)
+        
+        async function modifyImageDPI(file, targetDpi) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                const url = URL.createObjectURL(file);
+                img.onload = async () => {
+                    URL.revokeObjectURL(url);
+                    const width = img.width;
+                    const height = img.height;
+                    // Create the canvas, keeping original pixel dimensions without scaling
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // Determine output format: keep the original if possible, but convert webp or others to high-quality JPEG (for DPI compatibility)
+                    let mimeType = file.type;
+                    if (mimeType !== 'image/jpeg' && mimeType !== 'image/png') {
+                        // Convert webp or other formats to JPEG (quality 0.92)
+                        mimeType = 'image/jpeg';
+                    }
+                    const quality = (mimeType === 'image/jpeg') ? 0.92 : undefined;
+                    
+                    canvas.toBlob(async (blob) => {
+                        if (!blob) { reject(new Error('canvasGenerateFailed')); return; }
+                        // Write DPI metadata based on format (JPEG and PNG)
+                        try {
+                            let finalBlob;
+                            if (mimeType === 'image/jpeg') {
+                                finalBlob = await embedDpiToJPEG(blob, targetDpi);
+                            } else if (mimeType === 'image/png') {
+                                finalBlob = await embedDpiToPNG(blob, targetDpi);
+                            } else {
+                                finalBlob = blob;
+                            }
+                            resolve(finalBlob);
+                        } catch (err) {
+                            reject(err);
+                        }
+                    }, mimeType, quality);
+                };
+                img.onerror = () => {
+                    URL.revokeObjectURL(url);
+                    reject(new Error('Image load failed. Please try again.'));
+                };
+                img.src = url;
+            });
+        }
+
+        // Build an EXIF APP1 segment with the correct DPI (Windows and mainstream software read DPI from EXIF)
+        function buildExifApp1(dpi) {
+            const dpiVal = Math.min(65535, Math.max(1, dpi));
+            // TIFF data (little-endian): 66 bytes
+            const tiff = new Uint8Array(66);
+            let p = 0;
+            // Byte order "II" + magic number 0x002A
+            tiff[p++]=0x49;tiff[p++]=0x49;tiff[p++]=0x2A;tiff[p++]=0x00;
+            // IFD0 offset = 8
+            tiff[p++]=0x08;tiff[p++]=0x00;tiff[p++]=0x00;tiff[p++]=0x00;
+            // IFD0 entry count = 3
+            tiff[p++]=0x03;tiff[p++]=0x00;
+            // Entry 1: XResolution (0x011A), RATIONAL, count=1, value@offset 50
+            tiff[p++]=0x1A;tiff[p++]=0x01;tiff[p++]=0x05;tiff[p++]=0x00;
+            tiff[p++]=0x01;tiff[p++]=0x00;tiff[p++]=0x00;tiff[p++]=0x00;
+            tiff[p++]=0x32;tiff[p++]=0x00;tiff[p++]=0x00;tiff[p++]=0x00;
+            // Entry 2: YResolution (0x011B), RATIONAL, count=1, value@offset 58
+            tiff[p++]=0x1B;tiff[p++]=0x01;tiff[p++]=0x05;tiff[p++]=0x00;
+            tiff[p++]=0x01;tiff[p++]=0x00;tiff[p++]=0x00;tiff[p++]=0x00;
+            tiff[p++]=0x3A;tiff[p++]=0x00;tiff[p++]=0x00;tiff[p++]=0x00;
+            // Entry 3: ResolutionUnit (0x0128), SHORT, count=1, value=2 (inches)
+            tiff[p++]=0x28;tiff[p++]=0x01;tiff[p++]=0x03;tiff[p++]=0x00;
+            tiff[p++]=0x01;tiff[p++]=0x00;tiff[p++]=0x00;tiff[p++]=0x00;
+            tiff[p++]=0x02;tiff[p++]=0x00;tiff[p++]=0x00;tiff[p++]=0x00;
+            // Next IFD offset = 0 (no more IFDs)
+            tiff[p++]=0x00;tiff[p++]=0x00;tiff[p++]=0x00;tiff[p++]=0x00;
+            // XResolution rational: DPI / 1 (4+4 bytes, offset 50)
+            tiff[p++]=dpiVal&0xFF;tiff[p++]=(dpiVal>>8)&0xFF;
+            tiff[p++]=(dpiVal>>16)&0xFF;tiff[p++]=(dpiVal>>24)&0xFF;
+            tiff[p++]=0x01;tiff[p++]=0x00;tiff[p++]=0x00;tiff[p++]=0x00;
+            // YResolution rational: DPI / 1 (4+4 bytes, offset 58)
+            tiff[p++]=dpiVal&0xFF;tiff[p++]=(dpiVal>>8)&0xFF;
+            tiff[p++]=(dpiVal>>16)&0xFF;tiff[p++]=(dpiVal>>24)&0xFF;
+            tiff[p++]=0x01;tiff[p++]=0x00;tiff[p++]=0x00;tiff[p++]=0x00;
+            // Assemble APP1: FF E1 + Length(2) + "Exif\0\0"(6) + TIFF data(66)
+            const app1Len = 2 + 6 + 66; // Total length of data after the length field = 74
+            const app1 = new Uint8Array(2 + app1Len); // 76 bytes including the marker
+            app1[0]=0xFF;app1[1]=0xE1;
+            app1[2]=(app1Len>>8)&0xFF;app1[3]=app1Len&0xFF;
+            app1[4]=0x45;app1[5]=0x78;app1[6]=0x69;app1[7]=0x66;app1[8]=0x00;app1[9]=0x00;
+            app1.set(tiff, 10);
+            return app1;
+        }
+        // Build a JFIF APP0 segment with the correct DPI (compatibility fallback)
+        function buildJfifApp0(dpi) {
+            const dpiVal = Math.min(65535, Math.max(1, dpi));
+            const app0 = new Uint8Array(18);
+            app0[0]=0xFF;app0[1]=0xE0;
+            app0[2]=0x00;app0[3]=0x10; // Length16
+            app0[4]=0x4A;app0[5]=0x46;app0[6]=0x49;app0[7]=0x46;app0[8]=0x00; // "JFIF\0"
+            app0[9]=0x01;app0[10]=0x02; // Version 1.2
+            app0[11]=0x01; // Unit: dpi
+            app0[12]=(dpiVal>>8)&0xFF;app0[13]=dpiVal&0xFF; // X density
+            app0[14]=(dpiVal>>8)&0xFF;app0[15]=dpiVal&0xFF; // Y density
+            app0[16]=0x00;app0[17]=0x00; // No thumbnail
+            return app0;
+        }
+        // Write DPI for JPEG: strip old APP0/APP1 and insert new segments with EXIF DPI
+        function embedDpiToJPEG(blob, dpi) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    try {
+                        const data = new Uint8Array(ev.target.result);
+                        if (data.length < 2 || data[0] !== 0xFF || data[1] !== 0xD8) {
+                            return resolve(blob);
+                        }
+                        const exifSeg = buildExifApp1(dpi);
+                        const jfifSeg = buildJfifApp0(dpi);
+                        // Parse JPEG segments, skipping old APP0/APP1
+                        const keepSegs = [];
+                        let off = 2;
+                        while (off < data.length - 1) {
+                            if (data[off] !== 0xFF) { keepSegs.push(data.slice(off)); break; }
+                            const marker = data[off + 1];
+                            if (marker === 0x00 || marker === 0xFF) { off++; continue; }
+                            if (marker === 0xD9) { keepSegs.push(data.slice(off, off + 2)); break; }
+                            if (marker === 0xDA) { // SOS: compressed data follows the header, need to find EOI
+                                const sosLen = ((data[off+2]<<8)|data[off+3]) + 2;
+                                const sosEnd = off + sosLen;
+                                keepSegs.push(data.slice(off, sosEnd));
+                                let eoi = sosEnd;
+                                while (eoi < data.length - 1) {
+                                    if (data[eoi] === 0xFF && data[eoi + 1] === 0xD9) break;
+                                    eoi++;
+                                }
+                                if (eoi < data.length - 1) {
+                                    keepSegs.push(data.slice(sosEnd, eoi + 2));
+                                } else {
+                                    keepSegs.push(data.slice(sosEnd));
+                                }
+                                break;
+                            }
+                            const segLen = ((data[off+2]<<8)|data[off+3]) + 2;
+                            if (marker === 0xE0 || marker === 0xE1) {
+                                off += segLen; // Skip old APP0/APP1
+                                continue;
+                            }
+                            if (segLen < 2 || off + segLen > data.length) { keepSegs.push(data.slice(off)); break; }
+                            keepSegs.push(data.slice(off, off + segLen));
+                            off += segLen;
+                        }
+                        // Assemble: SOI + EXIF(APP1) + JFIF(APP0) + remaining segments
+                        const parts = [data.slice(0, 2), exifSeg, jfifSeg].concat(keepSegs);
+                        const total = parts.reduce(function(s,p){return s+p.length;}, 0);
+                        const out = new Uint8Array(total);
+                        let pos = 0;
+                        for (var i = 0; i < parts.length; i++) { out.set(parts[i], pos); pos += parts[i].length; }
+                        resolve(new Blob([out], { type: 'image/jpeg' }));
+                    } catch (e) { resolve(blob); }
+                };
+                reader.onerror = function() { resolve(blob); };
+                reader.readAsArrayBuffer(blob);
+            });
+        }
+
+        // CRC32 helper (for PNG checksums)
+        function crc32(data, typeStr) {
+            var table = [];
+            for (var n = 0; n < 256; n++) {
+                var c = n;
+                for (var k = 0; k < 8; k++) {
+                    c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+                }
+                table[n] = c;
+            }
+            var bytes = [];
+            for (var i = 0; i < typeStr.length; i++) bytes.push(typeStr.charCodeAt(i));
+            for (var j = 0; j < data.length; j++) bytes.push(data[j]);
+            var crc = 0xFFFFFFFF;
+            for (var r = 0; r < bytes.length; r++) {
+                crc = table[(crc ^ bytes[r]) & 0xFF] ^ (crc >>> 8);
+            }
+            return (crc ^ 0xFFFFFFFF) >>> 0;
+        }
+
+        // Write a pHYs chunk for PNG (pixels per meter)
+        function embedDpiToPNG(blob, dpi) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    try {
+                        const data = new Uint8Array(ev.target.result);
+                        const pngSig = [137,80,78,71,13,10,26,10];
+                        if (data.length < 33) return resolve(blob);
+                        for (let i = 0; i < 8; i++) if (data[i] !== pngSig[i]) return resolve(blob);
+                        let offset = 8;
+                        let modified = false;
+                        while (offset < data.length - 12) {
+                            const len = (data[offset]<<24)|(data[offset+1]<<16)|(data[offset+2]<<8)|data[offset+3];
+                            if (offset + 12 + len > data.length) break;
+                            const type = String.fromCharCode(data[offset+4], data[offset+5], data[offset+6], data[offset+7]);
+                            if (type === 'pHYs' && len === 9) {
+                                const ppm = Math.round(dpi * 39.3701);
+                                data[offset+8]  = (ppm >> 24) & 0xFF;
+                                data[offset+9]  = (ppm >> 16) & 0xFF;
+                                data[offset+10] = (ppm >> 8) & 0xFF;
+                                data[offset+11] = ppm & 0xFF;
+                                data[offset+12] = (ppm >> 24) & 0xFF;
+                                data[offset+13] = (ppm >> 16) & 0xFF;
+                                data[offset+14] = (ppm >> 8) & 0xFF;
+                                data[offset+15] = ppm & 0xFF;
+                                // Update CRC
+                                const physData = data.slice(offset+8, offset+17);
+                                const newCrc = crc32(physData, 'pHYs');
+                                data[offset+17] = (newCrc >> 24) & 0xFF;
+                                data[offset+18] = (newCrc >> 16) & 0xFF;
+                                data[offset+19] = (newCrc >> 8) & 0xFF;
+                                data[offset+20] = newCrc & 0xFF;
+                                modified = true;
+                                break;
+                            }
+                            offset += (12 + len);
+                        }
+                        if (!modified) {
+                            const ihdrLen = (data[8]<<24)|(data[9]<<16)|(data[10]<<8)|data[11];
+                            const ihdrEnd = 8 + 12 + ihdrLen;
+                            const ppm = Math.round(dpi * 39.3701);
+                            const physChunk = new Uint8Array(21);
+                            physChunk[0] = 0x00; physChunk[1] = 0x00; physChunk[2] = 0x00; physChunk[3] = 0x09;
+                            physChunk[4] = 0x70; physChunk[5] = 0x48; physChunk[6] = 0x59; physChunk[7] = 0x73; // pHYs
+                            physChunk[8]  = (ppm >> 24) & 0xFF; physChunk[9]  = (ppm >> 16) & 0xFF;
+                            physChunk[10] = (ppm >> 8) & 0xFF; physChunk[11] = ppm & 0xFF;
+                            physChunk[12] = (ppm >> 24) & 0xFF; physChunk[13] = (ppm >> 16) & 0xFF;
+                            physChunk[14] = (ppm >> 8) & 0xFF; physChunk[15] = ppm & 0xFF;
+                            physChunk[16] = 0x01;
+                            const crcVal = crc32(physChunk.slice(8, 17), 'pHYs');
+                            physChunk[17] = (crcVal >> 24) & 0xFF;
+                            physChunk[18] = (crcVal >> 16) & 0xFF;
+                            physChunk[19] = (crcVal >> 8) & 0xFF;
+                            physChunk[20] = crcVal & 0xFF;
+                            const newData = new Uint8Array(data.length + physChunk.length);
+                            newData.set(data.slice(0, ihdrEnd), 0);
+                            newData.set(physChunk, ihdrEnd);
+                            newData.set(data.slice(ihdrEnd), ihdrEnd + physChunk.length);
+                            resolve(new Blob([newData], { type: 'image/png' }));
+                            return;
+                        }
+                        resolve(new Blob([data], { type: 'image/png' }));
+                    } catch (e) {
+                        resolve(blob);
+                    }
+                };
+                reader.onerror = () => resolve(blob);
+                reader.readAsArrayBuffer(blob);
+            });
+        }
+
+        // Main modification flow
+        applyBtn.addEventListener('click', async () => {
+            if (!originalFile) {
+                alert('Please upload an image first');
+                return;
+            }
+            let targetDpi = parseInt(dpiNumber.value, 10);
+            if (isNaN(targetDpi) || targetDpi < 20) targetDpi = 72;
+            if (targetDpi > 2400) targetDpi = 2400;
+            dpiNumber.value = targetDpi;
+            
+            // Show processing state
+            const originalBtnText = applyBtn.innerHTML;
+            applyBtn.innerHTML = 'Processing...';
+            applyBtn.disabled = true;
+            try {
+                const newBlob = await modifyImageDPI(originalFile, targetDpi);
+                processedBlob = newBlob;
+                if (processedUrl) URL.revokeObjectURL(processedUrl);
+                processedUrl = URL.createObjectURL(newBlob);
+                previewImg.src = processedUrl;
+                previewImg.style.display = 'block';
+                emptyMsg.style.display = 'none';
+                downloadBtn.disabled = false;
+                alert(`Done! DPI set to ${targetDpi}. Click download to save.`);
+            } catch (err) {
+                console.error(err);
+                alert('Failed: ' + (err.message || 'Unknown error, please retry or try another image'));
+            } finally {
+                applyBtn.innerHTML = originalBtnText;
+                applyBtn.disabled = false;
+            }
+        });
+
+        downloadBtn.addEventListener('click', () => {
+            if (!processedBlob) {
+                alert('No image to download. Please click Change DPI first');
+                return;
+            }
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(processedBlob);
+            link.href = url;
+            let ext = processedBlob.type.split('/')[1] || 'jpg';
+            if (ext === 'jpeg') ext = 'jpg';
+            link.download = (sourceFileName || 'dpi') + '' + '_' + dpiNumber.value + '.' + ext;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        });
+
+        // Clean up resources
+        window.addEventListener('beforeunload', () => {
+            revokeUrls();
+        });
+    })();
+</script>
+</body>
+</html>
+
+

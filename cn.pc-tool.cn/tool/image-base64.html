@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片转Base64</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="免费在线图片转Base64工具，拖入图片直接生成Base64字符串，纯浏览器端处理，保护隐私安全。">
+    <link rel="stylesheet" href="common.css">
+    <!-- OGP 社交分享标签 -->
+    <meta property="og:title" content="图片转Base64 | PC-TOOL">
+    <meta property="og:description" content="免费在线工具集合——图片转换、视频压缩、音频转格式、图片抠图……每一个功能都为效率而生，完全免费，为人民服务！">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/image-base64.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="zh_CN">
+    <style>
+
+        .container h1 {
+            color: #e4e4e7;
+            margin-bottom: 10px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .container > p {
+            color: #a1a1aa;
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        #base64FileInput { display: none; }
+
+        .preview-area {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            min-height: 160px;
+        }
+
+        .preview-area img {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .info-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin: 10px 0;
+            color: #a1a1aa;
+            font-size: 14px;
+            flex-wrap: wrap;
+        }
+
+        .base64-output-wrap {
+            margin: 20px 0;
+        }
+
+        .base64-output-wrap label {
+            display: block;
+            color: #a1a1aa;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .base64-textarea {
+            width: 100%;
+            height: 120px;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #e4e4e7;
+            font-size: 12px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            resize: vertical;
+            word-break: break-all;
+        }
+
+        .base64-textarea:focus {
+            outline: none;
+            border-color: rgba(129, 140, 248, 0.5);
+        }
+
+        .btn-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .copy-btn {
+            padding: 10px 22px;
+            background: rgba(39, 174, 96, 0.25);
+            border: 1px solid rgba(39, 174, 96, 0.35);
+            color: #6ee7b7;
+            border-radius: 8px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .copy-btn:hover {
+            background: rgba(39, 174, 96, 0.4);
+            border-color: rgba(39, 174, 96, 0.5);
+        }
+
+        .copy-btn:active {
+            transform: scale(0.97);
+        }
+
+        .copy-success {
+            color: #34d399;
+            font-size: 13px;
+            margin-left: 8px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .copy-success.show {
+            opacity: 1;
+        }
+
+        .data-uri-area {
+            margin-top: 16px;
+        }
+
+        .data-uri-area label {
+            display: block;
+            color: #a1a1aa;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .data-uri-input {
+            width: 100%;
+            padding: 10px 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #e4e4e7;
+            font-size: 12px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            word-break: break-all;
+        }
+
+        .data-uri-input:focus {
+            outline: none;
+            border-color: rgba(129, 140, 248, 0.5);
+        }
+    </style>
+</head>
+<body>
+<canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <a href="../index.html" class="back-link">&larr; 返回转换工具首页</a>
+
+    <div class="container">
+        <h1>图片转Base64</h1>
+        <p>拖入图片直接生成 Base64 字符串，开发常用</p>
+        <div class="upload-area" id="base64UploadArea">
+            <p>点击或拖拽上传图片</p>
+            <input type="file" id="base64FileInput" accept="image/*">
+        </div>
+
+        <div class="preview-area" id="previewArea">
+            <p style="color: #71717a;">暂无图片预览</p>
+        </div>
+
+        <div class="info-row" id="infoRow" style="display:none;">
+            <span id="fileName"></span>
+            <span id="fileSize"></span>
+            <span id="fileDimensions"></span>
+            <span id="base64Length"></span>
+        </div>
+
+        <div class="base64-output-wrap" id="base64OutputWrap" style="display:none;">
+            <label>Base64 编码（纯文本）</label>
+            <textarea class="base64-textarea" id="base64Textarea" readonly placeholder="转换后在此显示 Base64 编码..."></textarea>
+            <div class="btn-row">
+                <button class="copy-btn" id="copyBase64Btn">复制 Base64</button>
+                <button class="copy-btn" id="downloadBase64Btn">下载 TXT</button>
+                <span class="copy-success" id="copySuccess">已复制!</span>
+            </div>
+        </div>
+
+        <div class="data-uri-area" id="dataUriArea" style="display:none;">
+            <label>Data URI（可直接用于 img src / CSS background）</label>
+            <input type="text" class="data-uri-input" id="dataUriInput" readonly placeholder="转换后在此显示 Data URI...">
+            <div class="btn-row">
+                <button class="copy-btn" id="copyDataUriBtn">复制 Data URI</button>
+                <span class="copy-success" id="copyDataUriSuccess">已复制!</span>
+            </div>
+        </div>
+
+        <div class="contact-tip">面向大众，有任何想要的功能或者意见，请联系QQ交流群：<strong>1121812272</strong></div>
+    </div>
+
+    <script src="common.js"></script>
+
+    <script>
+        const uploadArea = document.getElementById('base64UploadArea');
+        const fileInput = document.getElementById('base64FileInput');
+        const previewArea = document.getElementById('previewArea');
+        const infoRow = document.getElementById('infoRow');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const fileDimensions = document.getElementById('fileDimensions');
+        const base64Length = document.getElementById('base64Length');
+        const base64OutputWrap = document.getElementById('base64OutputWrap');
+        const base64Textarea = document.getElementById('base64Textarea');
+        const dataUriArea = document.getElementById('dataUriArea');
+        const dataUriInput = document.getElementById('dataUriInput');
+        const copyBase64Btn = document.getElementById('copyBase64Btn');
+        const downloadBase64Btn = document.getElementById('downloadBase64Btn');
+        const copyDataUriBtn = document.getElementById('copyDataUriBtn');
+        const copySuccess = document.getElementById('copySuccess');
+        const copyDataUriSuccess = document.getElementById('copyDataUriSuccess');
+
+        let currentDataUri = '';
+        let currentBase64 = '';
+        let currentFileName = '';
+
+        uploadArea.onclick = () => { fileInput.value = ''; fileInput.click(); };
+        fileInput.onchange = (e) => { if (e.target.files.length) processFile(e.target.files[0]); };
+
+        uploadArea.ondrop = (e) => {
+            e.preventDefault();
+            const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+            if (files.length) processFile(files[0]);
+        };
+        ['dragenter', 'dragover', 'dragleave'].forEach(ev => {
+            uploadArea.addEventListener(ev, e => e.preventDefault());
+        });
+
+        function processFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                currentDataUri = e.target.result;
+                // 提取纯 base64（去掉 data:image/xxx;base64, 前缀）
+                currentBase64 = currentDataUri.split(',')[1] || '';
+
+                // 预览
+                previewArea.innerHTML = '<img src="' + currentDataUri + '" alt="预览">';
+
+                // 信息
+                const img = new Image();
+                img.onload = () => {
+                    fileDimensions.textContent = img.width + ' × ' + img.height;
+                };
+                img.src = currentDataUri;
+
+                fileName.textContent = '文件名：' + file.name;
+                currentFileName = file.name;
+                fileSize.textContent = '大小：' + formatSize(file.size);
+                base64Length.textContent = 'Base64长度：' + currentBase64.length.toLocaleString() + ' 字符';
+                infoRow.style.display = 'flex';
+
+                // 输出
+                base64Textarea.value = currentBase64;
+                base64OutputWrap.style.display = 'block';
+
+                dataUriInput.value = currentDataUri;
+                dataUriArea.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function copyToClipboard(text, successEl) {
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(text).then(() => {
+                    successEl.classList.add('show');
+                    setTimeout(() => successEl.classList.remove('show'), 1500);
+                });
+            } else {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.left = '-9999px';
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                successEl.classList.add('show');
+                setTimeout(() => successEl.classList.remove('show'), 1500);
+            }
+        }
+
+        copyBase64Btn.onclick = () => {
+            if (!currentBase64) return;
+            copyToClipboard(currentBase64, copySuccess);
+        };
+
+        copyDataUriBtn.onclick = () => {
+            if (!currentDataUri) return;
+            copyToClipboard(currentDataUri, copyDataUriSuccess);
+        };
+
+        downloadBase64Btn.onclick = () => {
+            if (!currentBase64) return;
+            const baseName2 = currentFileName.replace(/\.[^.]+$/, '') || 'base64';
+            const txtName = baseName2 + '-图片转Base64.txt';
+            const blob = new Blob([currentBase64], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = txtName;
+            a.click();
+            URL.revokeObjectURL(url);
+        };
+    </script>
+</body>
+</html>

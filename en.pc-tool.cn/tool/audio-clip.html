@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Clipper</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="Free online audio trimmer that cuts audio clips by start and end time. Browser-based processing, safe and free.">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="Audio Trimmer | PC-TOOL">
+    <meta property="og:description" content="Free online tool collection — image conversion, video compression, audio format conversion, background removal… every feature built for productivity, completely free, made for everyone!">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/audio-clip.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="en_US">
+    <script src="https://unpkg.com/lamejs@1.2.1/lame.min.js"></script>
+    <style>
+        #audioInput { display: none; }
+        .time-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .time-row label {
+            color: #a1a1aa;
+            font-size: 14px;
+        }
+        .time-row input[type="text"] {
+            width: 80px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: #e4e4e7;
+            font-size: 14px;
+            text-align: center;
+        }
+        .time-row input[type="text"]:focus {
+            outline: none;
+            border-color: rgba(129, 140, 248, 0.5);
+        }
+        .time-tip {
+            color: #71717a;
+            font-size: 12px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <a href="../index.html" class="back-link">← Back to Tools</a>
+
+    <div class="container">
+        <h1>Audio Trimmer</h1>
+        <p>Set start and end times to trim an audio clip</p>
+
+        <div class="upload-area" id="uploadArea">
+            <p>Click or drag to upload audio</p>
+            <input type="file" id="audioInput" accept="audio/*">
+        </div>
+
+        <div id="audioInfo" style="text-align:center; margin:10px 0; display:none;">
+            <p id="fileName" style="color:#e4e4e7;"></p>
+            <p id="durationInfo" style="color:#71717a; font-size:13px;"></p>
+        </div>
+
+        <div class="time-row">
+            <label>Start time:</label>
+            <input type="text" id="starttime" value="00:00" placeholder="MM:SS">
+            <label style="margin-left:10px;">End time:</label>
+            <input type="text" id="endtime" value="00:10" placeholder="MM:SS">
+        </div>
+        <p class="time-tip">Format: m:ss or seconds, e.g. 01:30 or 90</p>
+
+        <div style="text-align:center;">
+            <select class="format-select" id="outputFormat">
+                <option value="wav">WAV format</option>
+                <option value="mp3">MP3 format</option>
+            </select>
+            <button class="convert-btn" id="clipBtn">Start Clipping</button>
+            <button class="download-btn" id="downloadBtn">Download Clip</button>
+        </div>
+
+        <div class="result-box" id="resultBox">
+            <h3>Clipping Complete</h3>
+            <div class="size-info" id="sizeInfo"></div>
+            <audio id="audiopreview" controls style="width:100%; margin-top:10px;"></audio>
+        </div>
+
+        <div class="contact-tip">For feature requests or feedback, join our Discord: <a href="https://discord.gg/wjvS3efTj" target="_blank" rel="noopener noreferrer">https://discord.gg/wjvS3efTj</a></div>
+
+    <script src="common.js"></script>
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const audioInput = document.getElementById('audioInput');
+        const clipBtn = document.getElementById('clipBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const resultBox = document.getElementById('resultBox');
+        const sizeInfo = document.getElementById('sizeInfo');
+        const audioInfo = document.getElementById('audioInfo');
+        const fileName = document.getElementById('fileName');
+        const durationInfo = document.getElementById('durationInfo');
+        const audiopreview = document.getElementById('audiopreview');
+        const starttime = document.getElementById('starttime');
+        const endtime = document.getElementById('endtime');
+        const outputFormat = document.getElementById('outputFormat');
+
+        let audioFile = null, audioUrl = null, audioBuffer = null, sourceaudioUrl = null;
+
+        uploadArea.onclick = () => audioInput.click();
+        setupDragDrop(uploadArea, (files) => {
+            if (files[0]?.type.startsWith('audio/') || /\.(mp3|wav|ogg|m4a|flac|aac)$/i.test(files[0].name)) handleaudio(files[0]);
+            else showToast('Please upload an audio file');
+        });
+
+        audioInput.onchange = (e) => handleaudio(e.target.files[0]);
+
+        async function handleaudio(f) {
+            audioFile = f;
+            fileName.textContent = 'File name: ' + f.name + ' (' + formatSize(f.size) + ')';
+            audioInfo.style.display = 'block';
+            resultBox.style.display = 'none';
+            downloadBtn.style.display = 'none';
+
+            if (sourceaudioUrl) URL.revokeObjectURL(sourceaudioUrl);
+            sourceaudioUrl = URL.createObjectURL(f);
+
+            try {
+                const actx = new (window.AudioContext || window.webkitAudioContext)();
+                const ab = await f.arrayBuffer();
+                audioBuffer = await actx.decodeAudioData(ab);
+                const d = audioBuffer.duration;
+                const mins = Math.floor(d / 60);
+                const secs = Math.floor(d % 60);
+                durationInfo.textContent = 'Audio duration: ' + mins + 'm ' + secs + 's (total ' + d.toFixed(1) + 's)';
+                actx.close();
+            } catch(e) {
+                durationInfo.textContent = 'Unable to get duration';
+            }
+        }
+
+        function parsetime(str) {
+            str = str.trim();
+            if (str.includes(':')) {
+                const parts = str.split(':');
+                return parseInt(parts[0]) * 60 + parseFloat(parts[1]);
+            }
+            return parseFloat(str);
+        }
+
+        clipBtn.onclick = async () => {
+            if (!audioFile || !audioBuffer) { showToast('Please upload audio first'); return; }
+
+            const start = parsetime(starttime.value);
+            const end = parsetime(endtime.value);
+            if (isNaN(start) || isNaN(end)) { showToast('Please enter a valid time'); return; }
+            if (start >= end) { showToast('Start time must be less than end time'); return; }
+            if (end > audioBuffer.duration) { showToast('End time exceeds the audio duration'); return; }
+
+            clipBtn.disabled = true;
+            clipBtn.textContent = 'Trimming…';
+
+            try {
+                const sampleRate = audioBuffer.sampleRate;
+                const channels = audioBuffer.numberOfChannels;
+                const startSample = Math.floor(start * sampleRate);
+                const endSample = Math.floor(end * sampleRate);
+                const length = endSample - startSample;
+
+                const offlineCtx = new OfflineAudioContext(channels, length, sampleRate);
+                const source = offlineCtx.createBufferSource();
+                source.buffer = audioBuffer;
+
+                const gain = offlineCtx.createGain();
+                gain.gain.value = 1;
+                source.connect(gain);
+                gain.connect(offlineCtx.destination);
+
+                source.start(0, start, end - start);
+                const renderedBuffer = await offlineCtx.startRendering();
+
+                let blob;
+                const fmt = outputFormat.value;
+                if (fmt === 'wav') {
+                    blob = audioBufferToBlob(renderedBuffer);
+                } else {
+                    // Encode as MP3 via MediaRecorder
+                    blob = await encodeMP3(renderedBuffer);
+                }
+
+                if (audioUrl) URL.revokeObjectURL(audioUrl);
+                audioUrl = URL.createObjectURL(blob);
+
+                sizeInfo.innerHTML = 'Original audio: ' + formatSize(audioFile.size) + '<br>Trimmed clip: <span class="highlight">' + formatSize(blob.size) + '</span><br>Duration: <span class="highlight">' + (end - start).toFixed(1) + 's</span>';
+                audiopreview.src = audioUrl;
+                resultBox.style.display = 'block';
+                downloadBtn.style.display = 'inline-block';
+            } catch (e) {
+                showToast('Trimming failed: ' + e.message);
+            } finally {
+                clipBtn.disabled = false;
+                clipBtn.textContent = 'Start Clipping';
+            }
+        };
+
+        function audioBufferToBlob(buffer) {
+            const numChannels = buffer.numberOfChannels;
+            const length = buffer.length;
+            const sampleRate = buffer.sampleRate;
+            const bitsPerSample = 16;
+            const byteRate = sampleRate * numChannels * bitsPerSample / 8;
+            const blockAlign = numChannels * bitsPerSample / 8;
+            const dataSize = length * numChannels * bitsPerSample / 8;
+            const headerSize = 44;
+            const totalSize = headerSize + dataSize;
+            const arrayBuffer = new ArrayBuffer(totalSize);
+            const view = new DataView(arrayBuffer);
+
+            function writeString(offset, str) {
+                for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+            }
+
+            writeString(0, 'RIFF');
+            view.setUint32(4, totalSize - 8, true);
+            writeString(8, 'WAVE');
+            writeString(12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, byteRate, true);
+            view.setUint16(32, blockAlign, true);
+            view.setUint16(34, bitsPerSample, true);
+            writeString(36, 'data');
+            view.setUint32(40, dataSize, true);
+
+            let offset = 44;
+            for (let i = 0; i < length; i++) {
+                for (let ch = 0; ch < numChannels; ch++) {
+                    const sample = Math.max(-1, Math.min(1, buffer.getChannelData(ch)[i]));
+                    view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+                    offset += 2;
+                }
+            }
+            return new Blob([arrayBuffer], { type: 'audio/wav' });
+        }
+
+        async function encodeMP3(buffer) {
+            // Encode WAV → MP3 via lamejs
+            const numChannels = buffer.numberOfChannels;
+            const sampleRate = buffer.sampleRate;
+            const length = buffer.length;
+
+            const mp3encoder = new lamejs.Mp3Encoder(numChannels, sampleRate, 128);
+            const mp3Data = [];
+
+            const blockSize = 1152;
+            const left = new Int16Array(length);
+            for (let i = 0; i < length; i++) {
+                const sample = Math.max(-1, Math.min(1, buffer.getChannelData(0)[i]));
+                left[i] = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+            }
+
+            if (numChannels === 1) {
+                for (let i = 0; i < length; i += blockSize) {
+                    const chunk = left.subarray(i, i + blockSize);
+                    const mp3buf = mp3encoder.encodeBuffer(chunk);
+                    if (mp3buf.length > 0) mp3Data.push(mp3buf);
+                }
+            } else {
+                const right = new Int16Array(length);
+                for (let i = 0; i < length; i++) {
+                    const sample = Math.max(-1, Math.min(1, buffer.getChannelData(1)[i]));
+                    right[i] = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+                }
+                for (let i = 0; i < length; i += blockSize) {
+                    const chunkL = left.subarray(i, i + blockSize);
+                    const chunkR = right.subarray(i, i + blockSize);
+                    const mp3buf = mp3encoder.encodeBuffer(chunkL, chunkR);
+                    if (mp3buf.length > 0) mp3Data.push(mp3buf);
+                }
+            }
+
+            const finalBuf = mp3encoder.flush();
+            if (finalBuf.length > 0) mp3Data.push(finalBuf);
+
+            return new Blob(mp3Data, { type: 'audio/mp3' });
+        }
+
+        downloadBtn.onclick = () => {
+            const a = document.createElement('a');
+            a.href = audioUrl;
+            const ext = outputFormat.value;
+            a.download = (audioFile?.name || 'audio').replace(/\.\w+$/, '') + '-clip.' + ext;
+            a.click();
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Cropper</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="Free online image cropping tool with free-form and preset aspect ratios. All processing happens in your browser, safe and fast.">
+    <link rel="stylesheet" href="common.css">
+    <!-- OGP social sharing tags -->
+    <meta property="og:title" content="Crop Image | PC-TOOL">
+    <meta property="og:description" content="Free online tool collection — image conversion, video compression, audio format conversion, background removal… every feature built for productivity, completely free, made for everyone!">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/image-crop.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="en_US">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.1/dist/cropper.min.css">
+    <style>
+        .aspect-options {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            margin: 15px 0;
+        }
+
+        .aspect-btn {
+            padding: 8px 16px;
+            background: rgba(24, 24, 27, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #a1a1aa;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .aspect-btn:hover {
+            background: rgba(39, 39, 42, 0.6);
+            border-color: rgba(255, 255, 255, 0.2);
+            color: #e4e4e7;
+        }
+
+        .aspect-btn.active {
+            background: rgba(129, 140, 248, 0.3);
+            border-color: rgba(129, 140, 248, 0.5);
+            color: #c4b5fd;
+        }
+
+        .img-crop-container {
+            display: none;
+            margin: 20px auto;
+            width: 100%;
+            max-width: 100%;
+            height: 450px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        #cropimage {
+            display: block;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .crop-btn-row {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin: 15px 0;
+        }
+
+        .preview-img {
+            max-width: 100%;
+            max-height: 400px;
+            margin: 20px auto;
+            border-radius: 8px;
+            display: none;
+            object-fit: contain;
+        }
+    </style>
+</head>
+<body>
+<canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <a href="../index.html" class="back-link">← Back to Tools</a>
+
+    <div class="container">
+        <h1>Crop Image</h1>
+        <p>Crop images freely, with common aspect ratio presets</p>
+
+        <div class="aspect-options" id="aspectOptions">
+            <button class="aspect-btn active" data-ratio="NaN">Free</button>
+            <button class="aspect-btn" data-ratio="1">1:1</button>
+            <button class="aspect-btn" data-ratio="4/3">4:3</button>
+            <button class="aspect-btn" data-ratio="3/4">3:4</button>
+            <button class="aspect-btn" data-ratio="16/9">16:9</button>
+            <button class="aspect-btn" data-ratio="9/16">9:16</button>
+            <button class="aspect-btn" data-ratio="3/2">3:2</button>
+            <button class="aspect-btn" data-ratio="2/3">2:3</button>
+        </div>
+
+        <div class="upload-area" id="uploadArea">
+            <p>Click or drag to upload an image</p>
+            <input type="file" id="fileInput" accept="image/*">
+        </div>
+
+        <div class="img-crop-container" id="cropContainer">
+            <img id="cropimage" alt="Image to crop">
+        </div>
+
+        <div class="crop-btn-row">
+            <button class="convert-btn" id="resetBtn" style="display:none;">Reset Crop Box</button>
+            <button class="download-btn" id="cropBtn" style="display:none;background:rgba(230,126,34,0.3);border-color:rgba(230,126,34,0.3);">Apply Crop</button>
+        </div>
+
+        <img id="previewimage" class="preview-img" alt="Cropped preview">
+
+        <div style="text-align:center; margin:20px 0;">
+            <button class="convert-btn" id="downloadBtn" style="display:none;">Download Cropped Image</button>
+        </div>
+
+        <div class="contact-tip">For feature requests or feedback, join our Discord: <a href="https://discord.gg/wjvS3efTj" target="_blank" rel="noopener noreferrer">https://discord.gg/wjvS3efTj</a></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.1/dist/cropper.min.js"></script>
+    <script src="common.js"></script>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const cropContainer = document.getElementById('cropContainer');
+        const cropimage = document.getElementById('cropimage');
+        const cropBtn = document.getElementById('cropBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const previewimage = document.getElementById('previewimage');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const aspectBtns = document.querySelectorAll('.aspect-btn');
+
+        let cropper;
+        let croppedUrl = null;
+        let originalFileName = '';
+
+        // Aspect ratio switching
+        aspectBtns.forEach(btn => {
+            btn.onclick = () => {
+                aspectBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                if (cropper) {
+                    const ratio = btn.dataset.ratio;
+                    cropper.setAspectRatio(ratio === 'NaN' ? NaN : eval(ratio));
+                }
+            };
+        });
+
+        // Upload 
+        uploadArea.onclick = () => fileInput.click();
+        fileInput.onchange = handleUpload;
+        uploadArea.ondrop = e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f?.type.startsWith('image/')) handleUpload({ target: { files: [f] } }); };
+        ['dragenter', 'dragover', 'dragleave'].forEach(ev => uploadArea.addEventListener(ev, e => e.preventDefault()));
+
+        function handleUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            originalFileName = file.name.replace(/\.\w+$/, '');
+            const url = URL.createObjectURL(file);
+            cropimage.src = url;
+            cropContainer.style.display = 'block';
+            cropBtn.style.display = 'inline-block';
+            resetBtn.style.display = 'inline-block';
+            previewimage.style.display = 'none';
+            downloadBtn.style.display = 'none';
+            croppedUrl = null;
+            initCropper();
+        }
+
+        function initCropper() {
+            if (cropper) cropper.destroy();
+            cropimage.onload = () => {
+                cropper = new Cropper(cropimage, {
+                    aspectRatio: NaN,
+                    viewMode: 1,
+                    autoCropArea: 0.9,
+                    responsive: true,
+                    autoCrop: true,
+                    zoomable: true,
+                    scalable: false
+                });
+            };
+        }
+
+        // Reset the crop box
+        resetBtn.onclick = () => {
+            if (cropper) cropper.reset();
+        };
+
+        // Apply the crop
+        cropBtn.onclick = () => {
+            cropper.getCroppedCanvas({ maxWidth: 6000, maxHeight: 6000 }).toBlob(b => {
+                croppedUrl = URL.createObjectURL(b);
+                previewimage.src = croppedUrl;
+                previewimage.style.display = 'block';
+                downloadBtn.style.display = 'inline-block';
+            });
+        };
+
+        // Download 
+        downloadBtn.onclick = () => {
+            const a = document.createElement('a');
+            a.href = croppedUrl;
+            a.download = originalFileName + '-cropped.' + 'png';
+            a.click();
+        };
+    </script>
+</body>
+</html>

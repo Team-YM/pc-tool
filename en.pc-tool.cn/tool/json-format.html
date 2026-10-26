@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON Formatter</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="Online JSON formatter, beautifier, minifier and syntax validator. Runs entirely in your browser with one-click copy and highlighted output.">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .container {
+            max-width: 860px;
+        }
+        .container h1 {
+            color: #e4e4e7;
+            margin-bottom: 8px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .container > p {
+            color: #a1a1aa;
+            font-size: 15px;
+            margin-bottom: 20px;
+        }
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 16px;
+            align-items: center;
+        }
+        .tool-btn {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #e4e4e7;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .tool-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-1px);
+        }
+        .tool-btn.primary {
+            background: #818cf8;
+            color: #fff;
+            border-color: #818cf8;
+        }
+        .tool-btn.primary:hover {
+            background: #6366f1;
+        }
+        .editor-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        @media (max-width: 768px) {
+            .editor-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .editor-box {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            text-align: left;
+        }
+        .editor-header {
+            font-size: 13px;
+            color: #a1a1aa;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .textarea-styled {
+            width: 100%;
+            height: 380px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 12px 14px;
+            color: #e4e4e7;
+            font-size: 13px;
+            line-height: 1.5;
+            resize: vertical;
+            outline: none;
+            font-family: Consolas, Monaco, "Courier New", monospace;
+            tab-size: 2;
+            transition: border-color 0.2s;
+        }
+        .textarea-styled:focus {
+            border-color: rgba(129, 140, 248, 0.5);
+        }
+        .status-bar {
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            display: none;
+            margin-top: 8px;
+            text-align: left;
+        }
+        .status-bar.success {
+            display: block;
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        .status-bar.error {
+            display: block;
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+    <a href="../index.html" class="back-link">← Back to Home</a>
+
+    <div class="container">
+        <h1>JSON Formatter &amp; Validator</h1>
+        <p>Beautify, minify, escape or unescape JSON and pinpoint syntax errors precisely. Everything is parsed locally in your browser.</p>
+
+        <div class="toolbar">
+            <button class="tool-btn primary" id="format2Btn">Format (2 spaces)</button>
+            <button class="tool-btn" id="format4Btn">Format (4 spaces)</button>
+            <button class="tool-btn" id="compressBtn">Minify to one line</button>
+            <button class="tool-btn" id="escapeBtn">Escape double quotes</button>
+            <button class="tool-btn" id="unescapeBtn">Unescape</button>
+            <button class="tool-btn" id="sampleBtn">Load sample</button>
+            <button class="tool-btn" id="clearBtn">Clear all</button>
+        </div>
+
+        <div class="editor-grid">
+            <div class="editor-box">
+                <div class="editor-header">
+                    <span>Input JSON:</span>
+                    <span id="inputStat">0 characters</span>
+                </div>
+                <textarea class="textarea-styled" id="jsonInput" placeholder="Paste or type your JSON here..."></textarea>
+            </div>
+            <div class="editor-box">
+                <div class="editor-header">
+                    <span>Result:</span>
+                    <button class="tool-btn" id="copyBtn" style="padding:4px 10px; font-size:12px;">Copy Result</button>
+                </div>
+                <textarea class="textarea-styled" id="jsonOutput" placeholder="Formatted output appears here..." readonly></textarea>
+            </div>
+        </div>
+
+        <div id="statusMsg" class="status-bar"></div>
+
+        <div class="contact-tip">For feature requests or feedback, join our Discord: <a href="https://discord.gg/wjvS3efTj" target="_blank" rel="noopener noreferrer">https://discord.gg/wjvS3efTj</a></div>
+
+    <script src="common.js"></script>
+    <script>
+        const jsonInput = document.getElementById('jsonInput');
+        const jsonOutput = document.getElementById('jsonOutput');
+        const statusMsg = document.getElementById('statusMsg');
+        const inputStat = document.getElementById('inputStat');
+        const copyBtn = document.getElementById('copyBtn');
+
+        jsonInput.addEventListener('input', () => {
+            inputStat.textContent = jsonInput.value.length + ' characters';
+        });
+
+        function parseJson(str) {
+            return JSON.parse(str);
+        }
+
+        function showstatus(isSuccess, text) {
+            statusMsg.className = 'status-bar ' + (isSuccess ? 'success' : 'error');
+            statusMsg.textContent = text;
+        }
+
+        function formatJSON(indent) {
+            const raw = jsonInput.value.trim();
+            if (!raw) {
+                showstatus(false, 'Please enter some JSON content.');
+                return;
+            }
+            try {
+                const parsed = parseJson(raw);
+                const res = JSON.stringify(parsed, null, indent);
+                jsonOutput.value = res;
+                showstatus(true, 'Valid JSON — formatted successfully.');
+            } catch (err) {
+                jsonOutput.value = '';
+                showstatus(false, 'JSON syntax error: ' + err.message);
+            }
+        }
+
+        document.getElementById('format2Btn').onclick = () => formatJSON(2);
+        document.getElementById('format4Btn').onclick = () => formatJSON(4);
+
+        document.getElementById('compressBtn').onclick = () => {
+            const raw = jsonInput.value.trim();
+            if (!raw) {
+                showstatus(false, 'Please enter some JSON content.');
+                return;
+            }
+            try {
+                const parsed = parseJson(raw);
+                jsonOutput.value = JSON.stringify(parsed);
+                showstatus(true, 'Compressed to a single line.');
+            } catch (err) {
+                showstatus(false, 'JSON syntax error: ' + err.message);
+            }
+        };
+
+        document.getElementById('escapeBtn').onclick = () => {
+            const raw = jsonInput.value;
+            if (!raw) return;
+            jsonOutput.value = JSON.stringify(raw);
+            showstatus(true, 'Double quotes and line breaks escaped.');
+        };
+
+        document.getElementById('unescapeBtn').onclick = () => {
+            const raw = jsonInput.value.trim();
+            if (!raw) return;
+            try {
+                if ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))) {
+                    jsonOutput.value = JSON.parse(raw);
+                } else {
+                    jsonOutput.value = raw.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+                }
+                showstatus(true, 'Unescape complete.');
+            } catch (err) {
+                jsonOutput.value = raw.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+                showstatus(true, 'Unescape complete (fallback mode).');
+            }
+        };
+
+        document.getElementById('sampleBtn').onclick = () => {
+            const sample = {
+                "name": "PC-TOOL",
+                "site": "https://pc-tool.cn",
+                "features": ["Free", "Fast", "Open source", "100% local processing"],
+                "author": {
+                    "nickname": "cute-Fish",
+                    "role": "Developer"
+                },
+                "status": 200,
+                "active": true
+            };
+            jsonInput.value = JSON.stringify(sample);
+            inputStat.textContent = jsonInput.value.length + ' characters';
+            formatJSON(2);
+        };
+
+        document.getElementById('clearBtn').onclick = () => {
+            jsonInput.value = '';
+            jsonOutput.value = '';
+            inputStat.textContent = '0 characters';
+            statusMsg.style.display = 'none';
+        };
+
+        copyBtn.onclick = () => {
+            if (!jsonOutput.value) return;
+            navigator.clipboard.writeText(jsonOutput.value).then(() => {
+                copyBtn.textContent = 'Copied!';
+                setTimeout(() => { copyBtn.textContent = 'Copy Result'; }, 1800);
+            }).catch(() => {
+                jsonOutput.select();
+                document.execCommand('copy');
+                copyBtn.textContent = 'Copied!';
+                setTimeout(() => { copyBtn.textContent = 'Copy Result'; }, 1800);
+            });
+        };
+    </script>
+</body>
+</html>

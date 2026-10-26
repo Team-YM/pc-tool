@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>颜色格式转换 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .container { max-width: 680px; }
+        .container h1 { text-align: center; }
+
+        /* ---- 颜色预览块 ---- */
+        .color-preview {
+            width: 100%;
+            height: 120px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            transition: background 0.2s;
+            border: 1px solid rgba(255,255,255,0.08);
+            position: relative;
+            overflow: hidden;
+        }
+        .color-preview::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 50%, rgba(0,0,0,0.1) 100%);
+            pointer-events: none;
+        }
+
+        /* ---- 取色器行 ---- */
+        .picker-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .picker-row input[type="color"] {
+            width: 48px;
+            height: 48px;
+            border: 2px solid rgba(255,255,255,0.12);
+            border-radius: 10px;
+            cursor: pointer;
+            background: none;
+            padding: 3px;
+        }
+        .picker-row input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        .picker-row input[type="color"]::-webkit-color-swatch { border-radius: 6px; border: none; }
+        .picker-label {
+            font-size: 14px;
+            color: #a1a1aa;
+        }
+
+        /* ---- 格式输入组 ---- */
+        .format-group {
+            margin-bottom: 16px;
+        }
+        .format-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #71717a;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+        .format-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .format-row input {
+            flex: 1;
+            padding: 10px 14px;
+            font-size: 15px;
+            font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.04);
+            color: #e4e4e7;
+            outline: none;
+            transition: border-color 0.2s;
+            text-align: center;
+        }
+        .format-row input:focus {
+            border-color: rgba(129, 140, 248, 0.5);
+        }
+        .format-row .copy-btn {
+            width: 36px;
+            height: 36px;
+            flex-shrink: 0;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.04);
+            color: #a1a1aa;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .format-row .copy-btn:hover {
+            background: rgba(255,255,255,0.1);
+            color: #e4e4e7;
+        }
+        .format-row .copy-btn.copied {
+            background: rgba(16, 185, 129, 0.2);
+            border-color: rgba(16, 185, 129, 0.3);
+            color: #6ee7b7;
+        }
+        .format-row .copy-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* ---- RGB / HSL 多输入 ---- */
+        .triple-input {
+            display: flex;
+            gap: 8px;
+        }
+        .triple-input input {
+            flex: 1;
+            text-align: center;
+            padding: 10px 8px;
+            font-size: 15px;
+            font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.04);
+            color: #e4e4e7;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .triple-input input:focus {
+            border-color: rgba(129, 140, 248, 0.5);
+        }
+        .triple-input .input-label {
+            position: relative;
+            flex: 1;
+        }
+        .triple-input .input-label span {
+            position: absolute;
+            top: -18px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            color: #71717a;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* ---- 分隔线 ---- */
+        .divider {
+            border: none;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            margin: 24px 0;
+        }
+
+        /* ---- 调色板 ---- */
+        .palette-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #71717a;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        .palette-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(42px, 1fr));
+            gap: 6px;
+            margin-bottom: 20px;
+        }
+        .palette-swatch {
+            aspect-ratio: 1;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.15s;
+            position: relative;
+        }
+        .palette-swatch:hover {
+            transform: scale(1.15);
+            border-color: rgba(255,255,255,0.4);
+            z-index: 2;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+        }
+        .palette-swatch.active {
+            border-color: #fff;
+            box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.3);
+        }
+
+        /* ---- 预设渐变色板 ---- */
+        .gradient-row {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        .gradient-row .palette-swatch {
+            flex: 1;
+        }
+
+        @media (max-width: 480px) {
+            .palette-grid {
+                grid-template-columns: repeat(8, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <a href="../index.html" class="back-link">← 返回转换工具首页</a>
+
+    <div class="container">
+        <h1>颜色格式转换</h1>
+
+        <!-- 颜色预览 -->
+        <div class="color-preview" id="colorPreview"></div>
+
+        <!-- 取色器 -->
+        <div class="picker-row">
+            <input type="color" id="colorPicker" value="#818cf8">
+            <span class="picker-label">点击取色器选择颜色，或直接输入以下任意格式</span>
+        </div>
+
+        <!-- HEX -->
+        <div class="format-group">
+            <div class="format-label">HEX</div>
+            <div class="format-row">
+                <input type="text" id="hexInput" value="#818cf8" placeholder="#000000" maxlength="7">
+                <button class="copy-btn" id="copyHex" title="复制 HEX">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <hr class="divider">
+
+        <!-- RGB -->
+        <div class="format-group">
+            <div class="format-label">RGB</div>
+            <div class="triple-input">
+                <div class="input-label">
+                    <span>R</span>
+                    <input type="number" id="rInput" value="129" min="0" max="255">
+                </div>
+                <div class="input-label">
+                    <span>G</span>
+                    <input type="number" id="gInput" value="140" min="0" max="255">
+                </div>
+                <div class="input-label">
+                    <span>B</span>
+                    <input type="number" id="bInput" value="248" min="0" max="255">
+                </div>
+            </div>
+            <div class="format-row" style="margin-top:8px;">
+                <input type="text" id="rgbInput" value="rgb(129, 140, 248)" placeholder="rgb(0, 0, 0)" readonly style="opacity:0.7;font-size:13px;">
+                <button class="copy-btn" id="copyRgb" title="复制 RGB">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <hr class="divider">
+
+        <!-- HSL -->
+        <div class="format-group">
+            <div class="format-label">HSL</div>
+            <div class="triple-input">
+                <div class="input-label">
+                    <span>H°</span>
+                    <input type="number" id="hInput" value="234" min="0" max="360">
+                </div>
+                <div class="input-label">
+                    <span>S%</span>
+                    <input type="number" id="sInput" value="84" min="0" max="100">
+                </div>
+                <div class="input-label">
+                    <span>L%</span>
+                    <input type="number" id="lInput" value="74" min="0" max="100">
+                </div>
+            </div>
+            <div class="format-row" style="margin-top:8px;">
+                <input type="text" id="hslInput" value="hsl(234, 84%, 74%)" placeholder="hsl(0, 0%, 0%)" readonly style="opacity:0.7;font-size:13px;">
+                <button class="copy-btn" id="copyHsl" title="复制 HSL">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <hr class="divider">
+
+        <!-- 常用颜色调色板 -->
+        <div class="palette-title">常用颜色</div>
+        <div class="palette-grid" id="paletteBasic"></div>
+
+        <div class="palette-title">渐变色系</div>
+        <div class="palette-grid" id="paletteGradient"></div>
+
+        <div class="contact-tip">
+            面向大众，有任何想要的功能或者意见，请联系<br><strong>QQ交流群：1121812272</strong>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+    (function() {
+        // ========== DOM 引用 ==========
+        var colorPicker = document.getElementById('colorPicker');
+        var colorPreview = document.getElementById('colorPreview');
+        var hexInput = document.getElementById('hexInput');
+        var rInput = document.getElementById('rInput');
+        var gInput = document.getElementById('gInput');
+        var bInput = document.getElementById('bInput');
+        var rgbInput = document.getElementById('rgbInput');
+        var hInput = document.getElementById('hInput');
+        var sInput = document.getElementById('sInput');
+        var lInput = document.getElementById('lInput');
+        var hslInput = document.getElementById('hslInput');
+
+        // ========== 工具函数 ==========
+        function clamp(v, min, max) { return Math.max(min, Math.min(max, Math.round(v))); }
+
+        function hexToRgb(hex) {
+            var h = hex.replace('#', '');
+            if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+            if (h.length !== 6) return null;
+            return {
+                r: parseInt(h.substring(0,2), 16),
+                g: parseInt(h.substring(2,4), 16),
+                b: parseInt(h.substring(4,6), 16)
+            };
+        }
+
+        function rgbToHex(r, g, b) {
+            return '#' + [r, g, b].map(function(x) {
+                var h = x.toString(16);
+                return h.length === 1 ? '0' + h : h;
+            }).join('');
+        }
+
+        function rgbToHsl(r, g, b) {
+            r /= 255; g /= 255; b /= 255;
+            var max = Math.max(r, g, b), min = Math.min(r, g, b);
+            var h, s, l = (max + min) / 2;
+            if (max === min) {
+                h = s = 0;
+            } else {
+                var d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+                    case g: h = ((b - r) / d + 2) / 6; break;
+                    case b: h = ((r - g) / d + 4) / 6; break;
+                }
+            }
+            return {
+                h: Math.round(h * 360),
+                s: Math.round(s * 100),
+                l: Math.round(l * 100)
+            };
+        }
+
+        function hslToRgb(h, s, l) {
+            h /= 360; s /= 100; l /= 100;
+            var r, g, b;
+            if (s === 0) {
+                r = g = b = l;
+            } else {
+                function hue2rgb(p, q, t) {
+                    if (t < 0) t += 1;
+                    if (t > 1) t -= 1;
+                    if (t < 1/6) return p + (q - p) * 6 * t;
+                    if (t < 1/2) return q;
+                    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                    return p;
+                }
+                var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                var p = 2 * l - q;
+                r = hue2rgb(p, q, h + 1/3);
+                g = hue2rgb(p, q, h);
+                b = hue2rgb(p, q, h - 1/3);
+            }
+            return {
+                r: Math.round(r * 255),
+                g: Math.round(g * 255),
+                b: Math.round(b * 255)
+            };
+        }
+
+        // ========== 更新所有字段 ==========
+        var updating = false;
+
+        function updateFromRgb(r, g, b, source) {
+            if (updating) return;
+            updating = true;
+
+            r = clamp(r, 0, 255);
+            g = clamp(g, 0, 255);
+            b = clamp(b, 0, 255);
+
+            var hex = rgbToHex(r, g, b);
+            var hsl = rgbToHsl(r, g, b);
+
+            colorPicker.value = hex;
+            colorPreview.style.background = hex;
+
+            if (source !== 'hex') hexInput.value = hex;
+            if (source !== 'rgb') {
+                rInput.value = r; gInput.value = g; bInput.value = b;
+                rgbInput.value = 'rgb(' + r + ', ' + g + ', ' + b + ')';
+            }
+            if (source !== 'hsl') {
+                hInput.value = hsl.h; sInput.value = hsl.s; lInput.value = hsl.l;
+                hslInput.value = 'hsl(' + hsl.h + ', ' + hsl.s + '%, ' + hsl.l + '%)';
+            }
+
+            // 高亮匹配的调色板色块
+            highlightPalette(hex.toLowerCase());
+
+            updating = false;
+        }
+
+        function updateFromHex(hex) {
+            var rgb = hexToRgb(hex);
+            if (!rgb) return;
+            updateFromRgb(rgb.r, rgb.g, rgb.b, 'hex');
+        }
+
+        function updateFromHsl(h, s, l) {
+            var rgb = hslToRgb(h, s, l);
+            updateFromRgb(rgb.r, rgb.g, rgb.b, 'hsl');
+        }
+
+        // ========== 事件绑定 ==========
+        colorPicker.addEventListener('input', function() {
+            updateFromHex(this.value);
+        });
+
+        hexInput.addEventListener('input', function() {
+            var val = this.value.trim();
+            if (val.length > 0 && val[0] !== '#') val = '#' + val;
+            if (/^#[0-9a-fA-F]{6}$/.test(val)) {
+                updateFromHex(val);
+            }
+        });
+
+        hexInput.addEventListener('blur', function() {
+            var val = this.value.trim();
+            if (val.length > 0 && val[0] !== '#') val = '#' + val;
+            if (!/^#[0-9a-fA-F]{6}$/.test(val)) {
+                // 恢复
+                var rgb = hexToRgb(colorPicker.value);
+                this.value = rgbToHex(rgb.r, rgb.g, rgb.b);
+            } else {
+                this.value = val.toLowerCase();
+            }
+        });
+
+        function onRgbChange() {
+            updateFromRgb(
+                parseInt(rInput.value) || 0,
+                parseInt(gInput.value) || 0,
+                parseInt(bInput.value) || 0,
+                'rgb'
+            );
+        }
+        rInput.addEventListener('input', onRgbChange);
+        gInput.addEventListener('input', onRgbChange);
+        bInput.addEventListener('input', onRgbChange);
+
+        function onHslChange() {
+            updateFromHsl(
+                parseInt(hInput.value) || 0,
+                parseInt(sInput.value) || 0,
+                parseInt(lInput.value) || 0
+            );
+        }
+        hInput.addEventListener('input', onHslChange);
+        sInput.addEventListener('input', onHslChange);
+        lInput.addEventListener('input', onHslChange);
+
+        // ========== 复制按钮 ==========
+        function setupCopy(btnId, inputId) {
+            var btn = document.getElementById(btnId);
+            var input = document.getElementById(inputId);
+            btn.addEventListener('click', function() {
+                var text = input.value;
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(text).then(function() {
+                        showCopyFeedback(btn);
+                    });
+                } else {
+                    // fallback
+                    input.select();
+                    document.execCommand('copy');
+                    showCopyFeedback(btn);
+                }
+            });
+        }
+
+        function showCopyFeedback(btn) {
+            btn.classList.add('copied');
+            setTimeout(function() { btn.classList.remove('copied'); }, 1500);
+        }
+
+        setupCopy('copyHex', 'hexInput');
+        setupCopy('copyRgb', 'rgbInput');
+        setupCopy('copyHsl', 'hslInput');
+
+        // ========== 调色板 ==========
+        var paletteBasic = [
+            '#ef4444','#f97316','#f59e0b','#eab308','#84cc16','#22c55e',
+            '#10b981','#14b8a6','#06b6d4','#0ea5e9','#3b82f6','#6366f1',
+            '#8b5cf6','#a855f7','#d946ef','#ec4899','#f43f5e','#ffffff',
+            '#d4d4d8','#a1a1aa','#71717a','#52525b','#3f3f46','#27272a',
+            '#18181b','#09090b','#e11d48','#c2410c','#a16207','#4d7c0f',
+            '#15803d','#047857','#0f766e','#155e75','#075985','#1d4ed8',
+            '#4338ca','#6d28d9','#7e22ce','#a21caf','#be185d','#9f1239'
+        ];
+
+        // 渐变色系
+        function generateGradient(startHex, endHex, steps) {
+            var start = hexToRgb(startHex);
+            var end = hexToRgb(endHex);
+            var colors = [];
+            for (var i = 0; i < steps; i++) {
+                var t = i / (steps - 1);
+                var r = Math.round(start.r + (end.r - start.r) * t);
+                var g = Math.round(start.g + (end.g - start.g) * t);
+                var b = Math.round(start.b + (end.b - start.b) * t);
+                colors.push(rgbToHex(r, g, b));
+            }
+            return colors;
+        }
+
+        var gradientRanges = [
+            ['#ef4444','#f97316','#f59e0b'],
+            ['#22c55e','#10b981','#14b8a6'],
+            ['#3b82f6','#6366f1','#8b5cf6'],
+            ['#ec4899','#d946ef','#a855f7'],
+            ['#f43f5e','#e11d48','#9f1239'],
+            ['#06b6d4','#0ea5e9','#3b82f6'],
+            ['#f59e0b','#eab308','#84cc16'],
+            ['#f97316','#ef4444','#ec4899']
+        ];
+
+        function buildPalette(containerId, colors) {
+            var container = document.getElementById(containerId);
+            colors.forEach(function(hex) {
+                var swatch = document.createElement('div');
+                swatch.className = 'palette-swatch';
+                swatch.style.background = hex;
+                swatch.title = hex;
+                swatch.setAttribute('data-hex', hex.toLowerCase());
+                swatch.addEventListener('click', function() {
+                    updateFromHex(hex);
+                });
+                container.appendChild(swatch);
+            });
+        }
+
+        // 生成渐变色
+        var gradientColors = [];
+        gradientRanges.forEach(function(range) {
+            var start = range[0], mid = range[1], end = range[2];
+            gradientColors = gradientColors.concat(generateGradient(start, mid, 6));
+            gradientColors.push(mid);
+            gradientColors = gradientColors.concat(generateGradient(mid, end, 6));
+        });
+
+        function highlightPalette(hex) {
+            document.querySelectorAll('.palette-swatch').forEach(function(s) {
+                if (s.getAttribute('data-hex') === hex) {
+                    s.classList.add('active');
+                } else {
+                    s.classList.remove('active');
+                }
+            });
+        }
+
+        buildPalette('paletteBasic', paletteBasic);
+        buildPalette('paletteGradient', gradientColors);
+
+        // 初始状态
+        updateFromHex('#818cf8');
+    })();
+    </script>
+</body>
+</html>

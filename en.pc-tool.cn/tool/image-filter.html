@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>image Color / Filter</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="Free online photo color and filter tool. Adjust brightness, contrast, saturation, hue, blur, warmth and grayscale, with real-time preview in your browser.">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="image Color / Filter | PC-TOOL">
+    <meta property="og:description" content="Free online tools — image conversion, video compression, audio format conversion, background removal… every feature built for productivity, completely free, made for everyone!">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/image-filter.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="en_US">
+    <style>
+
+        .container { max-width: 780px; }
+        .container h1 { margin-bottom: 6px; }
+        .container > p { margin-bottom: 10px; }
+
+        /* Preview canvas */
+        .preview-wrap {
+            position: relative;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 16px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
+        }
+
+        #previewCanvas {
+            max-width: 100%;
+            max-height: 520px;
+            display: block;
+        }
+
+        /* Continuous contrast slider track */
+        .compare-wrap {
+            position: relative;
+            cursor: col-resize;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Slider component */
+        .slider-group {
+            margin-bottom: 16px;
+        }
+
+        .slider-label {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+
+        .slider-name {
+            font-size: 14px;
+            color: #d4d4d8;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .slider-name svg {
+            width: 16px;
+            height: 16px;
+            color: #a1a1aa;
+            flex-shrink: 0;
+        }
+
+        .slider-val {
+            font-size: 13px;
+            color: #818cf8;
+            font-weight: 600;
+            min-width: 48px;
+            text-align: right;
+        }
+
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255,255,255,0.08);
+            outline: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #818cf8;
+            border: 2px solid rgba(255,255,255,0.2);
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+            box-shadow: 0 0 10px rgba(129,140,248,0.3);
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+            box-shadow: 0 0 16px rgba(129,140,248,0.5);
+        }
+
+        input[type="range"]::-webkit-slider-thumb:active {
+            transform: scale(1.05);
+        }
+
+        .reset-btn-sm {
+            background: none;
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #a1a1aa;
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .reset-btn-sm:hover {
+            background: rgba(255,255,255,0.06);
+            color: #e4e4e7;
+            border-color: rgba(255,255,255,0.2);
+        }
+
+        /* Adjustment panel */
+        .filter-panel {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 20px 22px;
+            margin: 16px 0;
+        }
+
+        .filter-panel h3 {
+            color: #e4e4e7;
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-panel h3 svg {
+            width: 18px;
+            height: 18px;
+            color: #818cf8;
+        }
+
+        /* Preset filter shortcut buttons */
+        .preset-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 18px;
+        }
+
+        .preset-btn {
+            padding: 7px 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.04);
+            color: #d4d4d8;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .preset-btn:hover {
+            background: rgba(129,140,248,0.12);
+            border-color: rgba(129,140,248,0.3);
+            color: #fff;
+        }
+
+        .preset-btn:active, .preset-btn.active {
+            background: rgba(129,140,248,0.2);
+            border-color: rgba(129,140,248,0.5);
+            color: #c4b5fd;
+        }
+
+        /* Action buttons */
+        .btn-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin: 16px 0;
+        }
+
+        .info-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 8px;
+            color: #a1a1aa;
+            font-size: 14px;
+        }
+
+        .info-row strong { color: #e4e4e7; }
+
+        /* Download panel */
+        .download-panel {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 18px 22px;
+            margin: 16px 0;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .download-panel h3 {
+            color: #e4e4e7;
+            font-size: 15px;
+            font-weight: 600;
+            width: 100%;
+            text-align: center;
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+<canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <a href="../index.html" class="back-link">← Back to Tools</a>
+
+    <div class="container">
+        <h1>image Color / Filter</h1>
+        <p>Adjust brightness, contrast, saturation, hue, blur and warmth, with real-time preview in your browser.</p>
+
+        <!-- Upload  -->
+        <div class="upload-area" id="mainUploadArea">
+            <p>Click or drag to upload images</p>
+            <input type="file" id="mainFileInput" accept="image/*">
+        </div>
+
+        <div id="actionArea" style="display:none;">
+
+            <div class="info-row">
+                <span>Size: <strong id="imgSize">-</strong></span>
+                <span> format: <strong id="imgType">-</strong></span>
+            </div>
+
+            <!-- preview -->
+            <div class="preview-wrap">
+                <canvas id="previewCanvas"></canvas>
+            </div>
+
+            <!-- Preset filters -->
+            <div class="filter-panel">
+                <h3>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    Preset filters
+                </h3>
+                <div class="preset-row" id="presetRow">
+                    <button class="preset-btn active" data-preset="none">Original</button>
+                    <button class="preset-btn" data-preset="film">Film</button>
+                    <button class="preset-btn" data-preset="warm">Warm</button>
+                    <button class="preset-btn" data-preset="cool">Cool</button>
+                    <button class="preset-btn" data-preset="vivid">Vivid</button>
+                    <button class="preset-btn" data-preset="bw">Black &amp; white</button>
+                    <button class="preset-btn" data-preset="vintage">Vintage</button>
+                    <button class="preset-btn" data-preset="fade">Faded</button>
+                </div>
+            </div>
+
+            <!-- Fine adjustments -->
+            <div class="filter-panel">
+                <h3>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+                    Fine adjustments
+                </h3>
+
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span class="slider-name">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                            Brightness
+                        </span>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span class="slider-val" id="brightnessVal">100%</span>
+                            <button class="reset-btn-sm" data-target="brightness">reset</button>
+                        </div>
+                    </div>
+                    <input type="range" id="brightness" min="0" max="200" value="100" step="1">
+                </div>
+
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span class="slider-name">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20"/><path d="M2 12h20"/></svg>
+                            Contrast
+                        </span>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span class="slider-val" id="contrastVal">100%</span>
+                            <button class="reset-btn-sm" data-target="contrast">reset</button>
+                        </div>
+                    </div>
+                    <input type="range" id="contrast" min="0" max="200" value="100" step="1">
+                </div>
+
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span class="slider-name">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+                            Saturation
+                        </span>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span class="slider-val" id="saturateVal">100%</span>
+                            <button class="reset-btn-sm" data-target="saturate">reset</button>
+                        </div>
+                    </div>
+                    <input type="range" id="saturate" min="0" max="300" value="100" step="1">
+                </div>
+
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span class="slider-name">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            Hue
+                        </span>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span class="slider-val" id="hueVal">0°</span>
+                            <button class="reset-btn-sm" data-target="hue">reset</button>
+                        </div>
+                    </div>
+                    <input type="range" id="hue" min="-180" max="180" value="0" step="1">
+                </div>
+
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span class="slider-name">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                            Blur
+                        </span>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span class="slider-val" id="blurVal">0px</span>
+                            <button class="reset-btn-sm" data-target="blur">reset</button>
+                        </div>
+                    </div>
+                    <input type="range" id="blur" min="0" max="30" value="0" step="0.1">
+                </div>
+
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span class="slider-name">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/><line x1="17.5" y1="15" x2="9" y2="15"/></svg>
+                            Warmth
+                        </span>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span class="slider-val" id="sepiaVal">0%</span>
+                            <button class="reset-btn-sm" data-target="sepia">reset</button>
+                        </div>
+                    </div>
+                    <input type="range" id="sepia" min="0" max="100" value="0" step="1">
+                </div>
+
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span class="slider-name">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+                            Grayscale
+                        </span>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <span class="slider-val" id="grayscaleVal">0%</span>
+                            <button class="reset-btn-sm" data-target="grayscale">reset</button>
+                        </div>
+                    </div>
+                    <input type="range" id="grayscale" min="0" max="100" value="0" step="1">
+                </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="btn-row">
+                <button class="btn" id="resetAllBtn" style="border-color:rgba(239,68,68,0.3);color:#fca5a5;">Reset all</button>
+            </div>
+
+            <!-- Download  -->
+            <div class="download-panel">
+                <h3>Export image</h3>
+                <select class="format-select" id="outputFormat">
+                    <option value="png">PNG</option>
+                    <option value="jpg">JPG</option>
+                    <option value="webp">WebP</option>
+                </select>
+                <button class="convert-btn" id="downloadBtn">Download image</button>
+            </div>
+        </div>
+
+        <div class="contact-tip">For feature requests or feedback, join our Discord: <a href="https://discord.gg/wjvS3efTj" target="_blank" rel="noopener noreferrer">https://discord.gg/wjvS3efTj</a></div>
+
+    <script src="common.js"></script>
+    <script>
+        (function () {
+            var mainUploadArea = document.getElementById('mainUploadArea');
+            var mainFileInput = document.getElementById('mainFileInput');
+            var actionArea = document.getElementById('actionArea');
+            var canvas = document.getElementById('previewCanvas');
+            var downloadBtn = document.getElementById('downloadBtn');
+            var outputFormat = document.getElementById('outputFormat');
+
+            var imgSize = document.getElementById('imgSize');
+            var imgType = document.getElementById('imgType');
+
+            // Sliders
+            var slBrightness = document.getElementById('brightness');
+            var slContrast = document.getElementById('contrast');
+            var slSaturate = document.getElementById('saturate');
+            var slHue = document.getElementById('hue');
+            var slBlur = document.getElementById('blur');
+            var slSepia = document.getElementById('sepia');
+            var slGrayscale = document.getElementById('grayscale');
+
+            var valBrightness = document.getElementById('brightnessVal');
+            var valContrast = document.getElementById('contrastVal');
+            var valSaturate = document.getElementById('saturateVal');
+            var valHue = document.getElementById('hueVal');
+            var valBlur = document.getElementById('blurVal');
+            var valSepia = document.getElementById('sepiaVal');
+            var valGrayscale = document.getElementById('grayscaleVal');
+
+            var originalimage = null;
+            var sourceFileName = '';
+
+            // Default value for each parameter
+            var defaults = {
+                brightness: 100,
+                contrast: 100,
+                saturate: 100,
+                hue: 0,
+                blur: 0,
+                sepia: 0,
+                grayscale: 0
+            };
+
+            // Currently active preset
+            var activePreset = 'none';
+
+            // ===== Upload  =====
+            mainUploadArea.addEventListener('click', function () {
+                mainFileInput.value = '';
+                mainFileInput.click();
+            });
+
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(function (ev) {
+                mainUploadArea.addEventListener(ev, function (e) { e.preventDefault(); e.stopPropagation(); });
+            });
+
+            mainUploadArea.addEventListener('drop', function (e) {
+                var files = Array.from(e.dataTransfer.files).filter(function (f) { return f.type.startsWith('image/'); });
+                if (files.length) loadimage(files[0]);
+            });
+
+            mainFileInput.addEventListener('change', function (e) {
+                if (e.target.files.length) loadimage(e.target.files[0]);
+            });
+
+            function loadimage(file) {
+                var reader = new FileReader();
+                reader.onload = function (ev) {
+                    var img = new Image();
+                    img.onload = function () {
+                        originalimage = img;
+                        sourceFileName = file.name.replace(/\.[^.]+$/, '');
+                        imgSize.textContent = img.width + ' x ' + img.height;
+                        imgType.textContent = (file.type || 'unknown').toUpperCase();
+                        actionArea.style.display = '';
+                        resetAllFilters();
+                        setActivePreset('none');
+                    };
+                    img.src = ev.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+
+            // ===== Build the filter string =====
+            function buildFilter() {
+                var parts = [];
+                parts.push('brightness(' + (slBrightness.value / 100) + ')');
+                parts.push('contrast(' + (slContrast.value / 100) + ')');
+                parts.push('saturate(' + (slSaturate.value / 100) + ')');
+                parts.push('hue-rotate(' + slHue.value + 'deg)');
+                parts.push('blur(' + slBlur.value + 'px)');
+                parts.push('sepia(' + (slSepia.value / 100) + ')');
+                parts.push('grayscale(' + (slGrayscale.value / 100) + ')');
+                return parts.join(' ');
+            }
+
+            // ===== Update the canvas =====
+            function updateCanvas() {
+                if (!originalimage) return;
+
+                var maxW = 750;
+                var maxH = 520;
+                var ratio = Math.min(maxW / originalimage.width, maxH / originalimage.height, 1);
+                var cw = Math.floor(originalimage.width * ratio);
+                var ch = Math.floor(originalimage.height * ratio);
+
+                canvas.width = cw;
+                canvas.height = ch;
+                canvas.style.display = 'block';
+
+                var ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, cw, ch);
+
+                var filterStr = buildFilter();
+                ctx.filter = filterStr;
+                ctx.drawImage(originalimage, 0, 0, cw, ch);
+                ctx.filter = 'none';
+
+                // Update the value display
+                valBrightness.textContent = slBrightness.value + '%';
+                valContrast.textContent = slContrast.value + '%';
+                valSaturate.textContent = slSaturate.value + '%';
+                valHue.textContent = slHue.value + '°';
+                valBlur.textContent = slBlur.value + 'px';
+                valSepia.textContent = slSepia.value + '%';
+                valGrayscale.textContent = slGrayscale.value + '%';
+            }
+
+            // ===== Slider events =====
+            [slBrightness, slContrast, slSaturate, slHue, slBlur, slSepia, slGrayscale].forEach(function (sl) {
+                sl.addEventListener('input', function () {
+                    setActivePreset('none');
+                    updateCanvas();
+                });
+            });
+
+            // ===== Reset a single parameter =====
+            document.querySelectorAll('.reset-btn-sm').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var target = this.getAttribute('data-target');
+                    var sliderMap = {
+                        brightness: slBrightness,
+                        contrast: slContrast,
+                        saturate: slSaturate,
+                        hue: slHue,
+                        blur: slBlur,
+                        sepia: slSepia,
+                        grayscale: slGrayscale
+                    };
+                    var slider = sliderMap[target];
+                    if (slider && defaults[target] !== undefined) {
+                        slider.value = defaults[target];
+                        setActivePreset('none');
+                        updateCanvas();
+                    }
+                });
+            });
+
+            // ===== Reset all =====
+            document.getElementById('resetAllBtn').addEventListener('click', function () {
+                resetAllFilters();
+                setActivePreset('none');
+            });
+
+            function resetAllFilters() {
+                slBrightness.value = defaults.brightness;
+                slContrast.value = defaults.contrast;
+                slSaturate.value = defaults.saturate;
+                slHue.value = defaults.hue;
+                slBlur.value = defaults.blur;
+                slSepia.value = defaults.sepia;
+                slGrayscale.value = defaults.grayscale;
+                updateCanvas();
+            }
+
+            // ===== Preset filters =====
+            var presets = {
+                none: { brightness: 100, contrast: 100, saturate: 100, hue: 0, blur: 0, sepia: 0, grayscale: 0 },
+                film:  { brightness: 105, contrast: 110, saturate: 80,  hue: 0, blur: 0, sepia: 15, grayscale: 0 },
+                warm:  { brightness: 110, contrast: 95,  saturate: 120, hue: 5, blur: 0, sepia: 25, grayscale: 0 },
+                cool:  { brightness: 100, contrast: 105, saturate: 110, hue: -15, blur: 0, sepia: 0, grayscale: 0 },
+                vivid: { brightness: 105, contrast: 120, saturate: 160, hue: 0, blur: 0, sepia: 0, grayscale: 0 },
+                bw:    { brightness: 105, contrast: 110, saturate: 0,   hue: 0, blur: 0, sepia: 0, grayscale: 100 },
+                vintage:{ brightness: 95,  contrast: 90,  saturate: 70,  hue: 10, blur: 0, sepia: 40, grayscale: 10 },
+                fade:  { brightness: 115, contrast: 85,  saturate: 50,  hue: 0, blur: 0.5, sepia: 10, grayscale: 0 }
+            };
+
+            function setActivePreset(name) {
+                activePreset = name;
+                document.querySelectorAll('#presetRow .preset-btn').forEach(function (btn) {
+                    if (btn.getAttribute('data-preset') === name) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+            }
+
+            function applyPreset(name) {
+                var p = presets[name];
+                if (!p) return;
+                slBrightness.value = p.brightness;
+                slContrast.value = p.contrast;
+                slSaturate.value = p.saturate;
+                slHue.value = p.hue;
+                slBlur.value = p.blur;
+                slSepia.value = p.sepia;
+                slGrayscale.value = p.grayscale;
+                updateCanvas();
+                setActivePreset(name);
+            }
+
+            document.querySelectorAll('#presetRow .preset-btn').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var name = this.getAttribute('data-preset');
+                    applyPreset(name);
+                });
+            });
+
+            // ===== Download  =====
+            downloadBtn.addEventListener('click', function () {
+                if (!originalimage) return;
+
+                var fmt = outputFormat.value;
+                var dataUrl;
+
+                // Images without blur can be exported directly at their original size
+                if (slBlur.value === '0') {
+                    // Draw at full size
+                    var tmpCanvas = document.createElement('canvas');
+                    tmpCanvas.width = originalimage.width;
+                    tmpCanvas.height = originalimage.height;
+                    var ctx = tmpCanvas.getContext('2d');
+                    ctx.filter = buildFilter();
+                    ctx.drawImage(originalimage, 0, 0);
+                    ctx.filter = 'none';
+                    dataUrl = tmpCanvas.toDataURL('image/' + fmt, 0.92);
+                } else {
+                    // Extra padding is needed when blur is applied
+                    var blurPx = parseFloat(slBlur.value);
+                    var pad = Math.ceil(blurPx * 3);
+                    var tmpCanvas = document.createElement('canvas');
+                    tmpCanvas.width = originalimage.width + pad * 2;
+                    tmpCanvas.height = originalimage.height + pad * 2;
+                    var ctx = tmpCanvas.getContext('2d');
+                    ctx.filter = buildFilter();
+                    ctx.drawImage(originalimage, pad, pad);
+                    ctx.filter = 'none';
+                    dataUrl = tmpCanvas.toDataURL('image/' + fmt, 0.92);
+                }
+
+                var a = document.createElement('a');
+                a.href = dataUrl;
+                a.download = (sourceFileName || 'filtered') + '-color-filter.' + fmt;
+                a.click();
+            });
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>打字速度测试 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="免费在线打字速度测试工具，内置中文词语、中文成语与英文单词词库，实时统计 WPM 与正确率，纯前端本地运行。">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="打字速度测试 | PC-TOOL">
+    <meta property="og:description" content="免费在线打字速度测试工具，支持中文词语、成语与英文单词三种模式，实时统计 WPM 与正确率。">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/typing-test.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="zh_CN">
+    <style>
+        .container { max-width: 720px; width: 100%; }
+        /* 设置区 */
+        .settings { display: flex; flex-wrap: wrap; gap: 16px; margin: 24px 0 18px; }
+        .setting-group { flex: 1; min-width: 220px; }
+        .setting-label { display: block; font-size: 0.75rem; color: #a1a1aa; margin-bottom: 8px; }
+        .seg { display: inline-flex; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 4px; gap: 4px; }
+        .seg-btn { background: transparent; border: none; color: #a1a1aa; padding: 7px 14px; border-radius: 8px; font-size: 0.875rem; cursor: pointer; transition: all 0.2s ease; white-space: nowrap; }
+        .seg-btn:hover { color: #e4e4e7; }
+        .seg-btn.active { background: rgba(99, 102, 241, 0.25); color: #c7d2fe; }
+        /* 倒计时进度条 */
+        .progress-wrap { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+        .progress-track { flex: 1; height: 6px; background: rgba(255, 255, 255, 0.06); border-radius: 999px; overflow: hidden; }
+        .progress-bar { height: 100%; width: 100%; background: linear-gradient(90deg, #6366f1, #818cf8); border-radius: 999px; transition: width 0.1s linear; }
+        .timer { min-width: 44px; text-align: right; font-size: 1rem; color: #a1a1aa; font-variant-numeric: tabular-nums; }
+
+        /* 练习文本区 */
+        .text-area { position: relative; height: 150px; background: rgba(15, 15, 18, 0.7); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; overflow: hidden; padding: 16px 20px; cursor: text; }
+        .text-stream { font-size: 1.35rem; line-height: 2.1; color: #a1a1aa; white-space: pre-wrap; word-break: break-word; position: relative; user-select: none; }
+        .char { position: relative; transition: color 0.1s ease; }
+        .char.correct { color: #6ee7b7; }
+        .char.wrong { color: #f87171; background: rgba(248, 113, 113, 0.14); border-radius: 3px; }
+        .char.current { color: #e4e4e7; border-bottom: 2px solid rgba(129, 140, 248, 0.6); }
+        .char.current::before { content: ''; position: absolute; left: -2px; top: 14%; height: 72%; width: 2px; background: #818cf8; animation: caretBlink 1s infinite; }
+        @keyframes caretBlink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+        .focus-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #71717a; font-size: 0.9rem; pointer-events: none; }
+        .hidden-input { position: fixed; left: -9999px; top: -9999px; width: 1px; height: 1px; opacity: 0; }
+
+        /* 实时统计 */
+        .stats-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .stat {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            padding: 12px 8px;
+            text-align: center;
+        }
+        .stat-value {
+            display: block;
+            font-size: 1.7rem;
+            font-weight: 700;
+            color: #e4e4e7;
+            font-variant-numeric: tabular-nums;
+        }
+        .stat-label {
+            font-size: 0.75rem;
+            color: #71717a;
+        }
+        .wpm-rule {
+            margin-top: 8px;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #71717a;
+        }
+
+        /* 按钮 */
+        .restart-btn {
+            width: 100%;
+            margin-top: 20px;
+            padding: 12px 20px;
+            background: rgba(99, 102, 241, 0.25);
+            border: 1px solid rgba(129, 140, 248, 0.4);
+            color: #c7d2fe;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .restart-btn:hover {
+            background: rgba(99, 102, 241, 0.45);
+            border-color: rgba(129, 140, 248, 0.7);
+            transform: translateY(-1px);
+        }
+
+        /* 结束面板 */
+        .result-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            padding: 20px;
+        }
+        .result-card {
+            width: min(92%, 420px);
+            background: #1b1b1f;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 16px;
+            padding: 32px;
+            text-align: center;
+            animation: fadeUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .result-card h2 {
+            color: #e4e4e7;
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+        }
+        .result-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .result-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            padding: 14px 8px;
+        }
+        .result-value {
+            display: block;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #818cf8;
+            font-variant-numeric: tabular-nums;
+        }
+        .result-label {
+            font-size: 0.75rem;
+            color: #71717a;
+        }
+        .rating {
+            margin-top: 18px;
+            font-size: 1.1rem;
+            color: #e4e4e7;
+            font-weight: 600;
+        }
+        .rating span {
+            color: #6ee7b7;
+        }
+
+        @media (max-width: 768px) {
+            .text-area {
+                height: 130px;
+            }
+            .text-stream {
+                font-size: 1.15rem;
+                line-height: 1.9;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <!-- 统一位置返回首页按钮 -->
+    <a href="../index.html" class="back-link">← 返回转换工具首页</a>
+
+    <div class="container">
+        <h1>打字速度测试</h1>
+        <p>内置中文词语、中文成语与英文单词词库，测试你的键盘输入速度与准确率</p>
+
+        <!-- 模式与时长设置 -->
+        <div class="settings">
+            <div class="setting-group">
+                <span class="setting-label">练习模式</span>
+                <div class="seg" id="modeSeg">
+                    <button class="seg-btn active" data-mode="cn-word">中文词语</button>
+                    <button class="seg-btn" data-mode="cn-idiom">中文成语</button>
+                    <button class="seg-btn" data-mode="en-word">英文单词</button>
+                </div>
+            </div>
+            <div class="setting-group">
+                <span class="setting-label">测试时长</span>
+                <div class="seg" id="durationSeg">
+                    <button class="seg-btn active" data-duration="30">30秒</button>
+                    <button class="seg-btn" data-duration="60">60秒</button>
+                    <button class="seg-btn" data-duration="120">120秒</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 倒计时进度条 -->
+        <div class="progress-wrap">
+            <div class="progress-track"><div class="progress-bar" id="progressBar"></div></div>
+            <div class="timer" id="timerText">30</div>
+        </div>
+
+        <!-- 练习文本区 -->
+        <div class="text-area" id="textArea">
+            <div class="text-stream" id="textStream"></div>
+            <div class="focus-overlay" id="focusOverlay">点击此处开始打字</div>
+        </div>
+        <input id="hiddenInput" class="hidden-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+
+        <!-- 实时统计 -->
+        <div class="stats-row">
+            <div class="stat"><span class="stat-value" id="wpmStat">0</span><span class="stat-label">WPM</span></div>
+            <div class="stat"><span class="stat-value" id="accStat">100%</span><span class="stat-label">正确率</span></div>
+            <div class="stat"><span class="stat-value" id="countStat">0</span><span class="stat-label">已输入字符</span></div>
+        </div>
+        <div class="wpm-rule" id="wpmRule"></div>
+
+        <button class="restart-btn" id="restartBtn">重新开始</button>
+    </div>
+
+    <!-- 结束面板 -->
+    <div class="result-overlay" id="resultOverlay">
+        <div class="result-card">
+            <h2>测试完成</h2>
+            <div class="result-grid">
+                <div class="result-item"><span class="result-value" id="finalWpm">0</span><span class="result-label">最终 WPM</span></div>
+                <div class="result-item"><span class="result-value" id="finalAcc">100%</span><span class="result-label">正确率</span></div>
+                <div class="result-item"><span class="result-value" id="finalKeys">0</span><span class="result-label">总击键</span></div>
+                <div class="result-item"><span class="result-value" id="finalWrong">0</span><span class="result-label">错键数</span></div>
+            </div>
+            <div class="rating" id="ratingText"></div>
+            <button class="restart-btn" id="againBtn">再来一局</button>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        (function() {
+            // 内置词库（中文词语 / 中文成语 / 英文单词）
+            const CN_WORDS = ['时间', '时光', '岁月', '青春', '年华', '初心', '梦想', '希望', '勇气', '坚持', '努力', '成长', '自由', '热爱', '温暖', '善良', '真诚', '坚定', '从容', '温柔', '安静', '美好', '幸福', '快乐', '平安', '健康', '如意', '吉祥', '欢喜', '微笑', '阳光', '风景', '星辰', '月光', '山海', '云烟', '草木', '花开', '叶落', '秋霜', '冬雪', '春色', '夏日', '清风', '明月', '孤帆', '远影', '长河', '落日', '青山', '绿水', '白云', '蓝天', '大海', '星空', '灯火', '归途', '故乡', '远方', '拼搏', '奋斗', '收获', '喜悦', '感动', '陪伴', '思念', '牵挂', '祝福', '心愿', '执着', '蜕变', '信念', '曙光', '晨曦', '晚霞', '微风', '细雨', '落叶', '秋风', '冬阳', '盛夏', '初春', '深秋'];
+            const CN_IDIOMS = ['一帆风顺', '心想事成', '万事如意', '前程似锦', '鹏程万里', '马到成功', '步步高升', '大展宏图', '蒸蒸日上', '如日中天', '独占鳌头', '名列前茅', '出类拔萃', '卓尔不群', '才华横溢', '博学多才', '见多识广', '温故知新', '学富五车', '满腹经纶', '胸有成竹', '游刃有余', '得心应手', '挥洒自如', '炉火纯青', '登峰造极', '精益求精', '百折不挠', '锲而不舍', '持之以恒', '滴水穿石', '愚公移山', '天道酬勤', '厚积薄发', '水到渠成', '瓜熟蒂落', '顺其自然', '随遇而安', '心平气和', '泰然自若', '从容不迫', '镇定自若', '气定神闲', '虚怀若谷', '海纳百川', '有容乃大', '上善若水', '厚德载物', '自强不息', '奋发图强', '壮志凌云', '志存高远', '高瞻远瞩', '深谋远虑', '未雨绸缪', '居安思危', '集思广益', '众志成城', '同心协力', '齐心协力', '和衷共济', '风雨同舟', '同舟共济', '肝胆相照', '光明磊落', '任劳任怨', '克己奉公', '鞠躬尽瘁'];
+            const EN_WORDS = ['time', 'year', 'people', 'way', 'day', 'man', 'woman', 'child', 'world', 'life', 'hand', 'part', 'eye', 'house', 'friend', 'water', 'night', 'mother', 'father', 'brother', 'sister', 'family', 'school', 'work', 'play', 'read', 'write', 'listen', 'speak', 'learn', 'teach', 'think', 'know', 'feel', 'love', 'like', 'want', 'need', 'give', 'take', 'make', 'come', 'go', 'see', 'look', 'find', 'help', 'call', 'tell', 'ask', 'show', 'start', 'stop', 'keep', 'turn', 'open', 'close', 'walk', 'run', 'move', 'stay', 'leave', 'bring', 'carry', 'hold', 'wait', 'watch', 'sleep', 'dream', 'smile', 'laugh', 'sing', 'dance', 'food', 'music', 'story', 'book', 'word', 'city', 'country', 'road', 'tree', 'flower', 'sky', 'sun', 'moon', 'star', 'wind', 'rain', 'snow', 'fire', 'light', 'dark', 'morning', 'evening'];
+
+            // DOM 元素
+            const modeSeg = document.getElementById('modeSeg');
+            const durationSeg = document.getElementById('durationSeg');
+            const progressBar = document.getElementById('progressBar');
+            const timerText = document.getElementById('timerText');
+            const textArea = document.getElementById('textArea');
+            const textStream = document.getElementById('textStream');
+            const focusOverlay = document.getElementById('focusOverlay');
+            const input = document.getElementById('hiddenInput');
+            const wpmStat = document.getElementById('wpmStat');
+            const accStat = document.getElementById('accStat');
+            const countStat = document.getElementById('countStat');
+            const wpmRule = document.getElementById('wpmRule');
+            const restartBtn = document.getElementById('restartBtn');
+            const againBtn = document.getElementById('againBtn');
+            const resultOverlay = document.getElementById('resultOverlay');
+            const finalWpm = document.getElementById('finalWpm');
+            const finalAcc = document.getElementById('finalAcc');
+            const finalKeys = document.getElementById('finalKeys');
+            const finalWrong = document.getElementById('finalWrong');
+            const ratingText = document.getElementById('ratingText');
+
+            const modeButtons = modeSeg.querySelectorAll('.seg-btn');
+            const durationButtons = durationSeg.querySelectorAll('.seg-btn');
+
+            // 运行状态
+            let mode = 'cn-word';
+            let duration = 30;
+            let targetText = '';
+            let charEls = [];
+            let typedIndex = 0;
+            let typedCount = 0;
+            let correctCount = 0;
+            let startTime = 0;
+            let tickId = null;
+            let status = 'idle'; // idle / running / finished
+            let composing = false;
+
+            const BANKS = { 'cn-word': CN_WORDS, 'cn-idiom': CN_IDIOMS, 'en-word': EN_WORDS };
+
+            // 随机抽取词库组成练习文本
+            function buildText(m) {
+                const bank = BANKS[m];
+                const count = m === 'cn-word' ? 200 : (m === 'cn-idiom' ? 150 : 200);
+                const parts = [];
+                for (let i = 0; i < count; i++) {
+                    parts.push(bank[(Math.random() * bank.length) | 0]);
+                }
+                return m === 'en-word' ? parts.join(' ') : parts.join('');
+            }
+
+            // 渲染文本字符流
+            function renderText() {
+                textStream.textContent = '';
+                const frag = document.createDocumentFragment();
+                charEls = [];
+                for (let i = 0; i < targetText.length; i++) {
+                    const span = document.createElement('span');
+                    span.className = 'char';
+                    span.textContent = targetText[i];
+                    frag.appendChild(span);
+                    charEls.push(span);
+                }
+                textStream.appendChild(frag);
+                if (charEls.length) charEls[0].classList.add('current');
+            }
+
+            // 标记单个字符并自动滚动
+            function applyChar(idx, isCorrect) {
+                const el = charEls[idx];
+                if (!el) return;
+                el.classList.remove('current');
+                el.classList.add(isCorrect ? 'correct' : 'wrong');
+                const next = charEls[idx + 1];
+                if (next) next.classList.add('current');
+                scrollToCurrent(idx + 1);
+            }
+
+            function scrollToCurrent(idx) {
+                const el = charEls[idx];
+                if (!el) return;
+                textArea.scrollTop = Math.max(0, el.offsetTop - 16);
+            }
+
+            // 实时统计刷新
+            function updateStats(elapsedMs) {
+                const minutes = Math.max(elapsedMs / 60000, 0.0001);
+                const divisor = mode === 'en-word' ? 5 : 1;
+                wpmStat.textContent = Math.round(correctCount / divisor / minutes);
+                accStat.textContent = (typedCount ? Math.round((correctCount / typedCount) * 100) : 100) + '%';
+                countStat.textContent = typedCount;
+            }
+
+            // 倒计时
+            function startTimer() {
+                status = 'running';
+                startTime = performance.now();
+                focusOverlay.style.display = 'none';
+                tickId = setInterval(tick, 100);
+                tick();
+            }
+
+            function tick() {
+                const remaining = Math.max(0, duration - (performance.now() - startTime) / 1000);
+                timerText.textContent = Math.ceil(remaining);
+                progressBar.style.width = ((remaining / duration) * 100) + '%';
+                updateStats(performance.now() - startTime);
+                if (remaining <= 0) finish();
+            }
+
+            // 处理单个输入字符
+            function handleChar(c) {
+                if (!c || status === 'finished') return;
+                if (status === 'idle') startTimer();
+                if (typedIndex >= targetText.length) return;
+                const idx = typedIndex;
+                const isCorrect = c === targetText[idx];
+                if (isCorrect) correctCount++;
+                typedCount++;
+                typedIndex++;
+                applyChar(idx, isCorrect);
+                updateStats(performance.now() - startTime);
+            }
+
+            // 评级文案
+            function getRating(wpm) {
+                const thresholds = mode === 'en-word' ? [20, 40, 60, 80] : [30, 60, 90, 120];
+                const names = ['入门新手', '稳步进阶', '熟练达人', '打字高手', '键盘大师'];
+                for (let i = 0; i < thresholds.length; i++) {
+                    if (wpm < thresholds[i]) return names[i];
+                }
+                return names[4];
+            }
+
+            // 结束处理
+            function finish() {
+                if (status === 'finished') return;
+                status = 'finished';
+                if (tickId) { clearInterval(tickId); tickId = null; }
+                const elapsed = performance.now() - startTime;
+                updateStats(elapsed);
+                input.blur();
+                finalWpm.textContent = wpmStat.textContent;
+                finalAcc.textContent = accStat.textContent;
+                finalKeys.textContent = typedCount;
+                finalWrong.textContent = typedCount - correctCount;
+                ratingText.innerHTML = '评级：<span>' + getRating(parseInt(wpmStat.textContent, 10)) + '</span>';
+                resultOverlay.style.display = 'flex';
+            }
+
+            // 重置/重新开始
+            function reset() {
+                if (tickId) { clearInterval(tickId); tickId = null; }
+                status = 'idle';
+                typedIndex = 0;
+                typedCount = 0;
+                correctCount = 0;
+                targetText = buildText(mode);
+                renderText();
+                progressBar.style.width = '100%';
+                timerText.textContent = duration;
+                wpmStat.textContent = '0';
+                accStat.textContent = '100%';
+                countStat.textContent = '0';
+                resultOverlay.style.display = 'none';
+                focusOverlay.textContent = '点击此处开始打字';
+                focusOverlay.style.display = '';
+                textArea.scrollTop = 0;
+                input.value = '';
+                updateRule();
+                input.focus();
+            }
+
+            // 更新 WPM 规则标注
+            function updateRule() {
+                wpmRule.textContent = mode === 'en-word'
+                    ? '英文按“词”计 WPM：1词=5字符（国际标准）'
+                    : '中文按“字”计 WPM：1字=1字符';
+            }
+
+            // 事件绑定
+            modeButtons.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    if (btn.dataset.mode === mode) return;
+                    mode = btn.dataset.mode;
+                    modeButtons.forEach(function(b) { b.classList.toggle('active', b === btn); });
+                    reset();
+                });
+            });
+
+            durationButtons.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    const val = parseInt(btn.dataset.duration, 10);
+                    if (val === duration) return;
+                    duration = val;
+                    durationButtons.forEach(function(b) { b.classList.toggle('active', b === btn); });
+                    reset();
+                });
+            });
+
+            restartBtn.addEventListener('click', reset);
+            againBtn.addEventListener('click', reset);
+
+            textArea.addEventListener('click', function() {
+                input.focus();
+                if (status === 'idle') focusOverlay.textContent = '已就绪，输入即开始计时';
+            });
+
+            input.addEventListener('focus', function() {
+                if (status === 'idle') focusOverlay.textContent = '已就绪，输入即开始计时';
+            });
+
+            input.addEventListener('blur', function() {
+                if (status === 'idle') focusOverlay.textContent = '点击此处开始打字';
+            });
+
+            // 输入捕获（兼容英文按键与中文输入法）
+            input.addEventListener('compositionstart', function() { composing = true; });
+            input.addEventListener('compositionend', function() {
+                composing = false;
+                const v = input.value;
+                for (let i = 0; i < v.length; i++) handleChar(v[i]);
+                input.value = '';
+            });
+            input.addEventListener('input', function(e) {
+                if (composing || e.isComposing) return;
+                const v = input.value;
+                for (let i = 0; i < v.length; i++) handleChar(v[i]);
+                input.value = '';
+            });
+
+            // 初始化
+            updateRule();
+            reset();
+        })();
+    </script>
+</body>
+</html>
+

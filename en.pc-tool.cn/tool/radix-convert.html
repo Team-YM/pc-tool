@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radix Converter</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="Online radix converter — supports binary (BIN), octal (OCT), decimal (DEC), hexadecimal (HEX) and any custom base from 2 to 36 with real-time linked conversion.">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .container {
+            max-width: 760px;
+        }
+        .container h1 {
+            color: #e4e4e7;
+            margin-bottom: 8px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .container > p {
+            color: #a1a1aa;
+            font-size: 15px;
+            margin-bottom: 24px;
+        }
+        .radix-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 24px;
+            text-align: left;
+        }
+        .radix-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            transition: all 0.2s;
+        }
+        .radix-card:focus-within {
+            border-color: rgba(129, 140, 248, 0.4);
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .radix-badge {
+            width: 90px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #a5b4fc;
+            flex-shrink: 0;
+        }
+        .radix-input {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 10px 12px;
+            color: #fff;
+            font-size: 15px;
+            font-family: Consolas, Monaco, monospace;
+            outline: none;
+        }
+        .radix-input:focus {
+            border-color: rgba(129, 140, 248, 0.6);
+        }
+        .copy-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #d4d4d8;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .copy-btn:hover {
+            background: rgba(129, 140, 248, 0.2);
+            color: #fff;
+        }
+        .custom-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .custom-select {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #e4e4e7;
+            border-radius: 6px;
+            padding: 4px 8px;
+            outline: none;
+            cursor: pointer;
+        }
+        .clear-bar {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .clear-btn {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            padding: 8px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .clear-btn:hover {
+            background: rgba(239, 68, 68, 0.25);
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+    <a href="../index.html" class="back-link">← Back to Home</a>
+
+    <div class="container">
+        <h1>Radix Converter</h1>
+        <p>Real-time two-way conversion between base 2 / 8 / 10 / 16 and any base from 2 to 36, with big-integer support and one-click copy.</p>
+
+        <div class="clear-bar">
+            <button class="clear-btn" id="clearAllBtn">Clear all inputs</button>
+        </div>
+
+        <div class="radix-list">
+            <div class="radix-card">
+                <div class="radix-badge">Binary (BIN)</div>
+                <input type="text" class="radix-input" id="radix2" placeholder="Enter binary digits (0, 1)..." data-base="2">
+                <button class="copy-btn" onclick="copyVal('radix2', this)">Copy</button>
+            </div>
+
+            <div class="radix-card">
+                <div class="radix-badge">Octal (OCT)</div>
+                <input type="text" class="radix-input" id="radix8" placeholder="Enter octal digits (0-7)..." data-base="8">
+                <button class="copy-btn" onclick="copyVal('radix8', this)">Copy</button>
+            </div>
+
+            <div class="radix-card">
+                <div class="radix-badge">Decimal (DEC)</div>
+                <input type="text" class="radix-input" id="radix10" placeholder="Enter decimal digits (0-9)..." data-base="10">
+                <button class="copy-btn" onclick="copyVal('radix10', this)">Copy</button>
+            </div>
+
+            <div class="radix-card">
+                <div class="radix-badge">Hexadecimal (HEX)</div>
+                <input type="text" class="radix-input" id="radix16" placeholder="Enter hexadecimal (0-9, a-f)..." data-base="16">
+                <button class="copy-btn" onclick="copyVal('radix16', this)">Copy</button>
+            </div>
+
+            <div class="radix-card">
+                <div class="radix-badge custom-row">
+                    <select class="custom-select" id="customBase">
+                        <option value="32">Base 32</option>
+                        <option value="36">Base 36</option>
+                        <option value="3">Base 3</option>
+                        <option value="4">Base 4</option>
+                        <option value="5">Base 5</option>
+                        <option value="6">Base 6</option>
+                        <option value="7">Base 7</option>
+                        <option value="9">Base 9</option>
+                        <option value="12">Base 12</option>
+                    </select>
+                </div>
+                <input type="text" class="radix-input" id="radixCustom" placeholder="Enter a custom base..." data-base="32">
+                <button class="copy-btn" onclick="copyVal('radixCustom', this)">Copy</button>
+            </div>
+        </div>
+
+        <div class="contact-tip">For feature requests or feedback, join our Discord: <a href="https://discord.gg/wjvS3efTj" target="_blank" rel="noopener noreferrer">https://discord.gg/wjvS3efTj</a></div>
+
+    <script src="common.js"></script>
+    <script>
+        const inputs = [
+            document.getElementById('radix2'),
+            document.getElementById('radix8'),
+            document.getElementById('radix10'),
+            document.getElementById('radix16'),
+            document.getElementById('radixCustom')
+        ];
+        const customBase = document.getElementById('customBase');
+        const radixCustom = document.getElementById('radixCustom');
+
+        customBase.onchange = () => {
+            radixCustom.setAttribute('data-base', customBase.value);
+            // If the decimal value exists, refresh using the new base
+            const dVal = document.getElementById('radix10').value.trim();
+            if (dVal) updateFromDec(BigInt(dVal));
+        };
+
+        function parseBigIntRadix(str, base) {
+            str = str.trim().toLowerCase();
+            const digits = '0123456789abcdefghijklmnopqrstuvwxyz';
+            let res = 0n;
+            const b = BigInt(base);
+            for (let char of str) {
+                const index = digits.indexOf(char);
+                if (index === -1 || index >= base) {
+                    throw new Error('Invalid character: ' + char);
+                }
+                res = res * b + BigInt(index);
+            }
+            return res;
+        }
+
+        function toBigIntRadix(bigNum, base) {
+            if (bigNum === 0n) return '0';
+            const digits = '0123456789abcdefghijklmnopqrstuvwxyz';
+            const b = BigInt(base);
+            let res = '';
+            let n = bigNum;
+            while (n > 0n) {
+                const rem = Number(n % b);
+                res = digits[rem] + res;
+                n = n / b;
+            }
+            return res;
+        }
+
+        function updateFromDec(bigNum, sourceInput) {
+            inputs.forEach(inp => {
+                if (inp === sourceInput) return;
+                const base = parseInt(inp.getAttribute('data-base'));
+                inp.value = toBigIntRadix(bigNum, base);
+            });
+        }
+
+        inputs.forEach(input => {
+            input.addEventListener('input', () => {
+                const val = input.value.trim();
+                if (!val) {
+                    inputs.forEach(inp => { if (inp !== input) inp.value = ''; });
+                    return;
+                }
+                const base = parseInt(input.getAttribute('data-base'));
+                try {
+                    const bigNum = parseBigIntRadix(val, base);
+                    updateFromDec(bigNum, input);
+                } catch (e) {
+                    // Do not update the other boxes when the input is invalid
+                }
+            });
+        });
+
+        document.getElementById('clearAllBtn').onclick = () => {
+            inputs.forEach(inp => inp.value = '');
+        };
+
+        function copyVal(id, btn) {
+            const val = document.getElementById(id).value;
+            if (!val) return;
+            navigator.clipboard.writeText(val).then(() => {
+                btn.textContent = 'Copied！';
+                setTimeout(() => btn.textContent = 'Copy', 1500);
+            });
+        }
+    </script>
+</body>
+</html>
+
+

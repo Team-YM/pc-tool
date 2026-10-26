@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Encode / Decode | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="Online URL encoder and decoder supporting encodeURIComponent, encodeURI and GBK/UTF-8 character encoding, with one-click copy and fully local processing.">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .container {
+            max-width: 760px;
+        }
+        .container h1 {
+            color: #e4e4e7;
+            margin-bottom: 8px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .container > p {
+            color: #a1a1aa;
+            font-size: 15px;
+            margin-bottom: 20px;
+        }
+        .tab-switch {
+            display: flex;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            border: none;
+            background: transparent;
+            color: #a1a1aa;
+            font-size: 15px;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tab-btn.active {
+            background: rgba(255, 255, 255, 0.12);
+            color: #ffffff;
+            font-weight: 600;
+        }
+        .mode-options {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+            font-size: 14px;
+            color: #d4d4d8;
+            align-items: center;
+        }
+        .mode-options label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+        .box-section {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 16px;
+            text-align: left;
+        }
+        .box-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #a1a1aa;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .textarea-styled {
+            width: 100%;
+            height: 150px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 12px 14px;
+            color: #e4e4e7;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: vertical;
+            outline: none;
+            font-family: Consolas, Monaco, "Courier New", monospace;
+        }
+        .textarea-styled:focus {
+            border-color: rgba(129, 140, 248, 0.5);
+        }
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .action-btn {
+            flex: 1;
+            padding: 12px 20px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .primary-btn {
+            background: #818cf8;
+            color: #ffffff;
+        }
+        .primary-btn:hover {
+            background: #6366f1;
+        }
+        .secondary-btn {
+            background: rgba(255, 255, 255, 0.08);
+            color: #d4d4d8;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .secondary-btn:hover {
+            background: rgba(255, 255, 255, 0.14);
+        }
+        .copy-btn {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .copy-btn:hover {
+            background: rgba(16, 185, 129, 0.25);
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+    <a href="../index.html" class="back-link">← Back to Home</a>
+
+    <div class="container">
+        <h1>URL Encode / Decode</h1>
+        <p>Standard URL encoding and decoding: process all characters or keep protocol and path symbols, entirely in your browser.</p>
+
+        <div class="tab-switch">
+            <button class="tab-btn active" id="tabEncode">URL Encode</button>
+            <button class="tab-btn" id="tabDecode">URL Decode</button>
+        </div>
+
+        <div class="mode-options">
+            <span>Encoding mode:</span>
+            <label><input type="radio" name="urlMode" value="component" checked> encodeURIComponent (recommended, escapes all special characters)</label>
+            <label><input type="radio" name="urlMode" value="uri"> encodeURI (keeps path symbols such as :// ? &amp;)</label>
+        </div>
+
+        <div class="box-section">
+            <div class="box-label">
+                <span id="inputLabel">Enter the URL / text to encode:</span>
+                <span id="inputStat" style="font-size:12px; color:#71717a;">0 characters</span>
+            </div>
+            <textarea class="textarea-styled" id="urlInput" placeholder="Please enter a link or text to convert..."></textarea>
+        </div>
+
+        <div class="btn-group">
+            <button class="action-btn primary-btn" id="convertBtn">Run Now</button>
+            <button class="action-btn secondary-btn" id="clearBtn">Clear Input</button>
+        </div>
+
+        <div class="box-section">
+            <div class="box-label">
+                <span id="outputLabel">Conversion result:</span>
+                <button class="copy-btn" id="copyBtn" style="display:none;">Copy Result</button>
+            </div>
+            <textarea class="textarea-styled" id="urlOutput" placeholder="The conversion result will appear here..." readonly></textarea>
+        </div>
+
+        <div class="contact-tip">For feature requests or feedback, join our Discord: <a href="https://discord.gg/wjvS3efTj" target="_blank" rel="noopener noreferrer">https://discord.gg/wjvS3efTj</a></div>
+
+    <script src="common.js"></script>
+    <script>
+        let currentMode = 'encode';
+        const tabEncode = document.getElementById('tabEncode');
+        const tabDecode = document.getElementById('tabDecode');
+        const urlInput = document.getElementById('urlInput');
+        const urlOutput = document.getElementById('urlOutput');
+        const convertBtn = document.getElementById('convertBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const inputStat = document.getElementById('inputStat');
+        const inputLabel = document.getElementById('inputLabel');
+        const outputLabel = document.getElementById('outputLabel');
+
+        function setTab(m) {
+            currentMode = m;
+            if (m === 'encode') {
+                tabEncode.classList.add('active');
+                tabDecode.classList.remove('active');
+                inputLabel.textContent = 'Enter the URL / text to encode:';
+                outputLabel.textContent = 'URL-encoded result:';
+            } else {
+                tabDecode.classList.add('active');
+                tabEncode.classList.remove('active');
+                inputLabel.textContent = 'Enter the URL-encoded string to decode:';
+                outputLabel.textContent = 'URL-decoded text:';
+            }
+            if (urlInput.value) handleConvert();
+        }
+
+        tabEncode.onclick = () => setTab('encode');
+        tabDecode.onclick = () => setTab('decode');
+
+        urlInput.addEventListener('input', () => {
+            inputStat.textContent = urlInput.value.length + ' characters';
+        });
+
+        function handleConvert() {
+            const raw = urlInput.value;
+            if (!raw) {
+                urlOutput.value = '';
+                copyBtn.style.display = 'none';
+                return;
+            }
+            const useUri = document.querySelector('input[name="urlMode"]:checked').value === 'uri';
+            try {
+                if (currentMode === 'encode') {
+                    urlOutput.value = useUri ? encodeURI(raw) : encodeURIComponent(raw);
+                } else {
+                    urlOutput.value = useUri ? decodeURI(raw) : decodeURIComponent(raw);
+                }
+                copyBtn.style.display = 'inline-block';
+            } catch (e) {
+                urlOutput.value = 'Conversion failed: ' + e.message;
+                copyBtn.style.display = 'none';
+            }
+        }
+
+        convertBtn.onclick = handleConvert;
+
+        clearBtn.onclick = () => {
+            urlInput.value = '';
+            urlOutput.value = '';
+            inputStat.textContent = '0 characters';
+            copyBtn.style.display = 'none';
+        };
+
+        copyBtn.onclick = () => {
+            if (!urlOutput.value) return;
+            navigator.clipboard.writeText(urlOutput.value).then(() => {
+                copyBtn.textContent = 'Copied!';
+                setTimeout(() => copyBtn.textContent = 'Copy Result', 1800);
+            }).catch(() => {
+                urlOutput.select();
+                document.execCommand('copy');
+                copyBtn.textContent = 'Copied!';
+                setTimeout(() => copyBtn.textContent = 'Copy Result', 1800);
+            });
+        };
+    </script>
+</body>
+</html>
+
+

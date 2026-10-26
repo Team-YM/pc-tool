@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio BPM Detector | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="Intelligently detects the BPM and tempo of audio songs. Supports one-click local analysis, waveform display, tap-tempo testing and BPM fine-tuning — all computed locally in your browser.">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="Audio BPM Detector | PC-TOOL">
+    <meta property="og:description" content="Free online BPM detector that intelligently detects the tempo of your songs, running entirely client-side.">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/audio-bpm.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="en_US">
+    <style>
+        .container {
+            max-width: 680px;
+            width: 100%;
+        }
+        #audioInput {
+            display: none;
+        }
+        .bpm-dashboard {
+            margin: 24px 0 16px;
+            padding: 24px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .bpm-display-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        .bpm-label {
+            font-size: 0.8125rem;
+            color: #a1a1aa;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+        .bpm-value {
+            font-size: 4.2rem;
+            font-weight: 700;
+            line-height: 1.1;
+            color: #f4f4f5;
+            letter-spacing: -0.02em;
+            font-variant-numeric: tabular-nums;
+            transition: color 0.25s ease, transform 0.1s ease;
+        }
+        .bpm-value.pulsing {
+            color: #818cf8;
+            transform: scale(1.04);
+        }
+        .bpm-sub {
+            font-size: 0.875rem;
+            color: #71717a;
+            margin-top: 4px;
+        }
+
+        /* Beat visual indicator */
+        .beat-indicator-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 18px;
+        }
+        .beat-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.08s ease;
+        }
+        .beat-dot.active {
+            background: #818cf8;
+            box-shadow: 0 0 14px #818cf8, 0 0 24px rgba(129, 140, 248, 0.6);
+            transform: scale(1.3);
+        }
+
+        /* Waveform */
+        .waveform-wrap {
+            margin-top: 20px;
+            background: rgba(15, 15, 18, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        #waveformCanvas {
+            width: 100%;
+            height: 90px;
+            display: block;
+        }
+
+        /* Quick fine-tuning and action buttons */
+        .controls-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .ctrl-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #e4e4e7;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .ctrl-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-1px);
+        }
+        .ctrl-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .ctrl-btn.primary {
+            background: rgba(99, 102, 241, 0.25);
+            border-color: rgba(129, 140, 248, 0.4);
+            color: #c7d2fe;
+        }
+        .ctrl-btn.primary:hover:not(:disabled) {
+            background: rgba(99, 102, 241, 0.45);
+            border-color: rgba(129, 140, 248, 0.7);
+        }
+
+        /* Manual tap-tempo module */
+        .tap-module {
+            margin-top: 24px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            text-align: center;
+        }
+        .tap-title {
+            font-size: 0.875rem;
+            color: #a1a1aa;
+            margin-bottom: 12px;
+        }
+        .tap-button {
+            width: 100%;
+            max-width: 260px;
+            padding: 14px 20px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            color: #f4f4f5;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.12s ease;
+            user-select: none;
+        }
+        .tap-button:active {
+            transform: scale(0.96);
+            background: rgba(99, 102, 241, 0.3);
+            border-color: rgba(129, 140, 248, 0.5);
+        }
+        .tap-tip {
+            font-size: 0.75rem;
+            color: #71717a;
+            margin-top: 8px;
+        }
+
+        /* Status and loading indicators */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            font-size: 0.8125rem;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #a1a1aa;
+            margin-top: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .status-badge.analyzing {
+            background: rgba(234, 179, 8, 0.15);
+            border-color: rgba(234, 179, 8, 0.3);
+            color: #fde047;
+        }
+        .status-badge.done {
+            background: rgba(16, 185, 129, 0.15);
+            border-color: rgba(16, 185, 129, 0.3);
+            color: #6ee7b7;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <!-- Back-to-home button in a unified position -->
+    <a href="../index.html" class="back-link">← Back to Tools</a>
+
+    <div class="container">
+        <h1>Audio BPM Detector</h1>
+        <p>Detect the tempo of a song (BPM, beats per minute) entirely in your browser, with waveform display and tap-tempo testing</p>
+
+        <!-- Upload area -->
+        <div class="upload-area" id="uploadArea">
+            <p id="uploadTip">Click or drag to upload audio (MP3, WAV, OGG, FLAC, M4A, etc.)</p>
+            <input type="file" id="audioInput" accept="audio/*">
+        </div>
+
+        <div id="statusWrap" style="text-align: center;">
+            <div id="statusBadge" class="status-badge" style="display: none;">Waiting for audio upload</div>
+        </div>
+
+        <!-- Main BPM display -->
+        <div class="bpm-dashboard">
+            <div class="bpm-display-wrap">
+                <span class="bpm-label">Result / Tempo</span>
+                <div class="bpm-value" id="bpmValue">--</div>
+                <div class="bpm-sub" id="tempoDesc">Import an audio file to start the analysis</div>
+            </div>
+
+            <!-- 4-beat visual indicator -->
+            <div class="beat-indicator-container">
+                <div class="beat-dot" id="beatDot0"></div>
+                <div class="beat-dot" id="beatDot1"></div>
+                <div class="beat-dot" id="beatDot2"></div>
+                <div class="beat-dot" id="beatDot3"></div>
+            </div>
+
+            <!-- Audio waveform / energy graph -->
+            <div class="waveform-wrap">
+                <canvas id="waveformCanvas"></canvas>
+            </div>
+
+            <!-- Playback and fine-tuning controls -->
+            <div class="controls-row">
+                <button class="ctrl-btn primary" id="playBtn" disabled>Preview</button>
+                <button class="ctrl-btn" id="halfBtn" title="Halve" disabled>/2 (half speed)</button>
+                <button class="ctrl-btn" id="doubleBtn" title="Double" disabled>x2 (double speed)</button>
+                <button class="ctrl-btn" id="minusBtn" title="BPM -1" disabled>-1</button>
+                <button class="ctrl-btn" id="plusBtn" title="BPM +1" disabled>+1</button>
+                <button class="ctrl-btn" id="copyBtn" title="Copy Result" disabled>Copy BPM</button>
+            </div>
+        </div>
+
+        <!-- Manual tap-tempo area -->
+        <div class="tap-module">
+            <div class="tap-title">Manual tap-tempo mode (tap along with the beat)</div>
+            <button class="tap-button" id="tapBtn">Tap to measure (TAP)</button>
+            <div class="tap-tip">Tap along with the groove several times and the average BPM is calculated automatically. You can also press the Space key to tap.</div>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        (function() {
+            // DOM element references
+            const uploadArea = document.getElementById('uploadArea');
+            const audioInput = document.getElementById('audioInput');
+            const uploadTip = document.getElementById('uploadTip');
+            const statusBadge = document.getElementById('statusBadge');
+            const bpmValueEl = document.getElementById('bpmValue');
+            const tempoDescEl = document.getElementById('tempoDesc');
+            const waveformCanvas = document.getElementById('waveformCanvas');
+            const playBtn = document.getElementById('playBtn');
+            const halfBtn = document.getElementById('halfBtn');
+            const doubleBtn = document.getElementById('doubleBtn');
+            const minusBtn = document.getElementById('minusBtn');
+            const plusBtn = document.getElementById('plusBtn');
+            const copyBtn = document.getElementById('copyBtn');
+            const tapBtn = document.getElementById('tapBtn');
+
+            const beatDots = [
+                document.getElementById('beatDot0'),
+                document.getElementById('beatDot1'),
+                document.getElementById('beatDot2'),
+                document.getElementById('beatDot3')
+            ];
+
+            let audioCtx = null;
+            let currentaudioBuffer = null;
+            let currentSourceNode = null;
+            let isPlaying = false;
+            let detectedBpm = 0;
+            let beatIntervalId = null;
+            let currentBeatStep = 0;
+
+            // Initialize the AudioContext
+            function getaudioContext() {
+                if (!audioCtx) {
+                    const audioContextClass = window.AudioContext || window.webkitAudioContext;
+                    audioCtx = new audioContextClass();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                return audioCtx;
+            }
+
+            // Get the tempo mood description
+            function getTempoDescription(bpm) {
+                if (bpm <= 0) return 'Import an audio file to start the analysis';
+                if (bpm < 60) return 'Grave / Largo (very slow and solemn)';
+                if (bpm < 76) return 'Adagio (slow and gentle)';
+                if (bpm < 108) return 'Andante (leisurely walking pace)';
+                if (bpm < 120) return 'Moderato (moderate and relaxed)';
+                if (bpm < 156) return 'Allegro (fast and lively)';
+                if (bpm < 176) return 'Vivace (quick and energetic)';
+                return 'Presto (very fast)';
+            }
+
+            // Update the BPM display
+            function updateBpmDisplay(val) {
+                detectedBpm = Math.round(val * 10) / 10;
+                bpmValueEl.textContent = detectedBpm > 0 ? detectedBpm : '--';
+                tempoDescEl.textContent = getTempoDescription(detectedBpm);
+
+                const hasValidBpm = detectedBpm > 0;
+                halfBtn.disabled = !hasValidBpm;
+                doubleBtn.disabled = !hasValidBpm;
+                minusBtn.disabled = !hasValidBpm;
+                plusBtn.disabled = !hasValidBpm;
+                copyBtn.disabled = !hasValidBpm;
+
+                restartBeatVisualizer();
+            }
+
+            // Beat visual indicator animation
+            function restartBeatVisualizer() {
+                if (beatIntervalId) {
+                    clearInterval(beatIntervalId);
+                    beatIntervalId = null;
+                }
+                beatDots.forEach(dot => dot.classList.remove('active'));
+                bpmValueEl.classList.remove('pulsing');
+                currentBeatStep = 0;
+
+                if (detectedBpm > 30 && detectedBpm < 300) {
+                    const beatMs = (60 / detectedBpm) * 1000;
+                    beatIntervalId = setInterval(() => {
+                        beatDots.forEach((dot, idx) => {
+                            if (idx === currentBeatStep) {
+                                dot.classList.add('active');
+                            } else {
+                                dot.classList.remove('active');
+                            }
+                        });
+
+                        if (currentBeatStep === 0) {
+                            bpmValueEl.classList.add('pulsing');
+                            setTimeout(() => bpmValueEl.classList.remove('pulsing'), 90);
+                        }
+
+                        currentBeatStep = (currentBeatStep + 1) % 4;
+                    }, beatMs);
+                }
+            }
+
+            // Draw the waveform outline
+            function drawWaveform(buffer) {
+                const canvas = waveformCanvas;
+                const dpr = window.devicePixelRatio || 1;
+                const rect = canvas.getBoundingClientRect();
+                canvas.width = (rect.width || 600) * dpr;
+                canvas.height = (rect.height || 90) * dpr;
+
+                const ctx = canvas.getContext('2d');
+                ctx.scale(dpr, dpr);
+                const w = canvas.width / dpr;
+                const h = canvas.height / dpr;
+
+                ctx.clearRect(0, 0, w, h);
+
+                const channelData = buffer.getChannelData(0);
+                const step = Math.ceil(channelData.length / w);
+                const amp = h / 2;
+
+                ctx.fillStyle = 'rgba(99, 102, 241, 0.4)';
+                ctx.strokeStyle = '#818cf8';
+                ctx.lineWidth = 1;
+
+                ctx.beginPath();
+                ctx.moveTo(0, amp);
+
+                for (let i = 0; i < w; i++) {
+                    let min = 1.0;
+                    let max = -1.0;
+                    const start = i * step;
+                    const end = Math.min(start + step, channelData.length);
+                    for (let j = start; j < end; j += 4) {
+                        const datum = channelData[j];
+                        if (datum < min) min = datum;
+                        if (datum > max) max = datum;
+                    }
+                    if (max < min) {
+                        min = 0;
+                        max = 0;
+                    }
+                    const y1 = (1 + min) * amp;
+                    const y2 = (1 + max) * amp;
+                    ctx.fillRect(i, y1, 1, Math.max(1, y2 - y1));
+                }
+            }
+
+            // Smart BPM core analysis algorithm (energy peak autocorrelation)
+            function calculateBpm(buffer) {
+                // Mix down to mono
+                const sampleRate = buffer.sampleRate;
+                const channelData = buffer.getChannelData(0);
+                
+                // Downsample to 4410Hz to speed up the autocorrelation and filter out very high frequencies
+                const downsampleRate = 4410;
+                const downsampleRatio = Math.floor(sampleRate / downsampleRate);
+                const downsampledLength = Math.floor(channelData.length / downsampleRatio);
+                const downsampled = new Float32Array(downsampledLength);
+
+                for (let i = 0; i < downsampledLength; i++) {
+                    downsampled[i] = channelData[i * downsampleRatio];
+                }
+
+                // Extract the transient envelope (Envelope Follower / Energy Flux)
+                const windowSize = Math.floor(downsampleRate * 0.05); // 50ms window
+                const hopSize = Math.floor(downsampleRate * 0.01);    // 10ms hop
+                const envelopeLength = Math.floor((downsampledLength - windowSize) / hopSize);
+                const envelope = new Float32Array(envelopeLength);
+
+                for (let i = 0; i < envelopeLength; i++) {
+                    let sum = 0;
+                    const offset = i * hopSize;
+                    for (let j = 0; j < windowSize; j++) {
+                        sum += Math.abs(downsampled[offset + j]);
+                    }
+                    envelope[i] = sum / windowSize;
+                }
+
+                // Compute the difference (first derivative, highlighting percussive transient attacks)
+                const diffEnvelope = new Float32Array(envelopeLength);
+                for (let i = 1; i < envelopeLength; i++) {
+                    const diff = envelope[i] - envelope[i - 1];
+                    diffEnvelope[i] = diff > 0 ? diff : 0;
+                }
+
+                // Limit the analysis range (take the most representative 60 s of audio)
+                const effectiveHopRate = downsampleRate / hopSize; // about 100Hz
+                const maxAnalysisFrames = Math.min(diffEnvelope.length, Math.floor(effectiveHopRate * 60));
+                const startOffset = Math.floor(Math.max(0, (diffEnvelope.length - maxAnalysisFrames) / 4));
+                const subEnvelope = diffEnvelope.subarray(startOffset, startOffset + maxAnalysisFrames);
+
+                // Autocorrelation over the common tempo range: 60 BPM ~ 190 BPM
+                const minBpm = 60;
+                const maxBpm = 190;
+                const minLag = Math.floor((60 / maxBpm) * effectiveHopRate);
+                const maxLag = Math.floor((60 / minBpm) * effectiveHopRate);
+
+                let bestLag = 0;
+                let maxCorrelation = -1;
+
+                for (let lag = minLag; lag <= maxLag; lag++) {
+                    let sum = 0;
+                    for (let i = 0; i < subEnvelope.length - lag; i++) {
+                        sum += subEnvelope[i] * subEnvelope[i + lag];
+                    }
+                    if (sum > maxCorrelation) {
+                        maxCorrelation = sum;
+                        bestLag = lag;
+                    }
+                }
+
+                if (bestLag > 0) {
+                    let detected = (60 * effectiveHopRate) / bestLag;
+                    // Tempo folding calibration (map into the common 75 ~ 160 range)
+                    while (detected < 70) detected *= 2;
+                    while (detected > 165) detected /= 2;
+                    return Math.round(detected);
+                }
+
+                return 120; // Fallback to a standard tempo
+            }
+
+            // File handling
+            async function handleaudioFile(file) {
+                if (!file) return;
+                uploadTip.textContent = `Reading: ${file.name} ...`;
+                statusBadge.style.display = 'inline-block';
+                statusBadge.className = 'status-badge analyzing';
+                statusBadge.textContent = 'Decoding audio...';
+
+                // Stop any previous playback
+                stopaudio();
+
+                try {
+                    const ctx = getaudioContext();
+                    const arrayBuffer = await file.arrayBuffer();
+                    statusBadge.textContent = 'Analyzing beats and transient peaks...';
+                    
+                    const decodedBuffer = await ctx.decodeAudioData(arrayBuffer);
+                    currentaudioBuffer = decodedBuffer;
+
+                    // Draw the waveform
+                    drawWaveform(decodedBuffer);
+
+                    // Calculate BPM
+                    const calculatedBpm = calculateBpm(decodedBuffer);
+                    updateBpmDisplay(calculatedBpm);
+
+                    statusBadge.className = 'status-badge done';
+                    statusBadge.textContent = `Analysis complete (${file.name}, duration ${Math.round(decodedBuffer.duration)} s)`;
+                    uploadTip.textContent = `Current audio: ${file.name} (click to choose another)`;
+                    playBtn.disabled = false;
+                } catch (err) {
+                    console.error('Audio analysis failed:', err);
+                    statusBadge.className = 'status-badge';
+                    statusBadge.style.color = '#ef4444';
+                    statusBadge.textContent = 'Audio decoding or analysis failed. Please try another format.';
+                    uploadTip.textContent = 'Click or drag to upload audio';
+                }
+            }
+
+            // Audio playback and preview
+            function stopaudio() {
+                if (currentSourceNode) {
+                    try { currentSourceNode.stop(); } catch(e) {}
+                    currentSourceNode.disconnect();
+                    currentSourceNode = null;
+                }
+                isPlaying = false;
+                playBtn.textContent = 'Preview';
+            }
+
+            function playaudio() {
+                if (!currentaudioBuffer) return;
+                const ctx = getaudioContext();
+                stopaudio();
+
+                const source = ctx.createBufferSource();
+                source.buffer = currentaudioBuffer;
+                source.connect(ctx.destination);
+                source.onended = () => {
+                    isPlaying = false;
+                    playBtn.textContent = 'Preview';
+                };
+                source.start(0);
+                currentSourceNode = source;
+                isPlaying = true;
+                playBtn.textContent = 'Stop';
+            }
+
+            // Upload event interactions
+            uploadArea.addEventListener('click', () => audioInput.click());
+            audioInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) handleaudioFile(file);
+            });
+
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = 'rgba(129, 140, 248, 0.5)';
+            });
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+            });
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+                const file = e.dataTransfer.files[0];
+                if (file) handleaudioFile(file);
+            });
+
+            // Control button logic
+            playBtn.addEventListener('click', () => {
+                if (isPlaying) {
+                    stopaudio();
+                } else {
+                    playaudio();
+                }
+            });
+
+            halfBtn.addEventListener('click', () => updateBpmDisplay(detectedBpm / 2));
+            doubleBtn.addEventListener('click', () => updateBpmDisplay(detectedBpm * 2));
+            minusBtn.addEventListener('click', () => updateBpmDisplay(detectedBpm - 1));
+            plusBtn.addEventListener('click', () => updateBpmDisplay(detectedBpm + 1));
+
+            copyBtn.addEventListener('click', () => {
+                if (detectedBpm > 0) {
+                    navigator.clipboard.writeText(detectedBpm.toString()).then(() => {
+                        const oldText = copyBtn.textContent;
+                        copyBtn.textContent = 'Copied!';
+                        setTimeout(() => copyBtn.textContent = oldText, 1500);
+                    }).catch(() => {
+                        alert(`BPM is: ${detectedBpm}`);
+                    });
+                }
+            });
+
+            // Manual tap-tempo logic
+            let taptimes = [];
+            let taptimeout = null;
+
+            function recordTap() {
+                const now = performance.now();
+                if (taptimeout) clearTimeout(taptimeout);
+
+                taptimes.push(now);
+                if (taptimes.length > 8) {
+                    taptimes.shift(); // Keep the most recent 8 taps
+                }
+
+                if (taptimes.length >= 2) {
+                    const intervals = [];
+                    for (let i = 1; i < taptimes.length; i++) {
+                        intervals.push(taptimes[i] - taptimes[i - 1]);
+                    }
+                    const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+                    const calculatedBpm = Math.round((60000 / avgInterval) * 10) / 10;
+                    updateBpmDisplay(calculatedBpm);
+                    statusBadge.style.display = 'inline-block';
+                    statusBadge.className = 'status-badge done';
+                    statusBadge.textContent = `Measuring (${taptimes.length} taps so far)`;
+                }
+
+                // Reset the current tap sequence if no tap within 2 s
+                taptimeout = setTimeout(() => {
+                    taptimes = [];
+                }, 2000);
+            }
+
+            tapBtn.addEventListener('click', recordTap);
+
+            // Spacebar shortcut for tapping
+            window.addEventListener('keydown', (e) => {
+                if (e.code === 'Space' && e.target !== audioInput && e.target.tagName !== 'INPUT') {
+                    e.preventDefault();
+                    recordTap();
+                    tapBtn.style.transform = 'scale(0.96)';
+                    setTimeout(() => tapBtn.style.transform = '', 100);
+                }
+            });
+
+            // Redraw the waveform on window resize
+            window.addEventListener('resize', () => {
+                if (currentaudioBuffer) {
+                    drawWaveform(currentaudioBuffer);
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Merger</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="Free online PDF merge tool. Merge multiple PDFs into one, right in your browser with pdf-lib. Safe and free.">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="PDF Merge | PC-TOOL">
+    <meta property="og:description" content="Free online tools for image conversion, video compression, audio conversion, background removal, and more. Every feature is built for efficiency and is completely free.">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/pdf-merge.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="en_US">
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <style>
+        #pdfInput { display: none; }
+        .file-list {
+            margin: 15px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 8px;
+            gap: 10px;
+        }
+        .file-item .name {
+            flex: 1;
+            color: #e4e4e7;
+            font-size: 14px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .file-item .size {
+            color: #71717a;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+        .file-item .remove-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: #a1a1aa;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+        .file-item .remove-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+        }
+        .file-item .drag-handle {
+            cursor: grab;
+            color: #52525b;
+            font-size: 16px;
+            flex-shrink: 0;
+            user-select: none;
+        }
+        .file-item.dragging {
+            opacity: 0.5;
+        }
+        .file-item.drag-over {
+            border-color: rgba(129, 140, 248, 0.5);
+            background: rgba(129, 140, 248, 0.08);
+        }
+    </style>
+</head>
+<body>
+<canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <a href="../index.html" class="back-link">← Back to Tools</a>
+
+    <div class="container">
+        <h1>PDF Merge</h1>
+        <p>Combine multiple PDFs into one, reorder them by dragging, and process everything in the browser.</p>
+
+        <div class="upload-area" id="uploadArea">
+            <p>Click or drag to upload multiple PDF files</p>
+            <input type="file" id="pdfInput" accept=".pdf" multiple>
+        </div>
+
+        <div class="file-list" id="fileList"></div>
+
+        <div style="text-align:center;">
+            <button class="convert-btn" id="mergeBtn">Start Merging</button>
+            <button class="download-btn" id="downloadBtn">Download merged PDF</button>
+        </div>
+
+        <div class="result-box" id="resultBox">
+            <h3>Merge Complete</h3>
+            <div class="size-info" id="sizeInfo"></div>
+        </div>
+
+        <div class="contact-tip">For feature requests or feedback, join our Discord: <a href="https://discord.gg/wjvS3efTj" target="_blank" rel="noopener noreferrer">https://discord.gg/wjvS3efTj</a></div>
+
+    <script src="common.js"></script>
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const pdfInput = document.getElementById('pdfInput');
+        const mergeBtn = document.getElementById('mergeBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const resultBox = document.getElementById('resultBox');
+        const sizeInfo = document.getElementById('sizeInfo');
+        const fileList = document.getElementById('fileList');
+
+        let pdfriles = [];
+        let mergedUrl = null;
+
+        uploadArea.onclick = () => pdfInput.click();
+        setupDragDrop(uploadArea, (files) => {
+            const pdfs = Array.from(files).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+            if (pdfs.length > 0) addriles(pdfs);
+            else showToast('Please upload a PDF file');
+        });
+
+        pdfInput.onchange = (e) => addriles(Array.from(e.target.files));
+        pdfInput.value = '';
+
+        function addriles(files) {
+            pdfriles.push(...files);
+            renderrileList();
+        }
+
+        function removerile(index) {
+            pdfriles.splice(index, 1);
+            renderrileList();
+            resultBox.style.display = 'none';
+            downloadBtn.style.display = 'none';
+        }
+
+        function renderrileList() {
+            fileList.innerHTML = pdfriles.map((f, i) => `
+                <div class="file-item" draggable="true" data-index="${i}">
+                    <span class="drag-handle">⋮⋮</span>
+                    <span class="name">${f.name}</span>
+                    <span class="size">${formatSize(f.size)}</span>
+                    <button class="remove-btn" data-index="${i}">✕</button>
+                </div>
+            `).join('');
+
+            fileList.querySelectorAll('.remove-btn').forEach(btn => {
+                btn.onclick = () => removerile(parseInt(btn.dataset.index));
+            });
+
+            let dragIdx = -1;
+            fileList.querySelectorAll('.file-item').forEach(item => {
+                item.ondragstart = (e) => {
+                    dragIdx = parseInt(item.dataset.index);
+                    item.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                };
+                item.ondragend = () => item.classList.remove('dragging');
+                item.ondragover = (e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    item.classList.add('drag-over');
+                };
+                item.ondragleave = () => item.classList.remove('drag-over');
+                item.ondrop = (e) => {
+                    e.preventDefault();
+                    item.classList.remove('drag-over');
+                    const targetIdx = parseInt(item.dataset.index);
+                    if (dragIdx !== targetIdx) {
+                        const [moved] = pdfriles.splice(dragIdx, 1);
+                        pdfriles.splice(targetIdx, 0, moved);
+                        renderrileList();
+                    }
+                };
+            });
+        }
+
+        mergeBtn.onclick = async () => {
+            if (pdfriles.length < 2) { showToast('Please add at least two PDF files'); return; }
+
+            mergeBtn.disabled = true;
+            mergeBtn.textContent = 'Merging...';
+            resultBox.style.display = 'none';
+            downloadBtn.style.display = 'none';
+
+            try {
+                const { PDFDocument } = PDFLib;
+                const mergedPdf = await PDFDocument.create();
+
+                for (const file of pdfriles) {
+                    const ab = await file.arrayBuffer();
+                    const pdf = await PDFDocument.load(ab);
+                    const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+                    copiedPages.forEach(page => mergedPdf.addPage(page));
+                }
+
+                const mergedBytes = await mergedPdf.save();
+                const blob = new Blob([mergedBytes], { type: 'application/pdf' });
+
+                if (mergedUrl) URL.revokeObjectURL(mergedUrl);
+                mergedUrl = URL.createObjectURL(blob);
+
+                const totalSize = pdfriles.reduce((s, f) => s + f.size, 0);
+                sizeInfo.innerHTML = 'Files: <span class="highlight">' + pdfriles.length + '</span><br>Total size before merging: ' + formatSize(totalSize) + '<br>Size after merging: <span class="highlight">' + formatSize(blob.size) + '</span>';
+                resultBox.style.display = 'block';
+                downloadBtn.style.display = 'inline-block';
+            } catch (e) {
+                showToast('Merge failed: ' + e.message);
+            } finally {
+                mergeBtn.disabled = false;
+                mergeBtn.textContent = 'Start Merging';
+            }
+        };
+
+        downloadBtn.onclick = () => {
+            const a = document.createElement('a');
+            a.href = mergedUrl;
+            a.download = 'merged_document.pdf';
+            a.click();
+        };
+    </script>
+</body>
+</html>
+
+
+

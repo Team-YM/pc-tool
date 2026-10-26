@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Text Difference Checker | PC-TOOL</title><link rel="stylesheet" href="common.css">
+<style>
+.container{max-width:1000px}.container h1{margin-bottom:8px}.container>p{margin-bottom:20px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.box{text-align:left}.label{display:flex;justify-content:space-between;color:#a1a1aa;font-size:13px;margin-bottom:8px}.editor,.diff{width:100%;min-height:230px;padding:12px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#e4e4e7;font:14px/1.6 Consolas,monospace;resize:vertical;outline:none}.editor:focus{border-color:rgba(129,140,248,.5)}.actions{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}.actions .btn{margin:0}.diff{min-height:180px;white-space:pre-wrap;overflow:auto}.line{display:block;padding:2px 8px;border-radius:3px}.add{color:#86efac;background:rgba(34,197,94,.12)}.del{color:#fca5a5;background:rgba(239,68,68,.12)}.same{color:#a1a1aa}.stats{color:#a1a1aa;font-size:13px;margin-bottom:8px}@media(max-width:700px){.grid{grid-template-columns:1fr}.container{padding:20px}}
+</style></head>
+<body><canvas id="bg-canvas" class="bg-canvas"></canvas><a class="back-link" href="../index.html">← Back to Home</a>
+<div class="container"><h1>Text Difference Checker</h1><p>Compare two texts line by line and quickly spot added, deleted, and unchanged content.</p>
+<div class="grid"><div class="box"><div class="label"><span>Original Text</span><span id="leftCount">0 lines</span></div><textarea id="left" class="editor" placeholder="Paste original text..."></textarea></div><div class="box"><div class="label"><span>Modified Text</span><span id="rightCount">0 lines</span></div><textarea id="right" class="editor" placeholder="Paste modified text..."></textarea></div></div>
+<div class="actions"><button class="btn" id="compare">Compare</button><button class="btn" id="swap">Swap</button><button class="btn" id="sample">Sample</button><button class="btn" id="clear">Clear</button><button class="btn" id="copy">Copy Result</button><button class="btn" id="download">Download Report</button></div>
+<div class="stats" id="stats">Waiting for comparison</div><div class="diff" id="result" aria-live="polite"></div></div>
+<script src="common.js"></script><script>
+(function(){var l=document.getElementById('left'),r=document.getElementById('right'),res=document.getElementById('result'),stats=document.getElementById('stats');
+function lines(s){return s.replace(/\r\n?/g,'\n').split('\n')}function updateCounts(){document.getElementById('leftCount').textContent=(l.value?lines(l.value).length:0)+' lines';document.getElementById('rightCount').textContent=(r.value?lines(r.value).length:0)+' lines'}
+function compare(){var a=lines(l.value),b=lines(r.value),i=0,j=0,add=0,del=0,same=0;res.textContent='';while(i<a.length||j<b.length){if(i<a.length&&j<b.length&&a[i]===b[j]){addLine('  '+a[i],'same');i++;j++;same++;}else if(j<b.length&&(i>=a.length||a[i+1]===b[j])){addLine('+ '+b[j],'add');j++;add++;}else{addLine('- '+a[i],'del');i++;del++;}}stats.textContent='Added '+add+' lines · Deleted '+del+' lines · Unchanged '+same+' lines · Total '+(add+del+same)+' lines'}
+function addLine(t,c){var el=document.createElement('span');el.className='line '+c;el.textContent=t;res.appendChild(el)}function outputText(){return Array.from(res.querySelectorAll('.line')).map(function(x){return x.textContent}).join('\n')}
+[l,r].forEach(function(x){x.addEventListener('input',updateCounts)});document.getElementById('compare').onclick=compare;document.getElementById('swap').onclick=function(){var t=l.value;l.value=r.value;r.value=t;updateCounts();compare()};document.getElementById('sample').onclick=function(){l.value='Page one\nKept line\nOld version line\nLast line';r.value='Page one\nKept line\nNew version line\nLast line\nAdded line';updateCounts();compare()};document.getElementById('clear').onclick=function(){l.value='';r.value='';res.textContent='';stats.textContent='Waiting for comparison';updateCounts()};document.getElementById('copy').onclick=function(){navigator.clipboard.writeText(outputText()).then(function(){showToast('Result copied')})};document.getElementById('download').onclick=function(){var blob=new Blob([outputText()],{type:'text/plain;charset=utf-8'});downloadFile(URL.createObjectURL(blob),'text-diff-report.txt')};updateCounts()})();
+</script></body></html>
+
+

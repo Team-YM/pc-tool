@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Short URL Generator | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="Online short URL generator and resolver — supports TinyURL, is.gd, CleanURI and more, custom aliases, QR code display and one-click copy.">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .container {
+            max-width: 720px;
+        }
+
+        .container h1 {
+            color: #e4e4e7;
+            margin-bottom: 8px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .container > p {
+            color: #a1a1aa;
+            font-size: 15px;
+            margin-bottom: 24px;
+        }
+
+        .input-group {
+            margin-bottom: 18px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 14px;
+            color: #d4d4d8;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .url-input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+            padding: 12px 16px;
+            color: #f4f4f5;
+            font-size: 15px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .url-input:focus {
+            border-color: #818cf8;
+            box-shadow: 0 0 10px rgba(129, 140, 248, 0.2);
+        }
+
+        .options-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        @media (max-width: 600px) {
+            .options-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .select-input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+            padding: 12px 16px;
+            color: #f4f4f5;
+            font-size: 14px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .select-input option {
+            background: #18181b;
+            color: #f4f4f5;
+        }
+
+        .action-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .btn-primary {
+            flex: 1;
+            background: #818cf8;
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 24px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover {
+            background: #6366f1;
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-clear {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #d4d4d8;
+            border-radius: 10px;
+            padding: 12px 20px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-clear:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+        }
+
+        /* State and result */
+        .loading-state {
+            display: none;
+            padding: 16px;
+            text-align: center;
+            color: #a1a1aa;
+            font-size: 14px;
+        }
+
+        .error-state {
+            display: none;
+            padding: 14px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            color: #f87171;
+            border-radius: 10px;
+            font-size: 14px;
+            text-align: left;
+            margin-bottom: 20px;
+        }
+
+        .result-card {
+            display: none;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: left;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .result-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #e4e4e7;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .result-display {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+        }
+
+        .short-url-text {
+            flex: 1;
+            font-family: monospace;
+            font-size: 16px;
+            color: #34d399;
+            word-break: break-all;
+        }
+
+        .btn-copy {
+            background: rgba(129, 140, 248, 0.2);
+            color: #a5b4fc;
+            border: 1px solid rgba(129, 140, 248, 0.4);
+            border-radius: 6px;
+            padding: 6px 14px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .btn-copy:hover {
+            background: rgba(129, 140, 248, 0.35);
+            color: #fff;
+        }
+
+        .result-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 13px;
+            color: #71717a;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .open-link {
+            color: #818cf8;
+            text-decoration: underline;
+        }
+
+        .qr-section {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .qr-box {
+            background: #ffffff;
+            padding: 8px;
+            border-radius: 8px;
+            display: inline-block;
+        }
+
+        .qr-box img {
+            display: block;
+            width: 110px;
+            height: 110px;
+        }
+
+        .qr-meta {
+            font-size: 13px;
+            color: #a1a1aa;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <a href="../index.html" class="back-link">← Back</a>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <div class="container">
+        <h1>Short URL Generator</h1>
+        <p>Shorten long, complex URLs into compact links in one click, with multiple fallback routes and live QR code generation.</p>
+
+        <div class="input-group">
+            <label for="longUrl">Original URL</label>
+            <input type="url" id="longUrl" class="url-input" placeholder="Please enter a complete URL, for example https://example.com/article/123..." autofocus>
+        </div>
+
+        <div class="options-row">
+            <div>
+                <label for="serviceSelect">Shortening provider</label>
+                <select id="serviceSelect" class="select-input">
+                    <option value="tinyurl">TinyURL stable route (tinyurl.com)</option>
+                    <option value="isgd">is.gd clean route (is.gd)</option>
+                    <option value="vurl">v.gd secure route (v.gd)</option>
+                    <option value="cleanuri">CleanURI route (cleanuri.com)</option>
+                </select>
+            </div>
+            <div>
+                <label for="customAlias">Custom suffix / alias (optional; supported by some providers)</label>
+                <input type="text" id="customAlias" class="url-input" placeholder="e.g. my-custom-link" style="padding: 10px 14px; font-size: 14px;">
+            </div>
+        </div>
+
+        <div class="action-bar">
+            <button class="btn-primary" id="generateBtn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                Shorten URL
+            </button>
+            <button class="btn-clear" id="clearBtn">Clear</button>
+        </div>
+
+        <div class="loading-state" id="loadingState">Requesting the shortening service, please wait...</div>
+        <div class="error-state" id="errorState"></div>
+
+        <div class="result-card" id="resultCard">
+            <div class="result-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                Short URL created successfully
+            </div>
+            <div class="result-display">
+                <span class="short-url-text" id="shortUrlDisplay">-</span>
+                <button class="btn-copy" id="copyBtn">one-clickCopy</button>
+            </div>
+            <div class="result-footer">
+                <span id="originalUrlHint">Original length: 0 chars -> short URL length: 0 chars</span>
+                <a href="#" target="_blank" class="open-link" id="visitLink">Open in a new tab ↗</a>
+            </div>
+            <div class="qr-section">
+                <div class="qr-box">
+                    <img id="qrImg" src="" alt="Short URL QR code">
+                </div>
+                <div class="qr-meta">
+                    <div><strong>Scan to visit</strong></div>
+                    <div>Scan with your phone to open the short link directly — handy for cross-device sharing.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        const longUrlInput = document.getElementById('longUrl');
+        const serviceSelect = document.getElementById('serviceSelect');
+        const customAliasInput = document.getElementById('customAlias');
+        const generateBtn = document.getElementById('generateBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const loadingState = document.getElementById('loadingState');
+        const errorState = document.getElementById('errorState');
+        const resultCard = document.getElementById('resultCard');
+        const shortUrlDisplay = document.getElementById('shortUrlDisplay');
+        const copyBtn = document.getElementById('copyBtn');
+        const originalUrlHint = document.getElementById('originalUrlHint');
+        const visitLink = document.getElementById('visitLink');
+        const qrImg = document.getElementById('qrImg');
+
+        function showError(msg) {
+            loadingState.style.display = 'none';
+            resultCard.style.display = 'none';
+            errorState.textContent = msg;
+            errorState.style.display = 'block';
+        }
+
+        function hideError() {
+            errorState.style.display = 'none';
+        }
+
+        async function requestTinyUrl(url, alias) {
+            let api = `https://tinyurl.com/api-create.php?url=${encodeURIComponent(url)}`;
+            if (alias) {
+                api += `&alias=${encodeURIComponent(alias)}`;
+            }
+            const res = await fetch(api);
+            if (!res.ok) throw new Error('TinyURL responded abnormally — the custom alias may already be taken');
+            const text = await res.text();
+            if (text.startsWith('Error')) throw new Error('TinyURL: ' + text);
+            return text.trim();
+        }
+
+        async function requestIsGd(url, alias, isVgd = false) {
+            const host = isVgd ? 'v.gd' : 'is.gd';
+            let api = `https://${host}/create.php?format=json&url=${encodeURIComponent(url)}`;
+            if (alias) {
+                api += `&shorturl=${encodeURIComponent(alias)}`;
+            }
+            const res = await fetch(api);
+            const data = await res.json();
+            if (data.errorcode) {
+                throw new Error(`${host} error: ${data.errormessage || 'GenerateFailed'}`);
+            }
+            return data.shorturl;
+        }
+
+        async function requestCleanUri(url) {
+            const res = await fetch('https://cleanuri.com/api/v1/shorten', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `url=${encodeURIComponent(url)}`
+            });
+            const data = await res.json();
+            if (data.result_url) return data.result_url;
+            if (data.error) throw new Error(`CleanURI: ${data.error}`);
+            throw new Error('CleanURI shortening failed');
+        }
+
+        async function handleGenerate() {
+            let rawUrl = longUrlInput.value.trim();
+            const service = serviceSelect.value;
+            const alias = customAliasInput.value.trim();
+
+            if (!rawUrl) {
+                showError('Please enter the URL to shorten!');
+                return;
+            }
+
+            if (!/^https?:\/\//i.test(rawUrl)) {
+                rawUrl = 'https://' + rawUrl;
+                longUrlInput.value = rawUrl;
+            }
+
+            try {
+                new URL(rawUrl);
+            } catch (e) {
+                showError('Please enter a valid URL (e.g. https://example.com)!');
+                return;
+            }
+
+            hideError();
+            resultCard.style.display = 'none';
+            loadingState.style.display = 'block';
+
+            let shortUrl = '';
+            try {
+                if (service === 'tinyurl') {
+                    shortUrl = await requestTinyUrl(rawUrl, alias);
+                } else if (service === 'isgd') {
+                    shortUrl = await requestIsGd(rawUrl, alias, false);
+                } else if (service === 'vurl') {
+                    shortUrl = await requestIsGd(rawUrl, alias, true);
+                } else if (service === 'cleanuri') {
+                    shortUrl = await requestCleanUri(rawUrl);
+                } else {
+                    // Retry with fallback routes
+                    shortUrl = await requestTinyUrl(rawUrl, alias);
+                }
+            } catch (err) {
+                // If the user did not specify a custom alias, automatically try the backup TinyURL route
+                if (!alias && service !== 'tinyurl') {
+                    try {
+                        shortUrl = await requestTinyUrl(rawUrl, '');
+                    } catch (err2) {
+                        showError(err.message || 'Failed to shorten the URL. Please retry later or switch routes');
+                        return;
+                    }
+                } else {
+                    showError(err.message || 'Failed to shorten the URL. Please check the URL or switch routes');
+                    return;
+                }
+            }
+
+            loadingState.style.display = 'none';
+            shortUrlDisplay.textContent = shortUrl;
+            visitLink.href = shortUrl;
+            originalUrlHint.textContent = `Original ${rawUrl.length} chars -> short ${shortUrl.length} chars (${Math.max(0, Math.round((1 - shortUrl.length / rawUrl.length) * 100))}% shorter)`;
+            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(shortUrl)}`;
+            resultCard.style.display = 'block';
+        }
+
+        generateBtn.addEventListener('click', handleGenerate);
+
+        longUrlInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') handleGenerate();
+        });
+
+        clearBtn.addEventListener('click', () => {
+            longUrlInput.value = '';
+            customAliasInput.value = '';
+            hideError();
+            resultCard.style.display = 'none';
+            loadingState.style.display = 'none';
+            longUrlInput.focus();
+        });
+
+        copyBtn.addEventListener('click', () => {
+            const val = shortUrlDisplay.textContent;
+            if (!val || val === '-') return;
+            navigator.clipboard.writeText(val).then(() => {
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = 'Copied!';
+                setTimeout(() => {
+                    copyBtn.textContent = originalText;
+                }, 2000);
+            }).catch(() => {
+                const textarea = document.createElement('textarea');
+                textarea.value = val;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                copyBtn.textContent = 'Copied!';
+                setTimeout(() => {
+                    copyBtn.textContent = 'one-clickCopy';
+                }, 2000);
+            });
+        });
+    </script>
+</body>
+</html>
+
+
+

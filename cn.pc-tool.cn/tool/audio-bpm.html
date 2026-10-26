@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>音频BPM识别 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="智能识别音频歌曲BPM与节拍速度，支持本地音频一键分析、波形图显示、节拍敲击测试与BPM微调，纯前端本地计算。">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="音频BPM识别 | PC-TOOL">
+    <meta property="og:description" content="免费在线音频BPM识别工具，智能检测歌曲节拍速度，完全纯前端运行。">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/audio-bpm.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="zh_CN">
+    <style>
+        .container {
+            max-width: 680px;
+            width: 100%;
+        }
+        #audioInput {
+            display: none;
+        }
+        .bpm-dashboard {
+            margin: 24px 0 16px;
+            padding: 24px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .bpm-display-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        .bpm-label {
+            font-size: 0.8125rem;
+            color: #a1a1aa;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+        .bpm-value {
+            font-size: 4.2rem;
+            font-weight: 700;
+            line-height: 1.1;
+            color: #f4f4f5;
+            letter-spacing: -0.02em;
+            font-variant-numeric: tabular-nums;
+            transition: color 0.25s ease, transform 0.1s ease;
+        }
+        .bpm-value.pulsing {
+            color: #818cf8;
+            transform: scale(1.04);
+        }
+        .bpm-sub {
+            font-size: 0.875rem;
+            color: #71717a;
+            margin-top: 4px;
+        }
+
+        /* 节拍视觉指示器 */
+        .beat-indicator-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 18px;
+        }
+        .beat-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.08s ease;
+        }
+        .beat-dot.active {
+            background: #818cf8;
+            box-shadow: 0 0 14px #818cf8, 0 0 24px rgba(129, 140, 248, 0.6);
+            transform: scale(1.3);
+        }
+
+        /* 波形图 */
+        .waveform-wrap {
+            margin-top: 20px;
+            background: rgba(15, 15, 18, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        #waveformCanvas {
+            width: 100%;
+            height: 90px;
+            display: block;
+        }
+
+        /* 快捷微调与操作按钮 */
+        .controls-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .ctrl-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #e4e4e7;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .ctrl-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-1px);
+        }
+        .ctrl-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .ctrl-btn.primary {
+            background: rgba(99, 102, 241, 0.25);
+            border-color: rgba(129, 140, 248, 0.4);
+            color: #c7d2fe;
+        }
+        .ctrl-btn.primary:hover:not(:disabled) {
+            background: rgba(99, 102, 241, 0.45);
+            border-color: rgba(129, 140, 248, 0.7);
+        }
+
+        /* 手动 TAP 测速模块 */
+        .tap-module {
+            margin-top: 24px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            text-align: center;
+        }
+        .tap-title {
+            font-size: 0.875rem;
+            color: #a1a1aa;
+            margin-bottom: 12px;
+        }
+        .tap-button {
+            width: 100%;
+            max-width: 260px;
+            padding: 14px 20px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            color: #f4f4f5;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.12s ease;
+            user-select: none;
+        }
+        .tap-button:active {
+            transform: scale(0.96);
+            background: rgba(99, 102, 241, 0.3);
+            border-color: rgba(129, 140, 248, 0.5);
+        }
+        .tap-tip {
+            font-size: 0.75rem;
+            color: #71717a;
+            margin-top: 8px;
+        }
+
+        /* 状态与加载指示 */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            font-size: 0.8125rem;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #a1a1aa;
+            margin-top: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .status-badge.analyzing {
+            background: rgba(234, 179, 8, 0.15);
+            border-color: rgba(234, 179, 8, 0.3);
+            color: #fde047;
+        }
+        .status-badge.done {
+            background: rgba(16, 185, 129, 0.15);
+            border-color: rgba(16, 185, 129, 0.3);
+            color: #6ee7b7;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <!-- 统一位置返回首页按钮 -->
+    <a href="../index.html" class="back-link">← 返回转换工具首页</a>
+
+    <div class="container">
+        <h1>音频BPM识别</h1>
+        <p>纯本地分析歌曲速度（BPM/每分钟节拍数），支持波形展示与节拍敲击测试</p>
+
+        <!-- 上传区域 -->
+        <div class="upload-area" id="uploadArea">
+            <p id="uploadTip">点击或拖拽上传音频（MP3、WAV、OGG、FLAC、M4A等）</p>
+            <input type="file" id="audioInput" accept="audio/*">
+        </div>
+
+        <div id="statusWrap" style="text-align: center;">
+            <div id="statusBadge" class="status-badge" style="display: none;">等待上传音频</div>
+        </div>
+
+        <!-- BPM 主显表盘 -->
+        <div class="bpm-dashboard">
+            <div class="bpm-display-wrap">
+                <span class="bpm-label">识别结果 / 速度</span>
+                <div class="bpm-value" id="bpmValue">--</div>
+                <div class="bpm-sub" id="tempoDesc">请先导入音频进行分析</div>
+            </div>
+
+            <!-- 4拍视觉节拍灯 -->
+            <div class="beat-indicator-container">
+                <div class="beat-dot" id="beatDot0"></div>
+                <div class="beat-dot" id="beatDot1"></div>
+                <div class="beat-dot" id="beatDot2"></div>
+                <div class="beat-dot" id="beatDot3"></div>
+            </div>
+
+            <!-- 音频波形/能量图 -->
+            <div class="waveform-wrap">
+                <canvas id="waveformCanvas"></canvas>
+            </div>
+
+            <!-- 播放与微调控制 -->
+            <div class="controls-row">
+                <button class="ctrl-btn primary" id="playBtn" disabled>试听播放</button>
+                <button class="ctrl-btn" id="halfBtn" title="减半" disabled>/2 (半速)</button>
+                <button class="ctrl-btn" id="doubleBtn" title="翻倍" disabled>x2 (双倍)</button>
+                <button class="ctrl-btn" id="minusBtn" title="BPM -1" disabled>-1</button>
+                <button class="ctrl-btn" id="plusBtn" title="BPM +1" disabled>+1</button>
+                <button class="ctrl-btn" id="copyBtn" title="复制结果" disabled>复制BPM</button>
+            </div>
+        </div>
+
+        <!-- TAP 节拍手动测速区 -->
+        <div class="tap-module">
+            <div class="tap-title">手动测速模式（跟随音乐节拍点击）</div>
+            <button class="tap-button" id="tapBtn">点击测速 (TAP)</button>
+            <div class="tap-tip">跟随歌曲律动连续点击数次，自动计算平均 BPM。按键盘【空格键】亦可点击测速。</div>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        (function() {
+            // DOM 元素引用
+            const uploadArea = document.getElementById('uploadArea');
+            const audioInput = document.getElementById('audioInput');
+            const uploadTip = document.getElementById('uploadTip');
+            const statusBadge = document.getElementById('statusBadge');
+            const bpmValueEl = document.getElementById('bpmValue');
+            const tempoDescEl = document.getElementById('tempoDesc');
+            const waveformCanvas = document.getElementById('waveformCanvas');
+            const playBtn = document.getElementById('playBtn');
+            const halfBtn = document.getElementById('halfBtn');
+            const doubleBtn = document.getElementById('doubleBtn');
+            const minusBtn = document.getElementById('minusBtn');
+            const plusBtn = document.getElementById('plusBtn');
+            const copyBtn = document.getElementById('copyBtn');
+            const tapBtn = document.getElementById('tapBtn');
+
+            const beatDots = [
+                document.getElementById('beatDot0'),
+                document.getElementById('beatDot1'),
+                document.getElementById('beatDot2'),
+                document.getElementById('beatDot3')
+            ];
+
+            let audioCtx = null;
+            let currentAudioBuffer = null;
+            let currentSourceNode = null;
+            let isPlaying = false;
+            let detectedBpm = 0;
+            let beatIntervalId = null;
+            let currentBeatStep = 0;
+
+            // 初始化 AudioContext
+            function getAudioContext() {
+                if (!audioCtx) {
+                    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                    audioCtx = new AudioContextClass();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                return audioCtx;
+            }
+
+            // 获取速度情绪描述
+            function getTempoDescription(bpm) {
+                if (bpm <= 0) return '请先导入音频进行分析';
+                if (bpm < 60) return 'Grave / Largo (极缓庄重)';
+                if (bpm < 76) return 'Adagio (柔板慢速)';
+                if (bpm < 108) return 'Andante (行板从容)';
+                if (bpm < 120) return 'Moderato (中速舒缓)';
+                if (bpm < 156) return 'Allegro (快板欢快)';
+                if (bpm < 176) return 'Vivace (活泼急板)';
+                return 'Presto (极快极速)';
+            }
+
+            // 更新 BPM 展示
+            function updateBpmDisplay(val) {
+                detectedBpm = Math.round(val * 10) / 10;
+                bpmValueEl.textContent = detectedBpm > 0 ? detectedBpm : '--';
+                tempoDescEl.textContent = getTempoDescription(detectedBpm);
+
+                const hasValidBpm = detectedBpm > 0;
+                halfBtn.disabled = !hasValidBpm;
+                doubleBtn.disabled = !hasValidBpm;
+                minusBtn.disabled = !hasValidBpm;
+                plusBtn.disabled = !hasValidBpm;
+                copyBtn.disabled = !hasValidBpm;
+
+                restartBeatVisualizer();
+            }
+
+            // 节拍视觉指示器动画
+            function restartBeatVisualizer() {
+                if (beatIntervalId) {
+                    clearInterval(beatIntervalId);
+                    beatIntervalId = null;
+                }
+                beatDots.forEach(dot => dot.classList.remove('active'));
+                bpmValueEl.classList.remove('pulsing');
+                currentBeatStep = 0;
+
+                if (detectedBpm > 30 && detectedBpm < 300) {
+                    const beatMs = (60 / detectedBpm) * 1000;
+                    beatIntervalId = setInterval(() => {
+                        beatDots.forEach((dot, idx) => {
+                            if (idx === currentBeatStep) {
+                                dot.classList.add('active');
+                            } else {
+                                dot.classList.remove('active');
+                            }
+                        });
+
+                        if (currentBeatStep === 0) {
+                            bpmValueEl.classList.add('pulsing');
+                            setTimeout(() => bpmValueEl.classList.remove('pulsing'), 90);
+                        }
+
+                        currentBeatStep = (currentBeatStep + 1) % 4;
+                    }, beatMs);
+                }
+            }
+
+            // 绘制波形轮廓
+            function drawWaveform(buffer) {
+                const canvas = waveformCanvas;
+                const dpr = window.devicePixelRatio || 1;
+                const rect = canvas.getBoundingClientRect();
+                canvas.width = (rect.width || 600) * dpr;
+                canvas.height = (rect.height || 90) * dpr;
+
+                const ctx = canvas.getContext('2d');
+                ctx.scale(dpr, dpr);
+                const w = canvas.width / dpr;
+                const h = canvas.height / dpr;
+
+                ctx.clearRect(0, 0, w, h);
+
+                const channelData = buffer.getChannelData(0);
+                const step = Math.ceil(channelData.length / w);
+                const amp = h / 2;
+
+                ctx.fillStyle = 'rgba(99, 102, 241, 0.4)';
+                ctx.strokeStyle = '#818cf8';
+                ctx.lineWidth = 1;
+
+                ctx.beginPath();
+                ctx.moveTo(0, amp);
+
+                for (let i = 0; i < w; i++) {
+                    let min = 1.0;
+                    let max = -1.0;
+                    const start = i * step;
+                    const end = Math.min(start + step, channelData.length);
+                    for (let j = start; j < end; j += 4) {
+                        const datum = channelData[j];
+                        if (datum < min) min = datum;
+                        if (datum > max) max = datum;
+                    }
+                    if (max < min) {
+                        min = 0;
+                        max = 0;
+                    }
+                    const y1 = (1 + min) * amp;
+                    const y2 = (1 + max) * amp;
+                    ctx.fillRect(i, y1, 1, Math.max(1, y2 - y1));
+                }
+            }
+
+            // 智能 BPM 核心分析算法（能量峰值自相关法）
+            function calculateBpm(buffer) {
+                // 混音至单声道
+                const sampleRate = buffer.sampleRate;
+                const channelData = buffer.getChannelData(0);
+                
+                // 降低采样率至 4410Hz 以加速自相关计算并过滤超高频
+                const downsampleRate = 4410;
+                const downsampleRatio = Math.floor(sampleRate / downsampleRate);
+                const downsampledLength = Math.floor(channelData.length / downsampleRatio);
+                const downsampled = new Float32Array(downsampledLength);
+
+                for (let i = 0; i < downsampledLength; i++) {
+                    downsampled[i] = channelData[i * downsampleRatio];
+                }
+
+                // 提取瞬态包络（Envelope Follower / Energy Flux）
+                const windowSize = Math.floor(downsampleRate * 0.05); // 50ms 窗口
+                const hopSize = Math.floor(downsampleRate * 0.01);    // 10ms 步长
+                const envelopeLength = Math.floor((downsampledLength - windowSize) / hopSize);
+                const envelope = new Float32Array(envelopeLength);
+
+                for (let i = 0; i < envelopeLength; i++) {
+                    let sum = 0;
+                    const offset = i * hopSize;
+                    for (let j = 0; j < windowSize; j++) {
+                        sum += Math.abs(downsampled[offset + j]);
+                    }
+                    envelope[i] = sum / windowSize;
+                }
+
+                // 计算差分（一阶导数，突出冲击瞬态起音）
+                const diffEnvelope = new Float32Array(envelopeLength);
+                for (let i = 1; i < envelopeLength; i++) {
+                    const diff = envelope[i] - envelope[i - 1];
+                    diffEnvelope[i] = diff > 0 ? diff : 0;
+                }
+
+                // 限制分析范围（截取最具代表性的 60 秒音频片段）
+                const effectiveHopRate = downsampleRate / hopSize; // 约 100Hz
+                const maxAnalysisFrames = Math.min(diffEnvelope.length, Math.floor(effectiveHopRate * 60));
+                const startOffset = Math.floor(Math.max(0, (diffEnvelope.length - maxAnalysisFrames) / 4));
+                const subEnvelope = diffEnvelope.subarray(startOffset, startOffset + maxAnalysisFrames);
+
+                // 自相关计算常见速度范围：60 BPM ~ 190 BPM
+                const minBpm = 60;
+                const maxBpm = 190;
+                const minLag = Math.floor((60 / maxBpm) * effectiveHopRate);
+                const maxLag = Math.floor((60 / minBpm) * effectiveHopRate);
+
+                let bestLag = 0;
+                let maxCorrelation = -1;
+
+                for (let lag = minLag; lag <= maxLag; lag++) {
+                    let sum = 0;
+                    for (let i = 0; i < subEnvelope.length - lag; i++) {
+                        sum += subEnvelope[i] * subEnvelope[i + lag];
+                    }
+                    if (sum > maxCorrelation) {
+                        maxCorrelation = sum;
+                        bestLag = lag;
+                    }
+                }
+
+                if (bestLag > 0) {
+                    let detected = (60 * effectiveHopRate) / bestLag;
+                    // 速度折叠校准（常见范围映射至 75 ~ 160）
+                    while (detected < 70) detected *= 2;
+                    while (detected > 165) detected /= 2;
+                    return Math.round(detected);
+                }
+
+                return 120; // 兜底标准速度
+            }
+
+            // 文件处理
+            async function handleAudioFile(file) {
+                if (!file) return;
+                uploadTip.textContent = `正在读取：${file.name} ...`;
+                statusBadge.style.display = 'inline-block';
+                statusBadge.className = 'status-badge analyzing';
+                statusBadge.textContent = '音频解码中...';
+
+                // 停止先前播放
+                stopAudio();
+
+                try {
+                    const ctx = getAudioContext();
+                    const arrayBuffer = await file.arrayBuffer();
+                    statusBadge.textContent = '正在分析音乐节拍与瞬态峰值...';
+                    
+                    const decodedBuffer = await ctx.decodeAudioData(arrayBuffer);
+                    currentAudioBuffer = decodedBuffer;
+
+                    // 绘制波形
+                    drawWaveform(decodedBuffer);
+
+                    // 计算 BPM
+                    const calculatedBpm = calculateBpm(decodedBuffer);
+                    updateBpmDisplay(calculatedBpm);
+
+                    statusBadge.className = 'status-badge done';
+                    statusBadge.textContent = `分析完成 (${file.name}，时长 ${Math.round(decodedBuffer.duration)} 秒)`;
+                    uploadTip.textContent = `当前音频：${file.name}（点击可重新选择）`;
+                    playBtn.disabled = false;
+                } catch (err) {
+                    console.error('音频分析失败:', err);
+                    statusBadge.className = 'status-badge';
+                    statusBadge.style.color = '#ef4444';
+                    statusBadge.textContent = '音频解码或分析失败，请换一种格式重试';
+                    uploadTip.textContent = '点击或拖拽上传音频';
+                }
+            }
+
+            // 音频播放与试听
+            function stopAudio() {
+                if (currentSourceNode) {
+                    try { currentSourceNode.stop(); } catch(e) {}
+                    currentSourceNode.disconnect();
+                    currentSourceNode = null;
+                }
+                isPlaying = false;
+                playBtn.textContent = '试听播放';
+            }
+
+            function playAudio() {
+                if (!currentAudioBuffer) return;
+                const ctx = getAudioContext();
+                stopAudio();
+
+                const source = ctx.createBufferSource();
+                source.buffer = currentAudioBuffer;
+                source.connect(ctx.destination);
+                source.onended = () => {
+                    isPlaying = false;
+                    playBtn.textContent = '试听播放';
+                };
+                source.start(0);
+                currentSourceNode = source;
+                isPlaying = true;
+                playBtn.textContent = '停止播放';
+            }
+
+            // 上传事件交互
+            uploadArea.addEventListener('click', () => audioInput.click());
+            audioInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) handleAudioFile(file);
+            });
+
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = 'rgba(129, 140, 248, 0.5)';
+            });
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+            });
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+                const file = e.dataTransfer.files[0];
+                if (file) handleAudioFile(file);
+            });
+
+            // 控制按钮逻辑
+            playBtn.addEventListener('click', () => {
+                if (isPlaying) {
+                    stopAudio();
+                } else {
+                    playAudio();
+                }
+            });
+
+            halfBtn.addEventListener('click', () => updateBpmDisplay(detectedBpm / 2));
+            doubleBtn.addEventListener('click', () => updateBpmDisplay(detectedBpm * 2));
+            minusBtn.addEventListener('click', () => updateBpmDisplay(detectedBpm - 1));
+            plusBtn.addEventListener('click', () => updateBpmDisplay(detectedBpm + 1));
+
+            copyBtn.addEventListener('click', () => {
+                if (detectedBpm > 0) {
+                    navigator.clipboard.writeText(detectedBpm.toString()).then(() => {
+                        const oldText = copyBtn.textContent;
+                        copyBtn.textContent = '已复制！';
+                        setTimeout(() => copyBtn.textContent = oldText, 1500);
+                    }).catch(() => {
+                        alert(`BPM为: ${detectedBpm}`);
+                    });
+                }
+            });
+
+            // 手动 TAP 测速逻辑
+            let tapTimes = [];
+            let tapTimeout = null;
+
+            function recordTap() {
+                const now = performance.now();
+                if (tapTimeout) clearTimeout(tapTimeout);
+
+                tapTimes.push(now);
+                if (tapTimes.length > 8) {
+                    tapTimes.shift(); // 保留最近 8 次
+                }
+
+                if (tapTimes.length >= 2) {
+                    const intervals = [];
+                    for (let i = 1; i < tapTimes.length; i++) {
+                        intervals.push(tapTimes[i] - tapTimes[i - 1]);
+                    }
+                    const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+                    const calculatedBpm = Math.round((60000 / avgInterval) * 10) / 10;
+                    updateBpmDisplay(calculatedBpm);
+                    statusBadge.style.display = 'inline-block';
+                    statusBadge.className = 'status-badge done';
+                    statusBadge.textContent = `手动测速中 (已敲击 ${tapTimes.length} 次)`;
+                }
+
+                // 2 秒未敲击则重置本次 TAP 序列
+                tapTimeout = setTimeout(() => {
+                    tapTimes = [];
+                }, 2000);
+            }
+
+            tapBtn.addEventListener('click', recordTap);
+
+            // 空格键快捷 TAP
+            window.addEventListener('keydown', (e) => {
+                if (e.code === 'Space' && e.target !== audioInput && e.target.tagName !== 'INPUT') {
+                    e.preventDefault();
+                    recordTap();
+                    tapBtn.style.transform = 'scale(0.96)';
+                    setTimeout(() => tapBtn.style.transform = '', 100);
+                }
+            });
+
+            // 窗口缩放自适应重绘波形
+            window.addEventListener('resize', () => {
+                if (currentAudioBuffer) {
+                    drawWaveform(currentAudioBuffer);
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

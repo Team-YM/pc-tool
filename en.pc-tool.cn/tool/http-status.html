@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTTP Status Code Checker</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="An online quick-reference and in-depth guide to HTTP status codes, covering the meaning of every 1xx, 2xx, 3xx, 4xx and 5xx code, typical scenarios, troubleshooting steps, with fuzzy search and category filters.">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .container {
+            max-width: 860px;
+        }
+
+        .container h1 {
+            color: #e4e4e7;
+            margin-bottom: 8px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .container > p {
+            color: #a1a1aa;
+            font-size: 15px;
+            margin-bottom: 24px;
+        }
+
+        .search-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .search-input {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+            padding: 12px 16px;
+            color: #f4f4f5;
+            font-size: 15px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .search-input:focus {
+            border-color: #818cf8;
+            box-shadow: 0 0 10px rgba(129, 140, 248, 0.2);
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .filter-tab {
+            padding: 7px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            color: #a1a1aa;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-tab:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e4e4e7;
+        }
+
+        .filter-tab.active {
+            background: #818cf8;
+            border-color: #818cf8;
+            color: #ffffff;
+        }
+
+        .status-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            text-align: left;
+            max-height: 560px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .status-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .status-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 3px;
+        }
+
+        .status-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 16px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .status-card:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.16);
+            transform: translateX(2px);
+        }
+
+        .status-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+
+        .status-code-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .badge-code {
+            font-family: monospace;
+            font-size: 16px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 6px;
+        }
+
+        .badge-1xx { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+        .badge-2xx { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .badge-3xx { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .badge-4xx { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .badge-5xx { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); }
+
+        .status-title-cn {
+            font-size: 16px;
+            font-weight: 600;
+            color: #f4f4f5;
+        }
+
+        .status-title-en {
+            font-size: 13px;
+            color: #71717a;
+            font-family: monospace;
+        }
+
+        .status-desc {
+            font-size: 14px;
+            color: #a1a1aa;
+            line-height: 1.6;
+        }
+
+        .status-solution {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px dashed rgba(255, 255, 255, 0.08);
+            font-size: 13px;
+            color: #818cf8;
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+        }
+
+        .empty-hint {
+            text-align: center;
+            color: #71717a;
+            padding: 30px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <a href="../index.html" class="back-link">← Back</a>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <div class="container">
+        <h1>HTTP Status Code Lookup and Reference</h1>
+        <p>Quickly search and inspect RFC-standard HTTP response status codes, their meanings, typical scenarios and troubleshooting advice.</p>
+
+        <div class="search-row">
+            <input type="text" id="searchInput" class="search-input" placeholder="Type a status code or keyword to search (e.g. 404, 502, unauthorized, redirect)..." autofocus>
+        </div>
+
+        <div class="filter-tabs" id="filterTabs">
+            <button class="filter-tab active" data-type="all">All</button>
+            <button class="filter-tab" data-type="1">1xx Informational</button>
+            <button class="filter-tab" data-type="2">2xx Success</button>
+            <button class="filter-tab" data-type="3">3xx Redirection</button>
+            <button class="filter-tab" data-type="4">4xx Client Error</button>
+            <button class="filter-tab" data-type="5">5xx Server Error</button>
+        </div>
+
+        <div class="status-list" id="statusList">
+            <!-- Rendered dynamically -->
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        const statusData = [
+            // 1xx
+            { code: 100, en: "Continue", cn: "Continue Sending the Request", desc: "The client should continue with its request. The server has received the initial part of the request and is waiting for the remainder.", fix: "Usually sent by the server when the client includes an Expect: 100-continue request header." },
+            { code: 101, en: "Switching Protocols", cn: "Protocol Switch Accepted", desc: "The server understands the client's request to switch protocols and will communicate using the new protocol.", fix: "Commonly seen when an HTTP connection is upgraded to WebSocket (ws:// or wss://) during the handshake." },
+            { code: 102, en: "Processing", cn: "Still Processing", desc: "A WebDAV extension. The server has received and is processing the request, but no response is available yet.", fix: "An interim acknowledgement sent while the server performs a long-running operation, so the client does not time out." },
+
+            // 2xx
+            { code: 200, en: "OK", cn: "Request Succeeded", desc: "The standard success response. The content the request asked for is returned in the response body.", fix: "Everything is working normally; no further action is required." },
+            { code: 201, en: "Created", cn: "Resource Created", desc: "The request succeeded and a new resource has been created as a result of it.", fix: "Typically returned when a POST or PUT request creates a resource; the Location header usually contains the new resource URL." },
+            { code: 202, en: "Accepted", cn: "Request Accepted", desc: "The server has accepted the request but has not finished processing it, and success is not guaranteed.", fix: "Common for asynchronous job queues and long-running batch operations." },
+            { code: 204, en: "No Content", cn: "No Content to Return", desc: "The server successfully processed the request but does not need to return any content.", fix: "Typically used for DELETE operations or when the page state changes without needing a view refresh." },
+            { code: 206, en: "Partial Content", cn: "Partial Content Returned", desc: "The server successfully processed a partial GET request, which enables resumable downloads.", fix: "Triggered by the client's Range header; common for large file downloads and streaming audio or video." },
+
+            // 3xx
+            { code: 301, en: "Moved Permanently", cn: "Permanent Redirect", desc: "The requested resource has been permanently moved to a new location, and search engines will pass along its ranking.", fix: "Clients and crawlers should update their bookmarks to the new URL given in the Location response header." },
+            { code: 302, en: "Found (Moved Temporarily)", cn: "Temporary Redirect", desc: "The resource is temporarily served from a different URI, and the original URI should keep being used in the future.", fix: "Common for redirecting unauthenticated users to a login page or for temporary campaign pages." },
+            { code: 304, en: "Not Modified", cn: "Not Modified (Negotiated Cache Hit)", desc: "The resource has not changed, so the client can keep using its locally cached copy.", fix: "Works with If-Modified-Since or If-None-Match (ETag) to speed up the web and save bandwidth." },
+            { code: 307, en: "Temporary Redirect", cn: "Temporary Redirect (Method Preserved)", desc: "A temporary redirect that requires the client to keep the original HTTP method when following it (for example, POST stays POST).", fix: "The specification-compliant replacement for 302 that guarantees the request method is not downgraded to GET." },
+            { code: 308, en: "Permanent Redirect", cn: "Permanent Redirect (Method Preserved)", desc: "A permanent redirect that strictly requires the client to keep the HTTP method when following it.", fix: "The specification-compliant replacement for 301, and the recommended choice for modern APIs." },
+
+            // 4xx
+            { code: 400, en: "Bad Request", cn: "Bad Request (Invalid Syntax or Parameters)", desc: "The server cannot understand the request because of an obvious client error, such as malformed request syntax or invalid parameters.", fix: "Check the JSON format, required fields, query parameter spelling and data types submitted by the frontend." },
+            { code: 401, en: "Unauthorized", cn: "Unauthorized (Authentication Required)", desc: "The request requires the user to authenticate; usually the Authorization header is missing or the token has expired.", fix: "Check whether the request headers carry a Bearer token or cookie, or guide the user to sign in again." },
+            { code: 403, en: "Forbidden", cn: "Forbidden (Insufficient Permission)", desc: "The server understands the client's identity but refuses to authorize access to the resource.", fix: "The account lacks permission, the IP has been blocked by a firewall, or hotlink protection rejected the request; signing in again will not help." },
+            { code: 404, en: "Not Found", cn: "Resource Not Found", desc: "The server cannot find a resource matching the requested URI.", fix: "Check that the request path is spelled correctly and that the route configuration or the static file on the server exists." },
+            { code: 405, en: "Method Not Allowed", cn: "Method Not Allowed", desc: "The HTTP method used in the request (such as GET, POST or DELETE) is not supported by this endpoint.", fix: "Check the API documentation to confirm which methods the URL supports (see the Allow response header)." },
+            { code: 408, en: "Request Timeout", cn: "Request Timeout", desc: "The server waited too long for the client to send the request and closed the connection.", fix: "Check upstream latency on the client network and the chunked upload logic used for large files." },
+            { code: 409, en: "Conflict", cn: "Resource Conflict", desc: "The request conflicts with the current state of the server, often caused by concurrent edits or duplicate primary keys.", fix: "Refresh the latest data and retry, or check the fields covered by unique constraints." },
+            { code: 413, en: "Payload Too Large", cn: "Payload Too Large", desc: "The entity data submitted with the request exceeds the limit the server is willing or able to handle.", fix: "Raise client_max_body_size in Nginx, or compress and split the images or files uploaded by the frontend." },
+            { code: 414, en: "URI Too Long", cn: "Request URI Too Long", desc: "The URL requested by the client is longer than the server can parse.", fix: "Avoid appending extremely long parameters to GET request URLs; send them in the body of a POST request instead." },
+            { code: 415, en: "Unsupported Media Type", cn: "Unsupported Media Type", desc: "The server cannot process the media format attached to the request.", fix: "Check the Content-Type header, for example whether it should be application/json or multipart/form-data." },
+            { code: 429, en: "Too Many Requests", cn: "Too Many Requests (Rate Limited)", desc: "The user has sent too many requests within a given time window (rate limit).", fix: "Slow down requests, add exponential backoff and retries, or read the Retry-After response header and wait before retrying." },
+
+            // 5xx
+            { code: 500, en: "Internal Server Error", cn: "Internal Server Error", desc: "The server encountered a situation it does not know how to handle; usually the backend business code crashed with an error.", fix: "Inspect the backend error logs, database connections, null pointer issues and uncaught exceptions." },
+            { code: 501, en: "Not Implemented", cn: "Not Implemented", desc: "The server does not support the request method and cannot handle it because the required functionality is missing.", fix: "Usually means the server lacks the capability module needed to support this HTTP feature." },
+            { code: 502, en: "Bad Gateway", cn: "Bad Gateway", desc: "A server acting as a gateway or reverse proxy (such as Nginx) received an invalid response from the upstream service.", fix: "Check whether the upstream application service (such as Node, Java, Python or PHP-FPM) has crashed or is configured on the wrong port." },
+            { code: 503, en: "Service Unavailable", cn: "Service Unavailable", desc: "The server is currently unable to handle the request, either because it is overloaded or down for maintenance. This is usually a temporary state.", fix: "Check CPU and memory usage, review the high-availability circuit-breaker policy for microservices, and wait for maintenance to finish." },
+            { code: 504, en: "Gateway Timeout", cn: "Gateway Timeout", desc: "A server acting as a gateway or proxy did not receive a timely response from the upstream server.", fix: "Investigate slow backend queries and long-running deadlocks, and raise the proxy_read_timeout threshold in Nginx." },
+            { code: 505, en: "HTTP Version Not Supported", cn: "HTTP Version Not Supported", desc: "The server does not support the version of the HTTP protocol used in the request.", fix: "Have the client use the widely supported HTTP/1.1, or confirm that HTTP/2 support is enabled on the server." }
+        ];
+
+        const searchInput = document.getElementById('searchInput');
+        const filterTabs = document.getElementById('filterTabs');
+        const statusList = document.getElementById('statusList');
+
+        let currentFilter = 'all';
+
+        function getBadgeClass(code) {
+            const first = Math.floor(code / 100);
+            return `badge-${first}xx`;
+        }
+
+        function renderList() {
+            const query = searchInput.value.trim().toLowerCase();
+            const filtered = statusData.filter(item => {
+                // Category filter
+                if (currentFilter !== 'all') {
+                    const first = Math.floor(item.code / 100).toString();
+                    if (first !== currentFilter) return false;
+                }
+
+                // Search filter
+                if (!query) return true;
+                const matchCode = item.code.toString().includes(query);
+                const matchEn = item.en.toLowerCase().includes(query);
+                const matchCn = item.cn.toLowerCase().includes(query);
+                const matchDesc = item.desc.toLowerCase().includes(query);
+                return matchCode || matchEn || matchCn || matchDesc;
+            });
+
+            if (filtered.length === 0) {
+                statusList.innerHTML = `<div class="empty-hint">No HTTP status codes match "${query}". Try a different keyword.</div>`;
+                return;
+            }
+
+            statusList.innerHTML = filtered.map(item => `
+                <div class="status-card" data-code="${item.code}">
+                    <div class="status-card-header">
+                        <div class="status-code-wrap">
+                            <span class="badge-code ${getBadgeClass(item.code)}">${item.code}</span>
+                            <span class="status-title-cn">${item.cn}</span>
+                        </div>
+                        <span class="status-title-en">${item.en}</span>
+                    </div>
+                    <div class="status-desc">${item.desc}</div>
+                    <div class="status-solution">
+                        <span>💡 Troubleshooting / Scenario:</span>
+                        <span>${item.fix}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        filterTabs.addEventListener('click', (e) => {
+            const tab = e.target.closest('.filter-tab');
+            if (!tab) return;
+            filterTabs.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
+            tab.classList.add('active');
+            currentFilter = tab.dataset.type;
+            renderList();
+        });
+
+        searchInput.addEventListener('input', renderList);
+
+        // Render all status codes initially
+        renderList();
+    </script>
+</body>
+</html>

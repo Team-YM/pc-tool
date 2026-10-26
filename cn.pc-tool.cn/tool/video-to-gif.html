@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>视频转GIF</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="免费在线视频转GIF工具，将视频转换为GIF动图，可自定义帧率和尺寸，纯浏览器端处理，安全免费。">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="视频转GIF | PC-TOOL">
+    <meta property="og:description" content="免费在线工具集合——图片转换、视频压缩、音频转格式、图片抠图……每一个功能都为效率而生，完全免费，为人民服务！">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/video-to-gif.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="zh_CN">
+    <script src="https://cdn.jsdelivr.net/npm/gifshot@0.4.5/dist/gifshot.min.js"></script>
+    <style>
+        #videoInput { display: none; }
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 3px;
+            margin: 15px 0;
+            display: none;
+            overflow: hidden;
+        }
+        .progress-bar .fill {
+            height: 100%;
+            background: linear-gradient(90deg, #818cf8, #34d399);
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .preview-video {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            display: none;
+            margin: 10px auto;
+        }
+        .option-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .option-row label {
+            color: #a1a1aa;
+            font-size: 14px;
+        }
+        .option-row input[type="range"] {
+            width: 120px;
+        }
+        .option-row span {
+            color: #e4e4e7;
+            font-size: 14px;
+            min-width: 40px;
+        }
+    </style>
+</head>
+<body>
+<canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <a href="../index.html" class="back-link">← 返回转换工具首页</a>
+
+    <div class="container">
+        <h1>视频转GIF</h1>
+        <p>上传视频文件，自动转换为GIF动图</p>
+
+        <div class="upload-area" id="uploadArea">
+            <p>点击或拖拽上传视频</p>
+            <input type="file" id="videoInput" accept="video/*">
+        </div>
+
+        <div id="videoInfo" style="text-align:center; margin:15px 0; display:none;">
+            <p id="fileName" style="color:#e4e4e7;"></p>
+        </div>
+
+        <video id="previewVideo" class="preview-video" controls></video>
+
+        <div class="option-row">
+            <label>帧率:</label>
+            <input type="range" id="fpsRange" min="2" max="20" value="10" step="1">
+            <span id="fpsVal">10 fps</span>
+        </div>
+
+        <div class="option-row">
+            <label>宽度:</label>
+            <input type="range" id="widthRange" min="100" max="640" value="320" step="10">
+            <span id="widthVal">320px</span>
+        </div>
+
+        <div class="progress-bar" id="progressBar">
+            <div class="fill" id="progressFill"></div>
+        </div>
+        <p id="progressText" style="text-align:center; color:#a1a1aa; font-size:13px; margin-top:4px; display:none;"></p>
+
+        <div style="text-align:center;">
+            <button class="convert-btn" id="convertBtn">开始转换</button>
+            <button class="download-btn" id="downloadBtn">下载 GIF</button>
+        </div>
+
+        <div class="result-box" id="resultBox">
+            <h3>转换完成</h3>
+            <div class="size-info" id="sizeInfo"></div>
+            <img id="gifPreview" style="max-width:100%; border-radius:8px; margin-top:10px;">
+        </div>
+
+        <div class="contact-tip">面向大众，有任何想要的功能或者意见，请联系QQ交流群：<strong>1121812272</strong></div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const videoInput = document.getElementById('videoInput');
+        const convertBtn = document.getElementById('convertBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const resultBox = document.getElementById('resultBox');
+        const sizeInfo = document.getElementById('sizeInfo');
+        const videoInfo = document.getElementById('videoInfo');
+        const fileName = document.getElementById('fileName');
+        const previewVideo = document.getElementById('previewVideo');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const gifPreview = document.getElementById('gifPreview');
+        const fpsRange = document.getElementById('fpsRange');
+        const fpsVal = document.getElementById('fpsVal');
+        const widthRange = document.getElementById('widthRange');
+        const widthVal = document.getElementById('widthVal');
+
+        let videoFile = null, gifUrl = null;
+
+        fpsRange.oninput = () => fpsVal.textContent = fpsRange.value + ' fps';
+        widthRange.oninput = () => widthVal.textContent = widthRange.value + 'px';
+
+        uploadArea.onclick = () => videoInput.click();
+        setupDragDrop(uploadArea, (files) => {
+            if (files[0]?.type.startsWith('video/')) handleVideo(files[0]);
+            else showToast('请上传视频文件');
+        });
+
+        videoInput.onchange = (e) => handleVideo(e.target.files[0]);
+
+        function handleVideo(f) {
+            videoFile = f;
+            fileName.textContent = '文件名：' + f.name + ' (' + formatSize(f.size) + ')';
+            videoInfo.style.display = 'block';
+            previewVideo.src = URL.createObjectURL(f);
+            previewVideo.style.display = 'block';
+            resultBox.style.display = 'none';
+            downloadBtn.style.display = 'none';
+        }
+
+        convertBtn.onclick = async () => {
+            if (!videoFile) { showToast('请先上传视频'); return; }
+
+            convertBtn.disabled = true;
+            convertBtn.textContent = '截取帧中...';
+            progressBar.style.display = 'block';
+            progressText.style.display = 'block';
+            progressText.textContent = '正在逐帧截取...';
+            progressFill.style.width = '0%';
+            resultBox.style.display = 'none';
+            downloadBtn.style.display = 'none';
+
+            try {
+                const fps = parseInt(fpsRange.value);
+                const outWidth = parseInt(widthRange.value);
+
+                // 创建隐藏 video 元素用于逐帧截取（不影响页面可见视频）
+                const hiddenVideo = document.createElement('video');
+                hiddenVideo.preload = 'auto';
+                hiddenVideo.muted = true;
+                hiddenVideo.playsInline = true;
+                hiddenVideo.setAttribute('playsinline', '');
+                // 复用同样的 Blob URL
+                hiddenVideo.src = previewVideo.src;
+
+                await new Promise((resolve, reject) => {
+                    hiddenVideo.onloadedmetadata = resolve;
+                    hiddenVideo.onerror = () => reject(new Error('视频加载失败'));
+                });
+
+                const outHeight = Math.round(hiddenVideo.videoHeight / hiddenVideo.videoWidth * outWidth);
+                const duration = hiddenVideo.duration;
+                const frameInterval = 1 / fps;
+                const numFrames = Math.max(1, Math.floor(duration / frameInterval));
+                const delay = Math.round(frameInterval * 100);
+
+                const canvas = document.createElement('canvas');
+                canvas.width = outWidth;
+                canvas.height = outHeight;
+                const ctx = canvas.getContext('2d');
+
+                const frames = [];
+                for (let i = 0; i < numFrames; i++) {
+                    hiddenVideo.currentTime = i * frameInterval;
+                    await new Promise((r) => {
+                        hiddenVideo.onseeked = r;
+                    });
+                    ctx.drawImage(hiddenVideo, 0, 0, outWidth, outHeight);
+                    frames.push(canvas.toDataURL('image/jpeg', 0.7));
+
+                    const pct = Math.round((i + 1) / numFrames * 80); // 截帧占80%
+                    progressFill.style.width = pct + '%';
+                }
+
+                // 释放隐藏 video
+                hiddenVideo.src = '';
+                hiddenVideo.load();
+
+                // 编码阶段
+                progressText.textContent = '正在编码 GIF...';
+                progressFill.style.width = '85%';
+
+                const encodingTimeout = setTimeout(() => {
+                    convertBtn.disabled = false;
+                    convertBtn.textContent = '开始转换';
+                    progressBar.style.display = 'none';
+                    progressText.style.display = 'none';
+                    showToast('GIF 编码超时，请尝试降低帧率或宽度');
+                }, 30000);
+
+                gifshot.createGIF({
+                    images: frames,
+                    gifWidth: outWidth,
+                    gifHeight: outHeight,
+                    interval: frameInterval
+                }, function (obj) {
+                    clearTimeout(encodingTimeout);
+                    convertBtn.disabled = false;
+                    convertBtn.textContent = '开始转换';
+                    progressBar.style.display = 'none';
+                    progressText.style.display = 'none';
+
+                    if (obj.error || !obj.image) {
+                        showToast('转换失败：' + (obj.errorMsg || obj.error || '编码失败'));
+                        return;
+                    }
+
+                    const base64 = obj.image;
+                    const byteString = atob(base64.split(',')[1]);
+                    const ab = new ArrayBuffer(byteString.length);
+                    const ia = new Uint8Array(ab);
+                    for (let i = 0; i < byteString.length; i++) {
+                        ia[i] = byteString.charCodeAt(i);
+                    }
+                    const gifBlob = new Blob([ab], { type: 'image/gif' });
+                    gifUrl = URL.createObjectURL(gifBlob);
+
+                    sizeInfo.innerHTML = '原始视频：' + formatSize(videoFile.size) + '<br>转换GIF：<span class="highlight">' + formatSize(gifBlob.size) + '</span><br>帧数：<span class="highlight">' + numFrames + '</span> 帧率：<span class="highlight">' + fps + ' fps</span>';
+                    resultBox.style.display = 'block';
+                    downloadBtn.style.display = 'inline-block';
+                    gifPreview.src = base64;
+                });
+            } catch (e) {
+                convertBtn.disabled = false;
+                convertBtn.textContent = '开始转换';
+                progressBar.style.display = 'none';
+                progressText.style.display = 'none';
+                showToast('转换失败：' + e.message);
+            }
+        };
+
+        downloadBtn.onclick = () => {
+            if (!gifUrl) return;
+            const a = document.createElement('a');
+            a.href = gifUrl;
+            a.download = (videoFile?.name || 'video').replace(/\.\w+$/, '') + '.gif';
+            a.click();
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JWT Decoder Online | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="Decode JWT tokens online: inspect the header and payload in real time with JSON syntax highlighting, automatic conversion of exp/iat/nbf timestamps and expiry status checks. Fully client-side, signature is not verified.">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="JWT Decoder Online | PC-TOOL">
+    <meta property="og:description" content="Free online JWT decoder that parses token structure and timestamps in real time, entirely in your browser.">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/jwt-decode.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="en_US">
+    <style>
+        .container {
+            max-width: 780px;
+        }
+        /* Input area */
+        .token-input {
+            width: 100%;
+            min-height: 110px;
+            margin-top: 20px;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: #e4e4e7;
+            font-size: 0.8125rem;
+            font-family: Consolas, Monaco, "Courier New", monospace;
+            line-height: 1.6;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.25s ease;
+            word-break: break-all;
+        }
+        .token-input:focus {
+            border-color: rgba(129, 140, 248, 0.5);
+        }
+        .token-input::placeholder {
+            color: #71717a;
+        }
+        /* Action row */
+        .action-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 14px;
+            flex-wrap: wrap;
+        }
+        .ctrl-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #e4e4e7;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.8125rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .ctrl-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-1px);
+        }
+        .ctrl-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .ctrl-btn.primary {
+            background: rgba(99, 102, 241, 0.25);
+            border-color: rgba(129, 140, 248, 0.4);
+            color: #c7d2fe;
+        }
+        .ctrl-btn.primary:hover:not(:disabled) {
+            background: rgba(99, 102, 241, 0.45);
+            border-color: rgba(129, 140, 248, 0.7);
+        }
+        .hint-text {
+            font-size: 0.75rem;
+            color: #71717a;
+            margin-left: auto;
+        }
+        /* Error message */
+        .error-box {
+            display: none;
+            margin-top: 16px;
+            padding: 12px 16px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            border-radius: 10px;
+            color: #fca5a5;
+            font-size: 0.875rem;
+            line-height: 1.6;
+            word-break: break-all;
+        }
+        /* Algorithm/type info bar */
+        .meta-bar {
+            display: none;
+            margin-top: 16px;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            font-size: 0.875rem;
+            color: #a1a1aa;
+            flex-wrap: wrap;
+            gap: 6px 24px;
+        }
+        .meta-bar .meta-item strong {
+            color: #c7d2fe;
+            font-weight: 600;
+        }
+        /* Signature warning bar */
+        .warn-banner {
+            display: none;
+            margin-top: 12px;
+            padding: 10px 16px;
+            background: rgba(234, 179, 8, 0.1);
+            border: 1px solid rgba(234, 179, 8, 0.3);
+            border-radius: 10px;
+            color: #fde047;
+            font-size: 0.8125rem;
+        }
+        /* Result panel */
+        .result-panels {
+            display: none;
+            margin-top: 20px;
+            gap: 16px;
+            flex-direction: column;
+        }
+        .panel {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        .panel-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .panel-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #e4e4e7;
+        }
+        .panel-title .sub {
+            color: #71717a;
+            font-weight: 400;
+            font-size: 0.75rem;
+            margin-left: 8px;
+        }
+        .copy-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #a1a1aa;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .copy-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #e4e4e7;
+        }
+        .panel-body {
+            margin: 0;
+            padding: 14px 16px;
+            max-height: 320px;
+            overflow: auto;
+            font-family: Consolas, Monaco, "Courier New", monospace;
+            font-size: 0.8125rem;
+            line-height: 1.7;
+            color: #d4d4d8;
+            white-space: pre;
+        }
+        /* JSON syntax highlighting colors */
+        .tok-key { color: #818cf8; }
+        .tok-str { color: #6ee7b7; }
+        .tok-num { color: #fbbf24; }
+        .tok-bool { color: #f472b6; }
+        .tok-null { color: #f472b6; }
+        /* Timestamp annotations */
+        .ts-note {
+            color: #71717a;
+            font-style: italic;
+        }
+        .ts-status {
+            display: inline-block;
+            padding: 0 8px;
+            margin-left: 6px;
+            border-radius: 999px;
+            font-size: 0.6875rem;
+            font-style: normal;
+            vertical-align: 1px;
+        }
+        .ts-status.expired {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #f87171;
+        }
+        .ts-status.valid {
+            background: rgba(52, 211, 153, 0.12);
+            border: 1px solid rgba(52, 211, 153, 0.4);
+            color: #34d399;
+        }
+        .ts-status.pending {
+            background: rgba(251, 191, 36, 0.12);
+            border: 1px solid rgba(251, 191, 36, 0.4);
+            color: #fbbf24;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <!-- Back-to-home button in a unified position -->
+    <a href="../index.html" class="back-link">← Back to Tools</a>
+
+    <div class="container">
+        <h1>JWT Decoder</h1>
+        <p>Paste a JWT token to decode its header and payload in real time, with automatic timestamp conversion and expiry status checks.</p>
+
+        <!-- Token input -->
+        <textarea id="tokenInput" class="token-input" rows="4"
+            placeholder="Paste a JWT token such as eyJhbGciOi...xxx.yyy.zzz — it is decoded automatically as you type" spellcheck="false"></textarea>
+
+        <!-- Action buttons -->
+        <div class="action-row">
+            <button class="ctrl-btn primary" id="formatCopyBtn" disabled>Format &amp; Copy</button>
+            <button class="ctrl-btn" id="clearBtn">Clear</button>
+            <span class="hint-text">Ctrl+Enter to parse again</span>
+        </div>
+
+        <!-- Error message -->
+        <div id="errorBox" class="error-box"></div>
+
+        <!-- Algorithm and type info -->
+        <div id="metaBar" class="meta-bar">
+            <span class="meta-item">Algorithm: <strong id="algText">--</strong></span>
+            <span class="meta-item">Token type: <strong id="typText">--</strong></span>
+        </div>
+
+        <!-- Signature warning -->
+        <div id="warnBanner" class="warn-banner">Signature verification requires a secret key. This tool only decodes the token and does not verify the signature, so do not rely on it to judge whether a token is authentic.</div>
+
+        <!-- Decoded result panel -->
+        <div id="resultPanels" class="result-panels">
+            <div class="panel">
+                <div class="panel-head">
+                    <span class="panel-title">Header<span class="sub">header data</span></span>
+                    <button class="copy-btn" id="copyHeaderBtn">Copy JSON</button>
+                </div>
+                <pre class="panel-body" id="headerOut"></pre>
+            </div>
+            <div class="panel">
+                <div class="panel-head">
+                    <span class="panel-title">Payload<span class="sub">payload data</span></span>
+                    <button class="copy-btn" id="copyPayloadBtn">Copy JSON</button>
+                </div>
+                <pre class="panel-body" id="payloadOut"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            // ---------- DOM references ----------
+            const tokenInput = document.getElementById('tokenInput');
+            const errorBox = document.getElementById('errorBox');
+            const metaBar = document.getElementById('metaBar');
+            const warnBanner = document.getElementById('warnBanner');
+            const algText = document.getElementById('algText');
+            const typText = document.getElementById('typText');
+            const resultPanels = document.getElementById('resultPanels');
+            const headerOut = document.getElementById('headerOut');
+            const payloadOut = document.getElementById('payloadOut');
+            const formatCopyBtn = document.getElementById('formatCopyBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const copyHeaderBtn = document.getElementById('copyHeaderBtn');
+            const copyPayloadBtn = document.getElementById('copyPayloadBtn');
+
+            // Cache of the current decoded result (used for copying)
+            let currentHeader = null;
+            let currentPayload = null;
+
+            // ---------- Base64URL decoding ----------
+            // Convert Base64URL (- and _ characters, padding optional) to a UTF-8 string
+            function base64UrlDecode(segment) {
+                // Pre-check that only valid Base64URL characters are present
+                if (!/^[A-Za-z0-9_-]*$/.test(segment)) {
+                    throw new Error('Contains invalid Base64URL characters');
+                }
+                // Replace URL-safe characters with standard Base64 characters
+                let b64 = segment.replace(/-/g, '+').replace(/_/g, '/');
+                // Pad to a multiple of 4
+                const pad = b64.length % 4;
+                if (pad === 1) {
+                    throw new Error('Invalid Base64 length (remainder 1 when divided by 4)');
+                }
+                if (pad === 2) b64 += '==';
+                else if (pad === 3) b64 += '=';
+                // Decode bytes first, then convert to UTF-8 to avoid garbled multi-byte characters
+                const binary = atob(b64);
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) {
+                    bytes[i] = binary.charCodeAt(i);
+                }
+                return new TextDecoder('utf-8').decode(bytes);
+            }
+
+            // ---------- HTML escaping ----------
+            function escapeHtml(str) {
+                return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            }
+
+            // ---------- JSON syntax highlighting (simple regex implementation) ----------
+            function highlightJson(json) {
+                const escaped = escapeHtml(json);
+                return escaped.replace(
+                    /("(?:\\u[0-9a-fA-F]{4}|\\[^u]|[^\\"])*")(\s*:)?|\b(?:true|false)\b|\bnull\b|-?\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b/g,
+                    function (match, str, colon) {
+                        let cls;
+                        if (str !== undefined) {
+                            cls = colon !== undefined ? 'key' : 'str';
+                        } else if (match === 'true' || match === 'false') {
+                            cls = 'bool';
+                        } else if (match === 'null') {
+                            cls = 'null';
+                        } else {
+                            cls = 'num';
+                        }
+                        return '<span class="tok-' + cls + '">' + match + '</span>';
+                    }
+                );
+            }
+
+            // ---------- Time helpers ----------
+            const TIME_LABELS = { exp: 'Expires', iat: 'Issued at', nbf: 'Not before' };
+
+            // Convert a timestamp to a readable local time string
+            function formatLocaltime(ts) {
+                const d = new Date(ts * 1000);
+                if (isNaN(d.gettime())) return 'Invalid time';
+                const p = function (n) { return String(n).padStart(2, '0'); };
+                return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) +
+                    ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+            }
+
+            // Relative time description (e.g. "3 days ago")
+            function relativetime(ts) {
+                const diffSec = Math.floor(Date.now() / 1000) - ts;
+                const abs = Math.abs(diffSec);
+                const suffix = diffSec >= 0 ? ' ago' : ' from now';
+                if (abs < 60) return abs + ' s' + suffix;
+                if (abs < 3600) return Math.floor(abs / 60) + ' min' + suffix;
+                if (abs < 86400) return Math.floor(abs / 3600) + ' h' + suffix;
+                return Math.floor(abs / 86400) + ' d' + suffix;
+            }
+
+            // Build the status badge HTML from the claim name and timestamp
+            function timestatusHtml(key, ts) {
+                const local = formatLocaltime(ts);
+                const label = TIME_LABELS[key];
+                let status = '';
+                if (key === 'exp') {
+                    status = ts < Date.now() / 1000
+                        ? '<span class="ts-status expired">Expired</span>'
+                        : '<span class="ts-status valid">Valid</span>';
+                } else if (key === 'nbf') {
+                    status = ts > Date.now() / 1000
+                        ? '<span class="ts-status pending">Not yet valid</span>'
+                        : '<span class="ts-status valid">In effect</span>';
+                }
+                return '<span class="ts-note">  // ' + label + ': ' + local +
+                    ' (' + relativetime(ts) + ')' + status + '</span>';
+            }
+
+            // Annotate each line of the highlighted JSON with a timestamp (matches lines like "exp": 1234567890)
+            function annotatetimes(highlighted) {
+                return highlighted.split('\n').map(function (line) {
+                    const m = line.match(/^(\s*<span class="tok-key">"(exp|iat|nbf)":<\/span>\s*<span class="tok-num">)(-?\d+)(<\/span>,?)$/);
+                    if (!m) return line;
+                    return m[1] + m[3] + m[4] + timestatusHtml(m[2], parseInt(m[3], 10));
+                }).join('\n');
+            }
+
+            // ---------- Copy helper ----------
+            function copyText(text, btn, okText) {
+                const done = function () {
+                    const old = btn.textContent;
+                    btn.textContent = okText || 'Copied!';
+                    setTimeout(function () { btn.textContent = old; }, 1500);
+                };
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(done).catch(function () {
+                        fallbackCopy(text); done();
+                    });
+                } else {
+                    fallbackCopy(text); done();
+                }
+            }
+
+            // Fallback copy for older browsers
+            function fallbackCopy(text) {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                try { document.execCommand('copy'); } catch (e) { /* ignore */ }
+                document.body.removeChild(ta);
+            }
+
+            // ---------- UI state handling ----------
+            function showError(msg) {
+                currentHeader = null;
+                currentPayload = null;
+                errorBox.textContent = 'Parsing failed: ' + msg;
+                errorBox.style.display = 'block';
+                metaBar.style.display = 'none';
+                warnBanner.style.display = 'none';
+                resultPanels.style.display = 'none';
+                formatCopyBtn.disabled = true;
+            }
+
+            function clearOutputs() {
+                currentHeader = null;
+                currentPayload = null;
+                errorBox.style.display = 'none';
+                metaBar.style.display = 'none';
+                warnBanner.style.display = 'none';
+                resultPanels.style.display = 'none';
+                formatCopyBtn.disabled = true;
+            }
+
+            // ---------- Core parsing flow ----------
+            function parseToken() {
+                const raw = tokenInput.value.trim();
+                if (!raw) {
+                    clearOutputs();
+                    return;
+                }
+
+                // Validate the number of segments
+                const parts = raw.split('.');
+                if (parts.length !== 3) {
+                    showError('A JWT must consist of 3 parts (Header.Payload.Signature); got ' + parts.length + ' parts.');
+                    return;
+                }
+                if (!parts[0] || !parts[1]) {
+                    showError('The Header or Payload part is empty, so this is not a valid JWT.');
+                    return;
+                }
+
+                // Decode and parse the JSON
+                let headerObj, payloadObj;
+                try {
+                    headerObj = JSON.parse(base64UrlDecode(parts[0]));
+                } catch (e) {
+                    showError('Failed to parse the Header part (' + (e.message || 'invalid Base64 or JSON') + ').');
+                    return;
+                }
+                try {
+                    payloadObj = JSON.parse(base64UrlDecode(parts[1]));
+                } catch (e) {
+                    showError('Failed to parse the Payload part (' + (e.message || 'invalid Base64 or JSON') + ').');
+                    return;
+                }
+                if (typeof headerObj !== 'object' || headerObj === null || Array.isArray(headerObj)) {
+                    showError('The decoded Header is not a JSON object.');
+                    return;
+                }
+                if (typeof payloadObj !== 'object' || payloadObj === null || Array.isArray(payloadObj)) {
+                    showError('The decoded Payload is not a JSON object.');
+                    return;
+                }
+
+                currentHeader = headerObj;
+                currentPayload = payloadObj;
+
+                // Algorithm and type info
+                algText.textContent = headerObj.alg !== undefined ? String(headerObj.alg) : 'Not specified';
+                typText.textContent = headerObj.typ !== undefined ? String(headerObj.typ) : 'Not specified';
+
+                // Render the highlighted result (with timestamp annotations on the payload)
+                headerOut.innerHTML = highlightJson(JSON.stringify(headerObj, null, 2));
+                payloadOut.innerHTML = annotatetimes(highlightJson(JSON.stringify(payloadObj, null, 2)));
+
+                // Show the result
+                errorBox.style.display = 'none';
+                metaBar.style.display = 'flex';
+                warnBanner.style.display = 'block';
+                resultPanels.style.display = 'flex';
+                formatCopyBtn.disabled = false;
+            }
+
+            // ---------- Event bindings ----------
+            // Parse in real time as the user types
+            tokenInput.addEventListener('input', parseToken);
+
+            // Re-parse with Ctrl+Enter
+            tokenInput.addEventListener('keydown', function (e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    parseToken();
+                }
+            });
+
+            // Clear button
+            clearBtn.addEventListener('click', function () {
+                tokenInput.value = '';
+                clearOutputs();
+                tokenInput.focus();
+            });
+
+            // Copy Header
+            copyHeaderBtn.addEventListener('click', function () {
+                if (currentHeader) {
+                    copyText(JSON.stringify(currentHeader, null, 2), copyHeaderBtn);
+                }
+            });
+
+            // Copy Payload
+            copyPayloadBtn.addEventListener('click', function () {
+                if (currentPayload) {
+                    copyText(JSON.stringify(currentPayload, null, 2), copyPayloadBtn);
+                }
+            });
+
+            // Format and copy the full {header, payload}
+            formatCopyBtn.addEventListener('click', function () {
+                if (currentHeader && currentPayload) {
+                    const full = JSON.stringify({ header: currentHeader, payload: currentPayload }, null, 2);
+                    copyText(full, formatCopyBtn, 'Copied!');
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

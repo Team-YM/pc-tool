@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base64 Encoder and Decoder</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="Online Base64 encoder and decoder. Convert text to Base64 and back instantly, copy results with one click, and everything runs locally in your browser for full privacy.">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .container h1 {
+            color: #e4e4e7;
+            margin-bottom: 10px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .container > p {
+            color: #a1a1aa;
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        /* Mode switch tabs */
+        .tab-switch {
+            display: flex;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            border: none;
+            background: transparent;
+            color: #a1a1aa;
+            font-size: 15px;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            background: rgba(255, 255, 255, 0.12);
+            color: #ffffff;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .box-section {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 18px;
+            text-align: left;
+        }
+
+        .box-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #71717a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .textarea-styled {
+            width: 100%;
+            height: 130px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 12px 14px;
+            color: #e4e4e7;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: vertical;
+            outline: none;
+            font-family: monospace, -apple-system, sans-serif;
+            transition: border-color 0.2s;
+        }
+
+        .textarea-styled:focus {
+            border-color: rgba(129, 140, 248, 0.5);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 12px 20px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .primary-btn {
+            background: #818cf8;
+            color: #ffffff;
+            box-shadow: 0 4px 14px rgba(129, 140, 248, 0.3);
+        }
+
+        .primary-btn:hover {
+            background: #6366f1;
+            transform: translateY(-1px);
+        }
+
+        .secondary-btn {
+            background: rgba(255, 255, 255, 0.08);
+            color: #d4d4d8;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .secondary-btn:hover {
+            background: rgba(255, 255, 255, 0.14);
+            color: #ffffff;
+        }
+
+        .copy-btn {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: rgba(16, 185, 129, 0.25);
+        }
+
+        .copy-btn.copied {
+            background: #10b981;
+            color: #ffffff;
+        }
+
+        .error-msg {
+            color: #f87171;
+            font-size: 13px;
+            margin-top: 4px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <a href="../index.html" class="back-link">← Back</a>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <div class="container">
+        <h1>Base64 Encoder / Decoder</h1>
+        <p>Encode and decode Base64 entirely in your browser. Full UTF-8 support, and your data never leaves your device.</p>
+
+        <div class="tab-switch">
+            <button class="tab-btn active" id="tabEncode">Text ➔ Base64</button>
+            <button class="tab-btn" id="tabDecode">Base64 ➔ Text</button>
+        </div>
+
+        <div class="box-section">
+            <div class="box-label">
+                <span id="inputLabel">Text to encode:</span>
+                <span id="inputLen" style="font-size:12px; font-weight:normal; color:#71717a;">0 chars</span>
+            </div>
+            <textarea class="textarea-styled" id="inputText" placeholder="Enter or paste text here..."></textarea>
+        </div>
+
+        <div class="btn-group">
+            <button class="action-btn primary-btn" id="convertBtn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                <span id="convertBtnText">Encode</span>
+            </button>
+            <button class="action-btn secondary-btn" id="clearBtn">Clear</button>
+        </div>
+
+        <div class="box-section">
+            <div class="box-label">
+                <span id="outputLabel">Result:</span>
+                <button class="copy-btn" id="copyBtn" style="display:none;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    <span id="copyText">Copy Result</span>
+                </button>
+            </div>
+            <textarea class="textarea-styled" id="outputText" placeholder="The result will appear here..." readonly></textarea>
+            <div class="error-msg" id="errorMsg"></div>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        let mode = 'encode'; // 'encode' or 'decode'
+
+        const tabEncode = document.getElementById('tabEncode');
+        const tabDecode = document.getElementById('tabDecode');
+        const inputLabel = document.getElementById('inputLabel');
+        const outputLabel = document.getElementById('outputLabel');
+        const convertBtnText = document.getElementById('convertBtnText');
+        const inputText = document.getElementById('inputText');
+        const outputText = document.getElementById('outputText');
+        const convertBtn = document.getElementById('convertBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const copyText = document.getElementById('copyText');
+        const errorMsg = document.getElementById('errorMsg');
+        const inputLen = document.getElementById('inputLen');
+
+        // UTF-8 aware encode/decode helpers (btoa/atob only handle Latin-1)
+        function utf8ToBase64(str) {
+            return window.btoa(unescape(encodeURIComponent(str)));
+        }
+
+        function base64ToUtf8(str) {
+            return decodeURIComponent(escape(window.atob(str.trim())));
+        }
+
+        function setMode(newMode) {
+            mode = newMode;
+            errorMsg.style.display = 'none';
+            if (mode === 'encode') {
+                tabEncode.classList.add('active');
+                tabDecode.classList.remove('active');
+                inputLabel.textContent = 'Text to encode:';
+                outputLabel.textContent = 'Base64 result:';
+                convertBtnText.textContent = 'Encode';
+                inputText.placeholder = 'Enter or paste text here...';
+            } else {
+                tabDecode.classList.add('active');
+                tabEncode.classList.remove('active');
+                inputLabel.textContent = 'Base64 string to decode:';
+                outputLabel.textContent = 'Decoded text:';
+                convertBtnText.textContent = 'Decode';
+                inputText.placeholder = 'Enter or paste a Base64 string (e.g. 5L2g5aW9)...';
+            }
+            if (inputText.value.trim()) {
+                processConvert();
+            }
+        }
+
+        tabEncode.addEventListener('click', () => setMode('encode'));
+        tabDecode.addEventListener('click', () => setMode('decode'));
+
+        inputText.addEventListener('input', () => {
+            inputLen.textContent = inputText.value.length + ' chars';
+            errorMsg.style.display = 'none';
+        });
+
+        function processConvert() {
+            const val = inputText.value;
+            errorMsg.style.display = 'none';
+            if (!val) {
+                outputText.value = '';
+                copyBtn.style.display = 'none';
+                return;
+            }
+
+            try {
+                if (mode === 'encode') {
+                    outputText.value = utf8ToBase64(val);
+                } else {
+                    outputText.value = base64ToUtf8(val);
+                }
+                copyBtn.style.display = outputText.value ? 'inline-flex' : 'none';
+            } catch (e) {
+                outputText.value = '';
+                copyBtn.style.display = 'none';
+                errorMsg.style.display = 'block';
+                errorMsg.textContent = mode === 'decode' ? 'Invalid Base64 input - decoding failed. Please check what you pasted.' : 'Encoding failed: ' + e.message;
+            }
+        }
+
+        convertBtn.addEventListener('click', processConvert);
+
+        clearBtn.addEventListener('click', () => {
+            inputText.value = '';
+            outputText.value = '';
+            inputLen.textContent = '0 chars';
+            copyBtn.style.display = 'none';
+            errorMsg.style.display = 'none';
+        });
+
+        copyBtn.addEventListener('click', () => {
+            if (!outputText.value) return;
+            navigator.clipboard.writeText(outputText.value).then(() => {
+                copyBtn.classList.add('copied');
+                copyText.textContent = 'Copied!';
+                setTimeout(() => {
+                    copyBtn.classList.remove('copied');
+                    copyText.textContent = 'Copy Result';
+                }, 1800);
+            }).catch(() => {
+                outputText.select();
+                document.execCommand('copy');
+                copyText.textContent = 'Copied!';
+                setTimeout(() => { copyText.textContent = 'Copy Result'; }, 1800);
+            });
+        });
+    </script>
+</body>
+</html>

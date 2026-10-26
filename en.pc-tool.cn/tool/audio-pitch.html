@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Pitch Shifter</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="Free online audio pitch shifter supporting pitch up/down (-12 to +12 semitones), male/female voice shifts and fun presets. Processed entirely in your browser, fast and secure.">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="Audio Pitch Shifter | PC-TOOL">
+    <meta property="og:description" content="Free online tools — audio pitch shifting, audio speed adjustment, format conversion… every feature built for productivity, completely free, made for everyone!">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/audio-pitch.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="en_US">
+    <script src="https://unpkg.com/lamejs@1.2.1/lame.min.js"></script>
+    <style>
+        .container {
+            max-width: 680px;
+        }
+        #audioInput { display: none; }
+
+        .pitch-presets {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin: 16px 0 10px;
+        }
+
+        .pitch-btn {
+            padding: 6px 13px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.04);
+            color: #d4d4d8;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .pitch-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .pitch-btn.active {
+            background: rgba(129, 140, 248, 0.25);
+            border-color: rgba(129, 140, 248, 0.6);
+            color: #c4b5fd;
+            font-weight: bold;
+        }
+
+        .slider-box {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            padding: 16px 20px;
+            margin: 15px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .slider-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+        }
+
+        .slider-row label {
+            color: #a1a1aa;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+        .slider-row input[type="range"] {
+            flex: 1;
+        }
+
+        .pitch-val-display {
+            color: #38bdf8;
+            font-size: 18px;
+            font-weight: bold;
+            min-width: 80px;
+            text-align: right;
+        }
+
+        .options-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            color: #a1a1aa;
+            font-size: 13px;
+            flex-wrap: wrap;
+        }
+
+        .options-row label {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+
+        .options-row select {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #e4e4e7;
+            padding: 4px 8px;
+            border-radius: 6px;
+            outline: none;
+        }
+
+        .preview-box {
+            display: none;
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .preview-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .play-btn {
+            padding: 8px 18px;
+            border-radius: 6px;
+            border: 1px solid rgba(129, 140, 248, 0.4);
+            background: rgba(129, 140, 248, 0.15);
+            color: #c4b5fd;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .play-btn:hover {
+            background: rgba(129, 140, 248, 0.3);
+            color: #fff;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 3px;
+            margin: 15px 0 6px;
+            display: none;
+            overflow: hidden;
+        }
+
+        .progress-bar .fill {
+            height: 100%;
+            background: linear-gradient(90deg, #818cf8, #34d399);
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.2s;
+        }
+
+        .status-text {
+            font-size: 13px;
+            color: #a1a1aa;
+            text-align: center;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <a href="../index.html" class="back-link">← Back to Tools</a>
+
+    <div class="container">
+        <h1>Audio Pitch Shifter</h1>
+        <p>Professional pitch shifter with male/female voice shifts and semitone up/down, keeping the original duration unchanged</p>
+
+        <div class="upload-area" id="uploadArea">
+            <p>Click or drag to upload an audio file</p>
+            <input type="file" id="audioInput" accept="audio/*">
+        </div>
+
+        <div id="audioMeta" style="text-align:center; margin:10px 0; display:none;">
+            <p id="fileName" style="color:#e4e4e7; font-size:14px;"></p>
+            <p id="durationInfo" style="color:#71717a; font-size:13px;"></p>
+        </div>
+
+        <div id="settingsBox" style="display:none;">
+            <div class="pitch-presets">
+                <button class="pitch-btn" data-semitones="-6">-6 (deep male voice)</button>
+                <button class="pitch-btn" data-semitones="-3">-3 (low male voice)</button>
+                <button class="pitch-btn" data-semitones="-1">-1 semitone</button>
+                <button class="pitch-btn active" data-semitones="0">0 (original)</button>
+                <button class="pitch-btn" data-semitones="1">+1 semitone</button>
+                <button class="pitch-btn" data-semitones="3">+3 (female / higher)</button>
+                <button class="pitch-btn" data-semitones="6">+6 (cute / high pitch)</button>
+                <button class="pitch-btn" data-semitones="12">+12 (octave up)</button>
+            </div>
+
+            <div class="slider-box">
+                <div class="slider-row">
+                    <label>Semitones:</label>
+                    <input type="range" id="pitchSlider" min="-12" max="12" step="0.5" value="0">
+                    <span class="pitch-val-display" id="pitchDisplay">0 semitone</span>
+                </div>
+                <div class="options-row">
+                    <label>
+                        <input type="checkbox" id="keepDurationCheck" checked> Keep original duration (pitch only, no speed change)
+                    </label>
+                    <label>Export format:
+                        <select id="outputFormat">
+                            <option value="wav" selected>WAV format (lossless / recommended)</option>
+                            <option value="mp3">MP3 format (smaller size)</option>
+                        </select>
+                    </label>
+                </div>
+            </div>
+
+            <div class="preview-box" id="previewBox">
+                <div style="font-size:13px; color:#a1a1aa; margin-bottom:6px;">Pitch shift preview</div>
+                <div class="preview-controls">
+                    <button class="play-btn" id="playpreviewBtn">▶ Preview current pitch effect</button>
+                    <button class="play-btn" id="stoppreviewBtn" style="display:none;">⏹ Stop preview</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="progress-bar" id="progressBar">
+            <div class="fill" id="progressFill"></div>
+        </div>
+        <div class="status-text" id="statusText">Processing...</div>
+
+        <div style="text-align:center; margin-top:16px;">
+            <button class="convert-btn" id="startBtn" style="display:none;">Start Pitch Shift & Export</button>
+            <button class="download-btn" id="downloadBtn">Download Pitch-Shifted Audio</button>
+        </div>
+
+        <div class="result-box" id="resultBox">
+            <h3>Pitch Shift Export Complete</h3>
+            <div class="size-info" id="sizeInfo"></div>
+            <audio id="resultaudio" controls style="width:100%; margin-top:10px;"></audio>
+        </div>
+
+        <div class="contact-tip">For feature requests or feedback, join our Discord: <a href="https://discord.gg/wjvS3efTj" target="_blank" rel="noopener noreferrer">https://discord.gg/wjvS3efTj</a></div>
+
+    <script src="common.js"></script>
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const audioInput = document.getElementById('audioInput');
+        const audioMeta = document.getElementById('audioMeta');
+        const fileName = document.getElementById('fileName');
+        const durationInfo = document.getElementById('durationInfo');
+        const settingsBox = document.getElementById('settingsBox');
+        const pitchButtons = document.querySelectorAll('.pitch-btn');
+        const pitchSlider = document.getElementById('pitchSlider');
+        const pitchDisplay = document.getElementById('pitchDisplay');
+        const keepDurationCheck = document.getElementById('keepDurationCheck');
+        const outputFormat = document.getElementById('outputFormat');
+        const previewBox = document.getElementById('previewBox');
+        const playpreviewBtn = document.getElementById('playpreviewBtn');
+        const stoppreviewBtn = document.getElementById('stoppreviewBtn');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        const statusText = document.getElementById('statusText');
+        const startBtn = document.getElementById('startBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const resultBox = document.getElementById('resultBox');
+        const sizeInfo = document.getElementById('sizeInfo');
+        const resultaudio = document.getElementById('resultaudio');
+
+        let audioFile = null;
+        let originalBuffer = null;
+        let currentSemitones = 0;
+        let exportedBlobUrl = null;
+        let isprocessing = false;
+        let previewSourceNode = null;
+        let previewaudioCtx = null;
+
+        uploadArea.onclick = () => audioInput.click();
+        setupDragDrop(uploadArea, (files) => {
+            const f = files[0];
+            if (f && (f.type.startsWith('audio/') || /\.(mp3|wav|ogg|m4a|flac|aac|wma)$/i.test(f.name))) {
+                handleaudio(f);
+            } else {
+                showToast('Please upload a valid audio file');
+            }
+        });
+
+        audioInput.onchange = (e) => {
+            if (e.target.files[0]) handleaudio(e.target.files[0]);
+        };
+
+        async function handleaudio(file) {
+            audioFile = file;
+            fileName.textContent = `File: ${file.name} (${formatSize(file.size)})`;
+            audioMeta.style.display = 'block';
+            stoppreview();
+
+            if (exportedBlobUrl) {
+                URL.revokeObjectURL(exportedBlobUrl);
+                exportedBlobUrl = null;
+            }
+
+            try {
+                showToast('Parsing audio file…');
+                const arrayBuffer = await file.arrayBuffer();
+                const actx = new (window.AudioContext || window.webkitAudioContext)();
+                originalBuffer = await actx.decodeAudioData(arrayBuffer);
+                actx.close();
+
+                const d = originalBuffer.duration;
+                const m = Math.floor(d / 60);
+                const s = Math.floor(d % 60);
+                durationInfo.textContent = `Audio duration: ${m}m ${s}s (${d.toFixed(1)}s) | Sample rate: ${originalBuffer.sampleRate}Hz | Channels: ${originalBuffer.numberOfChannels}`;
+
+                previewBox.style.display = 'block';
+                settingsBox.style.display = 'block';
+                startBtn.style.display = 'inline-block';
+                resultBox.style.display = 'none';
+                downloadBtn.style.display = 'none';
+                updatePitchDisplay();
+            } catch (err) {
+                console.error(err);
+                showToast('Failed to parse audio, please check the file format');
+            }
+        }
+
+        pitchButtons.forEach(btn => {
+            btn.onclick = () => {
+                pitchButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentSemitones = parseFloat(btn.dataset.semitones);
+                pitchSlider.value = currentSemitones;
+                updatePitchDisplay();
+                restartpreviewIfPlaying();
+            };
+        });
+
+        pitchSlider.oninput = () => {
+            currentSemitones = parseFloat(pitchSlider.value);
+            pitchButtons.forEach(b => {
+                b.classList.toggle('active', parseFloat(b.dataset.semitones) === currentSemitones);
+            });
+            updatePitchDisplay();
+            restartpreviewIfPlaying();
+        };
+
+        function updatePitchDisplay() {
+            const prefix = currentSemitones > 0 ? '+' : '';
+            pitchDisplay.textContent = `${prefix}${currentSemitones} semitone${Math.abs(currentSemitones) === 1 ? '' : 's'}`;
+        }
+
+        function stoppreview() {
+            if (previewSourceNode) {
+                try { previewSourceNode.stop(); } catch (e) {}
+                previewSourceNode = null;
+            }
+            if (previewaudioCtx) {
+                try { previewaudioCtx.close(); } catch (e) {}
+                previewaudioCtx = null;
+            }
+            playpreviewBtn.style.display = 'inline-block';
+            stoppreviewBtn.style.display = 'none';
+        }
+
+        function restartpreviewIfPlaying() {
+            if (previewSourceNode) {
+                playpreview();
+            }
+        }
+
+        async function playpreview() {
+            if (!originalBuffer) return;
+            stoppreview();
+
+            previewaudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const pitchFactor = Math.pow(2, currentSemitones / 12);
+
+            if (!keepDurationCheck.checked) {
+                // Keep duration unchecked: natural speed and pitch change (like a record player speeding up)
+                previewSourceNode = previewaudioCtx.createBufferSource();
+                previewSourceNode.buffer = originalBuffer;
+                previewSourceNode.playbackRate.value = pitchFactor;
+                previewSourceNode.connect(previewaudioCtx.destination);
+                previewSourceNode.onended = () => stoppreview();
+                previewSourceNode.start();
+            } else {
+                // Keep duration checked: pitch shift only, playback speed stays exactly 100% unchanged
+                playpreviewBtn.textContent = 'Preparing preview…';
+                const previewBuffer = sliceaudioBuffer(originalBuffer, 0, Math.min(15, originalBuffer.duration));
+                const stretchedBuffer = await pitchShiftBuffer(previewBuffer, currentSemitones, () => {});
+                
+                previewSourceNode = previewaudioCtx.createBufferSource();
+                previewSourceNode.buffer = stretchedBuffer;
+                previewSourceNode.connect(previewaudioCtx.destination);
+                previewSourceNode.onended = () => stoppreview();
+                previewSourceNode.start();
+                playpreviewBtn.textContent = '▶ Preview current pitch effect';
+            }
+
+            playpreviewBtn.style.display = 'none';
+            stoppreviewBtn.style.display = 'inline-block';
+        }
+
+        playpreviewBtn.onclick = playpreview;
+        stoppreviewBtn.onclick = stoppreview;
+
+        function sliceaudioBuffer(buffer, startSec, endSec) {
+            const sr = buffer.sampleRate;
+            const startOffset = Math.floor(startSec * sr);
+            const endOffset = Math.min(buffer.length, Math.floor(endSec * sr));
+            const newLength = endOffset - startOffset;
+            const actx = new (window.AudioContext || window.webkitAudioContext)();
+            const out = actx.createBuffer(buffer.numberOfChannels, newLength, sr);
+            actx.close();
+            for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
+                out.copyToChannel(buffer.getChannelData(ch).subarray(startOffset, endOffset), ch);
+            }
+            return out;
+        }
+
+        startBtn.onclick = async () => {
+            if (!originalBuffer || isprocessing) return;
+            isprocessing = true;
+            stoppreview();
+
+            startBtn.disabled = true;
+            startBtn.textContent = 'Processing pitch shift…';
+            progressBar.style.display = 'block';
+            statusText.style.display = 'block';
+            progressFill.style.width = '10%';
+            resultBox.style.display = 'none';
+            downloadBtn.style.display = 'none';
+
+            try {
+                const semitones = currentSemitones;
+                const keepDuration = keepDurationCheck.checked;
+                let finalBuffer;
+
+                if (Math.abs(semitones) < 0.01) {
+                    finalBuffer = originalBuffer;
+                } else if (!keepDuration) {
+                    // User chose not to keep the original duration: resample directly (pitch up gets faster, pitch down gets slower)
+                    const pitchFactor = Math.pow(2, semitones / 12);
+                    finalBuffer = resamplePitch(originalBuffer, pitchFactor);
+                } else {
+                    // Keep original duration checked by default: pitch shift only, playback speed unchanged
+                    statusText.textContent = 'Applying pitch shift...';
+                    finalBuffer = await pitchShiftBuffer(originalBuffer, semitones, (p) => {
+                        progressFill.style.width = `${15 + p * 65}%`;
+                    });
+                }
+
+                progressFill.style.width = '85%';
+                statusText.textContent = 'Encoding audio…';
+
+                let blob;
+                const fmt = outputFormat.value;
+                if (fmt === 'wav') {
+                    blob = audioBufferToWavBlob(finalBuffer);
+                } else {
+                    blob = encodeMP3(finalBuffer);
+                }
+
+                progressFill.style.width = '100%';
+                statusText.textContent = 'Pitch shift export complete!';
+
+                if (exportedBlobUrl) URL.revokeObjectURL(exportedBlobUrl);
+                exportedBlobUrl = URL.createObjectURL(blob);
+
+                resultaudio.src = exportedBlobUrl;
+                const prefix = semitones > 0 ? '+' : '';
+                sizeInfo.innerHTML = `Original audio: ${formatSize(audioFile.size)} (${originalBuffer.duration.toFixed(1)}s)<br>Pitch-shifted audio: <span class="highlight">${formatSize(blob.size)}</span> (${finalBuffer.duration.toFixed(1)}s)<br>Pitch parameters: <span class="highlight">${prefix}${semitones} semitone${Math.abs(semitones) === 1 ? '' : 's'}</span> (Keep duration: ${keepDuration ? 'Yes' : 'No'})`;
+                resultBox.style.display = 'block';
+                downloadBtn.style.display = 'inline-block';
+                showToast('Audio pitch shift completed successfully!');
+
+            } catch (err) {
+                console.error(err);
+                statusText.textContent = 'Processing failed: ' + (err.message || 'Unknown error');
+                showToast('Pitch shifting failed: ' + err.message);
+            } finally {
+                isprocessing = false;
+                startBtn.disabled = false;
+                startBtn.textContent = 'Start Pitch Shift & Export';
+            }
+        };
+
+        // Resampling-only pitch shift (duration changes along with it)
+        function resamplePitch(buffer, factor) {
+            const numChannels = buffer.numberOfChannels;
+            const origLen = buffer.length;
+            const newLen = Math.floor(origLen / factor);
+            const sampleRate = buffer.sampleRate;
+
+            const actx = new (window.AudioContext || window.webkitAudioContext)();
+            const outBuffer = actx.createBuffer(numChannels, newLen, sampleRate);
+            actx.close();
+
+            for (let ch = 0; ch < numChannels; ch++) {
+                const src = buffer.getChannelData(ch);
+                const dst = outBuffer.getChannelData(ch);
+                for (let i = 0; i < newLen; i++) {
+                    const srcPos = i * factor;
+                    const i0 = Math.floor(srcPos);
+                    const i1 = Math.min(i0 + 1, origLen - 1);
+                    const frac = srcPos - i0;
+                    dst[i] = src[i0] * (1 - frac) + src[i1] * frac;
+                }
+            }
+            return outBuffer;
+        }
+
+        // Core pitch shifting algorithm: change pitch while keeping the original duration (constant speed)
+        // Key idea:
+        // 1. When raising the pitch (pitchFactor > 1):
+        //    Resampling directly with resamplePitch(buffer, pitchFactor) raises the pitch but shortens the duration (i.e. speeds it up, dividing the duration by pitchFactor).
+        //    So the first step must use the SOLA algorithm to slow down / stretch the audio to pitchFactor times the original duration (i.e. a SOLA time-stretch factor of 1 / pitchFactor).
+        //    The second step then resamples by pitchFactor, and the shortening exactly cancels the stretching, restoring the duration precisely to 100% of the original — giving a pure pitch shift with unchanged speed!
+        // 2. When lowering the pitch (pitchFactor < 1): likewise, speed up the audio first (1/pitchFactor), then restore the original length via low-frequency interpolation while lowering the pitch.
+        async function pitchShiftBuffer(buffer, semitones, onProgress) {
+            const pitchFactor = Math.pow(2, semitones / 12);
+            if (Math.abs(semitones) < 0.01) return buffer;
+
+            // Correction: the SOLA time-stretch factor should be 1 / pitchFactor to offset the duration change from the later resampling
+            const timeStretchSpeed = 1 / pitchFactor;
+            const stretchedBuffer = await solatimeStretch(buffer, timeStretchSpeed, onProgress);
+            return resamplePitch(stretchedBuffer, pitchFactor);
+        }
+
+        async function solatimeStretch(buffer, speed, onProgress) {
+            const numChannels = buffer.numberOfChannels;
+            const sampleRate = buffer.sampleRate;
+            const origLen = buffer.length;
+
+            const winSize = Math.floor(sampleRate * 0.04);
+            const synHop = Math.floor(winSize / 2);
+            const anaHop = Math.floor(synHop * speed);
+
+            const targetLen = Math.floor(origLen / speed);
+            const actx = new (window.AudioContext || window.webkitAudioContext)();
+            const outBuffer = actx.createBuffer(numChannels, targetLen, sampleRate);
+            actx.close();
+
+            const maxSearch = Math.floor(sampleRate * 0.015);
+            const outChannels = [];
+            const srcChannels = [];
+            for (let ch = 0; ch < numChannels; ch++) {
+                outChannels.push(outBuffer.getChannelData(ch));
+                srcChannels.push(buffer.getChannelData(ch));
+            }
+
+            const totalSteps = Math.floor((origLen - winSize - maxSearch) / anaHop);
+            let anaPos = 0;
+            let synPos = 0;
+
+            for (let step = 0; step < totalSteps; step++) {
+                if (step % 35 === 0) {
+                    onProgress(step / totalSteps);
+                    await new Promise(r => setTimeout(r, 0));
+                }
+
+                let bestOffset = 0;
+                if (synPos > 0 && anaPos > 0) {
+                    let maxCorr = -Infinity;
+                    const ref = srcChannels[0];
+                    for (let delta = -maxSearch; delta <= maxSearch; delta++) {
+                        const testPos = anaPos + delta;
+                        if (testPos < 0 || testPos + winSize >= origLen) continue;
+                        let corr = 0;
+                        for (let k = 0; k < synHop; k += 2) {
+                            corr += ref[testPos + k] * outChannels[0][synPos + k];
+                        }
+                        if (corr > maxCorr) {
+                            maxCorr = corr;
+                            bestOffset = delta;
+                        }
+                    }
+                }
+
+                const actualAnaPos = anaPos + bestOffset;
+
+                for (let ch = 0; ch < numChannels; ch++) {
+                    const src = srcChannels[ch];
+                    const dst = outChannels[ch];
+                    for (let i = 0; i < winSize; i++) {
+                        if (synPos + i >= targetLen) break;
+                        const sVal = actualAnaPos + i < origLen ? src[actualAnaPos + i] : 0;
+                        if (i < synHop && synPos > 0) {
+                            const w = i / synHop;
+                            dst[synPos + i] = dst[synPos + i] * (1 - w) + sVal * w;
+                        } else {
+                            dst[synPos + i] = sVal;
+                        }
+                    }
+                }
+
+                anaPos += anaHop;
+                synPos += synHop;
+                if (synPos >= targetLen) break;
+            }
+
+            return outBuffer;
+        }
+
+        function audioBufferToWavBlob(buffer) {
+            const numChannels = buffer.numberOfChannels;
+            const length = buffer.length;
+            const sampleRate = buffer.sampleRate;
+            const bitsPerSample = 16;
+            const byteRate = (sampleRate * numChannels * bitsPerSample) / 8;
+            const blockAlign = (numChannels * bitsPerSample) / 8;
+            const dataSize = (length * numChannels * bitsPerSample) / 8;
+            const headerSize = 44;
+            const totalSize = headerSize + dataSize;
+            const arrayBuffer = new ArrayBuffer(totalSize);
+            const view = new DataView(arrayBuffer);
+
+            function writeString(offset, str) {
+                for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+            }
+
+            writeString(0, 'RIFF');
+            view.setUint32(4, totalSize - 8, true);
+            writeString(8, 'WAVE');
+            writeString(12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, byteRate, true);
+            view.setUint16(32, blockAlign, true);
+            view.setUint16(34, bitsPerSample, true);
+            writeString(36, 'data');
+            view.setUint32(40, dataSize, true);
+
+            let offset = 44;
+            for (let i = 0; i < length; i++) {
+                for (let ch = 0; ch < numChannels; ch++) {
+                    const sample = Math.max(-1, Math.min(1, buffer.getChannelData(ch)[i]));
+                    view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+                    offset += 2;
+                }
+            }
+            return new Blob([arrayBuffer], { type: 'audio/wav' });
+        }
+
+        function encodeMP3(buffer) {
+            const numChannels = buffer.numberOfChannels;
+            const sampleRate = buffer.sampleRate;
+            const length = buffer.length;
+
+            const mp3encoder = new lamejs.Mp3Encoder(numChannels, sampleRate, 128);
+            const mp3Data = [];
+            const blockSize = 1152;
+
+            const left = new Int16Array(length);
+            for (let i = 0; i < length; i++) {
+                const sample = Math.max(-1, Math.min(1, buffer.getChannelData(0)[i]));
+                left[i] = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+            }
+
+            if (numChannels === 1) {
+                for (let i = 0; i < length; i += blockSize) {
+                    const chunk = left.subarray(i, i + blockSize);
+                    const mp3buf = mp3encoder.encodeBuffer(chunk);
+                    if (mp3buf.length > 0) mp3Data.push(mp3buf);
+                }
+            } else {
+                const right = new Int16Array(length);
+                for (let i = 0; i < length; i++) {
+                    const sample = Math.max(-1, Math.min(1, buffer.getChannelData(1)[i]));
+                    right[i] = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+                }
+                for (let i = 0; i < length; i += blockSize) {
+                    const chunkL = left.subarray(i, i + blockSize);
+                    const chunkR = right.subarray(i, i + blockSize);
+                    const mp3buf = mp3encoder.encodeBuffer(chunkL, chunkR);
+                    if (mp3buf.length > 0) mp3Data.push(mp3buf);
+                }
+            }
+
+            const finalBuf = mp3encoder.flush();
+            if (finalBuf.length > 0) mp3Data.push(finalBuf);
+
+            return new Blob(mp3Data, { type: 'audio/mp3' });
+        }
+
+        downloadBtn.onclick = () => {
+            if (!exportedBlobUrl) return;
+            const a = document.createElement('a');
+            a.href = exportedBlobUrl;
+            const ext = outputFormat.value;
+            const prefix = currentSemitones > 0 ? `+${currentSemitones}` : `${currentSemitones}`;
+            a.download = (audioFile?.name || 'audio').replace(/\.\w+$/, '') + `-pitch${prefix} semitones.` + ext;
+            a.click();
+        };
+    </script>
+</body>
+</html>

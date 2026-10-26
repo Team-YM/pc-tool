@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timestamp Converter</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="Online timestamp converter that converts Unix second and millisecond timestamps to and from local time and UTC time, with a live clock.">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .container {
+            max-width: 760px;
+        }
+        .container h1 {
+            color: #e4e4e7;
+            margin-bottom: 8px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .container > p {
+            color: #a1a1aa;
+            font-size: 15px;
+            margin-bottom: 24px;
+        }
+        .current-time-box {
+            background: rgba(129, 140, 248, 0.08);
+            border: 1px solid rgba(129, 140, 248, 0.2);
+            border-radius: 12px;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .current-time-val {
+            font-size: 18px;
+            font-weight: 600;
+            color: #818cf8;
+            font-family: monospace;
+        }
+        .card-row {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .card-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #e4e4e7;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+        .input-styled {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px 14px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+            font-family: monospace, sans-serif;
+        }
+        .input-styled:focus {
+            border-color: rgba(129, 140, 248, 0.5);
+        }
+        .unit-select {
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #e4e4e7;
+            outline: none;
+            cursor: pointer;
+        }
+        .action-btn {
+            padding: 10px 18px;
+            background: #818cf8;
+            border: none;
+            color: white;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .action-btn:hover {
+            background: #6366f1;
+        }
+        .result-text {
+            font-size: 14px;
+            color: #a1a1aa;
+            margin-top: 8px;
+            line-height: 1.6;
+        }
+        .result-text strong {
+            color: #34d399;
+            font-family: monospace;
+            font-size: 15px;
+            margin-left: 4px;
+        }
+        .copy-tag {
+            cursor: pointer;
+            color: #818cf8;
+            font-size: 12px;
+            margin-left: 8px;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+    <a href="../index.html" class="back-link">← Back to Home</a>
+
+    <div class="container">
+        <h1>Timestamp Converter</h1>
+        <p>Convert between Unix timestamps and standard date-time values in both directions, with second-level (10-digit) and millisecond-level (13-digit) support plus a live clock.</p>
+
+        <div class="current-time-box">
+            <div>
+                <span style="font-size:13px; color:#a1a1aa;">Current local time:</span>
+                <span id="nowDate" style="color:#e4e4e7; font-weight:500;">-</span>
+            </div>
+            <div>
+                <span style="font-size:13px; color:#a1a1aa;">Unix timestamp:</span>
+                <span class="current-time-val" id="nowTimestamp">-</span>
+                <button class="action-btn" id="toggleRunBtn" style="padding:4px 10px; font-size:12px; margin-left:8px;">Pause</button>
+            </div>
+        </div>
+
+        <div class="card-row">
+            <div class="card-title">Timestamp ➔ Date</div>
+            <div class="input-group">
+                <input type="text" class="input-styled" id="tsInput" placeholder="Enter a timestamp, e.g. 1700000000">
+                <select class="unit-select" id="tsUnit">
+                    <option value="s">Seconds (10 digits)</option>
+                    <option value="ms">Milliseconds (13 digits)</option>
+                </select>
+                <button class="action-btn" id="tsToDateBtn">Convert</button>
+                <button class="action-btn" id="tsUseNowBtn" style="background:rgba(255,255,255,0.08);">Use current time</button>
+            </div>
+            <div class="result-text" id="tsResult">Local time:<strong>-</strong></div>
+            <div class="result-text" id="tsResultUtc">UTC time:<strong>-</strong></div>
+        </div>
+
+        <div class="card-row">
+            <div class="card-title">Date ➔ Timestamp</div>
+            <div class="input-group">
+                <input type="text" class="input-styled" id="dateInput" placeholder="Format, e.g. 2026-09-04 12:00:00">
+                <button class="action-btn" id="dateToTsBtn">Convert</button>
+                <button class="action-btn" id="dateUseNowBtn" style="background:rgba(255,255,255,0.08);">Fill current time</button>
+            </div>
+            <div class="result-text" id="dateResultSec">Second timestamp (10 digits):<strong>-</strong></div>
+            <div class="result-text" id="dateResultMs">Millisecond timestamp (13 digits):<strong>-</strong></div>
+        </div>
+
+        <div class="contact-tip">For feature requests or feedback, join our Discord: <a href="https://discord.gg/wjvS3efTj" target="_blank" rel="noopener noreferrer">https://discord.gg/wjvS3efTj</a></div>
+
+    <script src="common.js"></script>
+    <script>
+        let timer = null;
+        let isRunning = true;
+        const nowDate = document.getElementById('nowDate');
+        const nowTimestamp = document.getElementById('nowTimestamp');
+        const toggleRunBtn = document.getElementById('toggleRunBtn');
+
+        function formatDate(d) {
+            const pad = n => String(n).padStart(2, '0');
+            const Y = d.getFullYear();
+            const M = pad(d.getMonth() + 1);
+            const D = pad(d.getDate());
+            const h = pad(d.getHours());
+            const m = pad(d.getMinutes());
+            const s = pad(d.getSeconds());
+            return `${Y}-${M}-${D} ${h}:${m}:${s}`;
+        }
+
+        function formatUtc(d) {
+            return d.toUTCString();
+        }
+
+        function updateNow() {
+            const now = new Date();
+            nowDate.textContent = formatDate(now);
+            nowTimestamp.textContent = Math.floor(now.getTime() / 1000);
+        }
+
+        timer = setInterval(updateNow, 1000);
+        updateNow();
+
+        toggleRunBtn.onclick = () => {
+            if (isRunning) {
+                clearInterval(timer);
+                toggleRunBtn.textContent = 'Resume';
+            } else {
+                updateNow();
+                timer = setInterval(updateNow, 1000);
+                toggleRunBtn.textContent = 'Pause';
+            }
+            isRunning = !isRunning;
+        };
+
+        // Timestamp to time
+        const tsInput = document.getElementById('tsInput');
+        const tsUnit = document.getElementById('tsUnit');
+        const tsToDateBtn = document.getElementById('tsToDateBtn');
+        const tsUseNowBtn = document.getElementById('tsUseNowBtn');
+        const tsResult = document.getElementById('tsResult');
+        const tsResultUtc = document.getElementById('tsResultUtc');
+
+        function convertTs() {
+            let val = tsInput.value.trim();
+            if (!val) return;
+            let num = Number(val);
+            if (isNaN(num)) {
+                tsResult.innerHTML = 'Local time:<strong style="color:#f87171;">Please enter a valid number</strong>';
+                return;
+            }
+            if (tsUnit.value === 's') {
+                num = num * 1000;
+            }
+            const d = new Date(num);
+            if (isNaN(d.getTime())) {
+                tsResult.innerHTML = 'Local time:<strong style="color:#f87171;">The date is out of the valid range</strong>';
+                return;
+            }
+            tsResult.innerHTML = `Local time:<strong>${formatDate(d)}</strong> <span class="copy-tag" onclick="copyText('${formatDate(d)}')">Copy</span>`;
+            tsResultUtc.innerHTML = `UTC time:<strong>${formatUtc(d)}</strong> <span class="copy-tag" onclick="copyText('${formatUtc(d)}')">Copy</span>`;
+        }
+
+        tsToDateBtn.onclick = convertTs;
+        tsUseNowBtn.onclick = () => {
+            const now = Date.now();
+            tsInput.value = tsUnit.value === 's' ? Math.floor(now / 1000) : now;
+            convertTs();
+        };
+
+        // Time to timestamp
+        const dateInput = document.getElementById('dateInput');
+        const dateToTsBtn = document.getElementById('dateToTsBtn');
+        const dateUseNowBtn = document.getElementById('dateUseNowBtn');
+        const dateResultSec = document.getElementById('dateResultSec');
+        const dateResultMs = document.getElementById('dateResultMs');
+
+        function convertDate() {
+            let raw = dateInput.value.trim();
+            if (!raw) return;
+            // Supports the 2026-09-04 12:00:00 format
+            let formatted = raw.replace(/-/g, '/');
+            let ms = Date.parse(formatted);
+            if (isNaN(ms)) {
+                dateResultSec.innerHTML = 'Second timestamp:<strong style="color:#f87171;">Unable to parse the date format</strong>';
+                dateResultMs.innerHTML = '';
+                return;
+            }
+            const sec = Math.floor(ms / 1000);
+            dateResultSec.innerHTML = `Second timestamp (10 digits):<strong>${sec}</strong> <span class="copy-tag" onclick="copyText('${sec}')">Copy</span>`;
+            dateResultMs.innerHTML = `Millisecond timestamp (13 digits):<strong>${ms}</strong> <span class="copy-tag" onclick="copyText('${ms}')">Copy</span>`;
+        }
+
+        dateToTsBtn.onclick = convertDate;
+        dateUseNowBtn.onclick = () => {
+            dateInput.value = formatDate(new Date());
+            convertDate();
+        };
+
+        function copyText(val) {
+            navigator.clipboard.writeText(val).then(() => {
+                showToast('Copied to clipboard!');
+            });
+        }
+    </script>
+</body>
+</html>
+
+

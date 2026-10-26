@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Background Remover</title>
+<link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="Free online AI background remover that runs entirely offline — no image uploads to a server, so your privacy stays protected. Works with any image format.">
+    <link rel="stylesheet" href="common.css">
+<!-- OGP social sharing tags -->
+<meta property="og:title" content="Smart Background Remover - Free &amp; Offline | PC-TOOL">
+<meta property="og:description" content="Free online tools — image conversion, video compression, audio format conversion, background removal… every feature built for productivity, completely free, made for everyone!">
+<meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+<meta property="og:url" content="https://www.pc-tool.cn/tool/cut-image.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="PC-TOOL">
+<meta property="og:locale" content="en_US">
+<style>
+
+body {
+  min-height: 100vh;
+    display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  color: #e0e0e0;
+}
+
+.container {
+  width: 100%;
+  max-width: 1100px;
+}
+
+h1 {
+  text-align: center;
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: #fff;
+  letter-spacing: -0.5px;
+}
+
+.subtitle {
+  text-align: center;
+  font-size: 0.8rem;
+  color: #777;
+  margin-bottom: 28px;
+}
+
+/* ---- Upload area ---- */
+.dropzone {
+  border: 2px dashed #333;
+  border-radius: 16px;
+  padding: 48px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: rgba(255,255,255,0.02);
+  margin-bottom: 24px;
+}
+
+.dropzone:hover,
+.dropzone.dragover {
+  border-color: #667eea;
+  background: rgba(102,126,234,0.06);
+}
+
+.dropzone-icon { font-size: 2.8rem; margin-bottom: 12px; }
+.dropzone-title { font-size: 1.1rem; font-weight: 600; color: #ccc; margin-bottom: 6px; }
+.dropzone-hint { font-size: 0.78rem; color: #666; }
+.dropzone.hidden { display: none; }
+
+/* ---- Two-column preview ---- */
+.preview-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.preview-row.hidden { display: none; }
+
+.preview-card {
+  flex: 1;
+  min-width: 320px;
+  background: #1a1a2a;
+  border-radius: 16px;
+  padding: 16px;
+  border: 1px solid #2a2a3a;
+}
+
+.preview-card h3 {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #aaa;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.canvas-wrap {
+  background: repeating-conic-gradient(#2a2a3a 0% 25%, #222236 0% 50%) 50% / 20px 20px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #333;
+}
+
+.canvas-wrap canvas {
+  width: 100%;
+  display: block;
+}
+
+/* ---- Buttons ---- */
+.actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.actions.hidden { display: none; }
+
+button {
+  padding: 11px 28px;
+  border: none;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #fff;
+}
+
+button:hover { transform: translateY(-1px); filter: brightness(1.08); }
+button:active { transform: scale(0.97); }
+button:disabled { opacity: 0.45; cursor: not-allowed; transform: none; filter: none; }
+
+.btn-cut { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); box-shadow: 0 4px 16px rgba(102,126,234,0.3); padding: 13px 36px; font-size: 1rem; }
+.btn-download { background: linear-gradient(135deg, #00b4aa 0%, #008c7a 100%); }
+.btn-reset { background: linear-gradient(135deg, #3a3a5a 0%, #2a2a4a 100%); }
+
+/* ---- Status bar ---- */
+.status-bar {
+  margin-top: 16px;
+  text-align: center;
+  font-size: 0.8rem;
+  color: #888;
+  min-height: 20px;
+}
+
+.status-bar .loader {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border: 2px solid #667eea;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 0.6s linear infinite;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---- Feature tags ---- */
+.features {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 28px;
+  flex-wrap: wrap;
+}
+
+.feature-tag {
+  font-size: 0.7rem;
+  color: #6fcf97;
+  background: rgba(111,207,151,0.08);
+  border: 1px solid rgba(111,207,151,0.2);
+  padding: 5px 14px;
+  border-radius: 40px;
+}
+
+/* ---- Progress bar ---- */
+.progress-wrap {
+  width: 260px;
+  height: 5px;
+  background: #2a2a3a;
+  border-radius: 10px;
+  margin: 16px auto 0;
+  overflow: hidden;
+  display: none;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  border-radius: 10px;
+  transition: width 0.3s;
+  width: 0%;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 750px) {
+  h1 { font-size: 1.4rem; }
+  .preview-card { min-width: 100%; }
+}
+</style>
+</head>
+<body>
+<canvas id="bg-canvas" class="bg-canvas"></canvas>
+    <a href="../index.html" class="back-link">← Back to Tools</a>
+
+<div class="container">
+  <h1>Smart Background Remover</h1>
+  <p class="subtitle">Fully offline · No upload needed · Privacy-safe · Any image</p>
+
+  <!-- Drag-and-drop upload area -->
+  <div class="dropzone" id="dropzone">
+    <div class="dropzone-title">Drag an image here, or click to choose a file</div>
+    <div class="dropzone-hint">Supports JPG / PNG / WebP. Everything is processed locally.</div>
+  </div>
+
+  <input type="file" id="fileInput" accept="image/*" hidden>
+
+  <!-- Two-column preview -->
+  <div class="preview-row hidden" id="previewRow">
+    <div class="preview-card">
+      <h3>Original</h3>
+      <div class="canvas-wrap">
+        <canvas id="inputCanvas"></canvas>
+      </div>
+    </div>
+    <div class="preview-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 0 10px;">
+        <h3 style="margin-bottom: 0;">Cutout Result</h3>
+        <select id="modelSelect" style="background: #2a2a3a; color: #fff; border: 1px solid #444; border-radius: 6px; padding: 4px 8px; font-size: 0.8rem; outline: none; cursor: pointer;">
+          <option value="medium" selected>IS-Net FP16 (High accuracy / 80MB)</option>
+          <option value="small">IS-Net QInt8 (Faster / 40MB)</option>
+        </select>
+      </div>
+      <div class="canvas-wrap">
+        <canvas id="outputCanvas"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Progress bar -->
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
+
+  <!-- Status -->
+  <div class="status-bar" id="statusBar">Ready. Upload an image to get started.</div>
+
+  <!-- Action buttons -->
+  <div class="actions hidden" id="actions">
+    <button class="btn-cut" id="cutBtn">Remove Background</button>
+    <button class="btn-download" id="downloadBtn">Download PNG</button>
+    <button class="btn-reset" id="resetBtn">Choose Another</button>
+  </div>
+
+  <!-- Features -->
+  <div class="features">
+    <span class="feature-tag">Fully Offline</span>
+    <span class="feature-tag">AI Model</span>
+    <span class="feature-tag">Any Image</span>
+    <span class="feature-tag">Free Forever</span>
+    <span class="feature-tag">No Sign-up</span>
+  </div>
+
+  <div class="contact-tip">
+    Built for everyone. If there's a feature you'd like or feedback you'd like to share, please reach out:<br><a href="https://discord.gg/wjvS3efTj" target="_blank" rel="noopener noreferrer">https://discord.gg/wjvS3efTj</a>
+  </div>
+</div>
+
+<script>
+// ==================== DOM references ====================
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const modelSelect = document.getElementById('modelSelect');
+const previewRow = document.getElementById('previewRow');
+const inputCanvas = document.getElementById('inputCanvas');
+const outputCanvas = document.getElementById('outputCanvas');
+const cutBtn = document.getElementById('cutBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+const resetBtn = document.getElementById('resetBtn');
+const statusBar = document.getElementById('statusBar');
+const actions = document.getElementById('actions');
+const progressWrap = document.getElementById('progressWrap');
+const progressFill = document.getElementById('progressFill');
+
+const inputCtx = inputCanvas.getContext('2d');
+const outputCtx = outputCanvas.getContext('2d');
+
+let originalimage = null;
+let resultBlob = null;
+let isprocessing = false;
+let sourceFileName = '';
+
+// ==================== Initialize canvases ====================
+function ensureCanvas() {
+  const w = Math.min(600, window.innerWidth - 60);
+  inputCanvas.width = w;
+  inputCanvas.height = Math.round(w * 0.667);
+  outputCanvas.width = w;
+  outputCanvas.height = Math.round(w * 0.667);
+}
+
+function drawCheckerboard(ctx, w, h) {
+  const size = 16;
+  for (let y = 0; y < h; y += size) {
+    for (let x = 0; x < w; x += size) {
+      ctx.fillStyle = ((Math.floor(x / size) + Math.floor(y / size)) % 2 === 0) ? '#30304a' : '#252540';
+      ctx.fillRect(x, y, size, size);
+    }
+  }
+}
+
+function clearOutputCanvas() {
+  drawCheckerboard(outputCtx, outputCanvas.width, outputCanvas.height);
+}
+
+ensureCanvas();
+clearOutputCanvas();
+drawCheckerboard(inputCtx, inputCanvas.width, inputCanvas.height);
+
+// ==================== File handling ====================
+function loadimage(file) {
+  if (!file.type.match(/image\/(jpeg|png|webp)/)) {
+    statusBar.innerHTML = 'Unsupported format. Please use JPG / PNG / WebP.';
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      originalimage = img;
+      resultBlob = null;
+      sourceFileName = file.name.replace(/\.[^.]+$/, '');
+
+      // Scale the canvases proportionally
+      let dw = 600, dh = (img.height / img.width) * 600;
+      if (dh > 500) { dh = 500; dw = (img.width / img.height) * 500; }
+      inputCanvas.width = dw;
+      inputCanvas.height = dh;
+      outputCanvas.width = dw;
+      outputCanvas.height = dh;
+
+      inputCtx.drawImage(img, 0, 0, dw, dh);
+      clearOutputCanvas();
+      cutBtn.disabled = false;
+
+      dropzone.classList.add('hidden');
+      previewRow.classList.remove('hidden');
+      actions.classList.remove('hidden');
+      statusBar.innerHTML = 'Image loaded. Click "Remove Background" to start.';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ==================== Background removal logic ====================
+async function removeBackground() {
+  if (!originalimage || isprocessing) return;
+
+  isprocessing = true;
+  cutBtn.disabled = true;
+  downloadBtn.disabled = true;
+  progressWrap.style.display = 'block';
+  progressFill.style.width = '0%';
+  statusBar.innerHTML = '<span class="loader"></span>Loading AI model (the first load takes about 5-15 s)...';
+
+  try {
+    // Dynamically load the background removal engine (ESM import)
+    progressFill.style.width = '15%';
+    statusBar.innerHTML = '<span class="loader"></span>Loading background removal engine...';
+
+    const mod = await import('https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/+esm');
+    const imglyRemoveBackground = mod.removeBackground;
+
+    // Convert the canvas to a Blob
+    progressFill.style.width = '30%';
+    statusBar.innerHTML = '<span class="loader"></span>Running AI model inference...';
+
+    const blob = await new Promise(resolve => inputCanvas.toBlob(resolve, 'image/png'));
+
+    const selectedModel = modelSelect.value;
+    
+    // Run background removal
+    const config = {
+      model: selectedModel,
+      output: { format: 'image/png', quality: 1 },
+      progress: (key, current, total) => {
+        const pct = 30 + Math.round((current / total) * 60);
+        progressFill.style.width = pct + '%';
+        if (key === 'fetch:model') {
+          statusBar.innerHTML = '<span class="loader"></span>Downloading AI model (tens of MB, please be patient)...';
+        } else if (key === 'compute:inference') {
+          statusBar.innerHTML = '<span class="loader"></span>AI is processing the image...';
+        }
+      }
+    };
+
+    resultBlob = await imglyRemoveBackground(blob, config);
+
+    // Show the result
+    progressFill.style.width = '95%';
+    const resultUrl = URL.createObjectURL(resultBlob);
+    const resultImg = new Image();
+    resultImg.onload = () => {
+      clearOutputCanvas();
+      outputCtx.drawImage(resultImg, 0, 0, outputCanvas.width, outputCanvas.height);
+      URL.revokeObjectURL(resultUrl);
+
+      progressFill.style.width = '100%';
+      setTimeout(() => { progressWrap.style.display = 'none'; }, 400);
+
+      downloadBtn.disabled = false;
+      cutBtn.disabled = false;
+      isprocessing = false;
+      statusBar.innerHTML = 'Background removed! Click "Download PNG" to save the image with a transparent background.';
+    };
+    resultImg.src = resultUrl;
+
+  } catch (err) {
+    console.error('Background removal failed:', err);
+    statusBar.innerHTML = 'Background removal failed: ' + (err.message || 'Unknown error');
+    progressWrap.style.display = 'none';
+    cutBtn.disabled = false;
+    downloadBtn.disabled = false;
+    isprocessing = false;
+  }
+}
+
+// ==================== Download & copy ====================
+function downloadResult() {
+  if (!resultBlob) {
+    statusBar.innerHTML = 'Please remove the background first.';
+    return;
+  }
+  const url = URL.createObjectURL(resultBlob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = (sourceFileName || 'cutout') + '-background-removed.png';
+  a.click();
+  URL.revokeObjectURL(url);
+  statusBar.innerHTML = 'PNG downloaded (transparent background).';
+}
+
+function resetUI() {
+  originalimage = null;
+  resultBlob = null;
+  isprocessing = false;
+  cutBtn.disabled = true;
+  downloadBtn.disabled = true;
+  progressWrap.style.display = 'none';
+  ensureCanvas();
+  drawCheckerboard(inputCtx, inputCanvas.width, inputCanvas.height);
+  clearOutputCanvas();
+  dropzone.classList.remove('hidden');
+  previewRow.classList.add('hidden');
+  actions.classList.add('hidden');
+  statusBar.innerHTML = 'Ready. Upload an image to get started.';
+}
+
+// ==================== Event bindings ====================
+dropzone.addEventListener('click', () => fileInput.click());
+
+dropzone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  dropzone.classList.add('dragover');
+});
+
+dropzone.addEventListener('dragleave', () => {
+  dropzone.classList.remove('dragover');
+});
+
+dropzone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropzone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) loadimage(file);
+});
+
+fileInput.addEventListener('change', () => {
+  const file = fileInput.files[0];
+  if (file) loadimage(file);
+  fileInput.value = '';
+});
+
+cutBtn.addEventListener('click', removeBackground);
+downloadBtn.addEventListener('click', downloadResult);
+resetBtn.addEventListener('click', resetUI);
+
+// Paste an image
+document.addEventListener('paste', (e) => {
+  const item = e.clipboardData?.items?.[0];
+  if (item?.type?.startsWith('image/')) {
+    loadimage(item.getAsFile());
+  }
+});
+
+// ==================== Initial state ====================
+cutBtn.disabled = true;
+downloadBtn.disabled = true;
+</script>
+<script src="common.js"></script>
+</body>
+</html>

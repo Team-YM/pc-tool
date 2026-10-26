@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片EXIF查看与抹除 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="在线查看图片EXIF元数据（相机、拍摄参数、GPS定位）并一键抹除导出，纯前端本地解析，图片不上传服务器。">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="图片EXIF查看与抹除 | PC-TOOL">
+    <meta property="og:description" content="免费在线图片EXIF查看器，解析相机信息与GPS定位，一键抹除元数据导出，完全纯前端运行。">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/image-exif.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="zh_CN">
+    <style>
+        .container {
+            max-width: 680px;
+            width: 100%;
+        }
+        #imgInput { display: none; }
+
+        /* 预览与基本信息卡片 */
+        .preview-card {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            display: none;
+        }
+        .preview-img-wrap {
+            border-radius: 10px;
+            overflow: hidden;
+            background: rgba(15, 15, 18, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        #previewImg {
+            display: block;
+            max-width: 100%;
+            max-height: 320px;
+            margin: 0 auto;
+        }
+        .file-info {
+            margin-top: 14px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 16px;
+            font-size: 0.875rem;
+            color: #a1a1aa;
+        }
+        .file-info span { color: #e4e4e7; word-break: break-all; }
+
+        /* EXIF 结果表格 */
+        .exif-section {
+            margin-top: 20px;
+            display: none;
+        }
+        .exif-section h3 {
+            color: #c7d2fe;
+            font-size: 1rem;
+            margin-bottom: 10px;
+        }
+        .exif-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .exif-table th, .exif-table td {
+            padding: 9px 14px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .exif-table th {
+            color: #a1a1aa;
+            font-weight: 500;
+            width: 34%;
+            white-space: nowrap;
+        }
+        .exif-table td { color: #e4e4e7; word-break: break-all; }
+        .exif-table tr:last-child th, .exif-table tr:last-child td { border-bottom: none; }
+        .gps-value { color: #818cf8; }
+
+        /* 操作按钮行 */
+        .controls-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .ctrl-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #e4e4e7;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .ctrl-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-1px);
+        }
+        .ctrl-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .ctrl-btn.primary {
+            background: rgba(99, 102, 241, 0.25);
+            border-color: rgba(129, 140, 248, 0.4);
+            color: #c7d2fe;
+        }
+        .ctrl-btn.primary:hover:not(:disabled) {
+            background: rgba(99, 102, 241, 0.45);
+            border-color: rgba(129, 140, 248, 0.7);
+        }
+
+        /* 状态提示徽章 */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            font-size: 0.8125rem;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #a1a1aa;
+            margin-top: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .status-badge.done {
+            background: rgba(16, 185, 129, 0.15);
+            border-color: rgba(16, 185, 129, 0.3);
+            color: #6ee7b7;
+        }
+        .status-badge.warn {
+            background: rgba(234, 179, 8, 0.15);
+            border-color: rgba(234, 179, 8, 0.3);
+            color: #fde047;
+        }
+
+        /* 抹除原理说明 */
+        .erase-tip {
+            margin-top: 20px;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            font-size: 0.8125rem;
+            color: #71717a;
+            line-height: 1.7;
+            display: none;
+        }
+        .erase-tip strong { color: #a1a1aa; }
+
+        @media (max-width: 480px) {
+            .file-info { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <!-- 统一位置返回首页按钮 -->
+    <a href="../index.html" class="back-link">← 返回转换工具首页</a>
+
+    <div class="container">
+        <h1>图片EXIF查看与抹除</h1>
+        <p>纯本地解析图片EXIF元数据（相机、拍摄参数、GPS定位），并支持一键抹除导出</p>
+
+        <!-- 上传区域 -->
+        <div class="upload-area" id="uploadArea">
+            <p id="uploadTip">点击或拖拽上传图片（JPEG、PNG、WebP）</p>
+            <input type="file" id="imgInput" accept="image/jpeg,image/png,image/webp">
+        </div>
+
+        <div id="statusWrap" style="text-align: center;">
+            <div id="statusBadge" class="status-badge" style="display: none;">等待上传图片</div>
+        </div>
+
+        <!-- 预览与基本信息 -->
+        <div class="preview-card" id="previewCard">
+            <div class="preview-img-wrap"><img id="previewImg" alt="图片预览"></div>
+            <div class="file-info">
+                <div>文件名：<span id="infoName">-</span></div>
+                <div>大小：<span id="infoSize">-</span></div>
+                <div>尺寸：<span id="infoDim">-</span></div>
+                <div>类型：<span id="infoType">-</span></div>
+            </div>
+        </div>
+
+        <!-- EXIF 表格 -->
+        <div class="exif-section" id="exifSection">
+            <h3>EXIF 元数据</h3>
+            <table class="exif-table"><tbody id="exifBody"></tbody></table>
+        </div>
+
+        <!-- GPS 坐标行 -->
+        <div class="exif-section" id="gpsSection">
+            <h3>GPS 定位信息</h3>
+            <table class="exif-table"><tbody id="gpsBody"></tbody></table>
+            <div class="controls-row">
+                <button class="ctrl-btn primary" id="copyGpsBtn">复制十进制坐标</button>
+            </div>
+        </div>
+
+        <!-- 抹除导出 -->
+        <div class="exif-section" id="eraseSection">
+            <div class="controls-row" style="justify-content: flex-start;">
+                <button class="ctrl-btn primary" id="eraseBtn">一键抹除元数据导出</button>
+                <select class="format-select" id="formatSelect">
+                    <option value="auto">保持原格式</option>
+                    <option value="image/png">PNG</option>
+                    <option value="image/jpeg">JPEG</option>
+                    <option value="image/webp">WebP</option>
+                </select>
+            </div>
+            <div class="erase-tip" id="eraseTip">
+                <strong>抹除原理：</strong>点击导出后，工具会在本地通过 Canvas 将图片像素重新绘制并重新编码。
+                新生成的文件只包含像素数据，不包含原文件中的 EXIF、GPS、缩略图等任何元数据段，
+                因此相机型号、拍摄时间、定位信息均被彻底去除。全程在浏览器内完成，图片不会上传到任何服务器。
+            </div>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        (function () {
+            // DOM 引用
+            const uploadArea = document.getElementById('uploadArea');
+            const imgInput = document.getElementById('imgInput');
+            const uploadTip = document.getElementById('uploadTip');
+            const statusBadge = document.getElementById('statusBadge');
+            const previewCard = document.getElementById('previewCard');
+            const previewImg = document.getElementById('previewImg');
+            const infoName = document.getElementById('infoName');
+            const infoSize = document.getElementById('infoSize');
+            const infoDim = document.getElementById('infoDim');
+            const infoType = document.getElementById('infoType');
+            const exifSection = document.getElementById('exifSection');
+            const exifBody = document.getElementById('exifBody');
+            const gpsSection = document.getElementById('gpsSection');
+            const gpsBody = document.getElementById('gpsBody');
+            const copyGpsBtn = document.getElementById('copyGpsBtn');
+            const eraseBtn = document.getElementById('eraseBtn');
+            const eraseSection = document.getElementById('eraseSection');
+            const eraseTip = document.getElementById('eraseTip');
+            const formatSelect = document.getElementById('formatSelect');
+
+            // 当前文件状态（用于抹除导出）
+            let currentFile = null;
+            let currentImg = null;
+            let currentOrientation = 1;
+            let currentGpsText = '';
+            let previewUrl = null;
+
+            // ---------------- EXIF 解析器（纯 JS 手写） ----------------
+            // TIFF 数据类型对应的字节数
+            const TYPE_SIZE = { 1: 1, 2: 1, 3: 2, 4: 4, 5: 8, 7: 1, 9: 4, 10: 8 };
+            // IFD0 常用标签
+            const TAG_IFD0 = {
+                0x010F: 'Make', 0x0110: 'Model', 0x0112: 'Orientation',
+                0x0131: 'Software', 0x0132: 'DateTime',
+                0x8769: 'ExifIFDPointer', 0x8825: 'GPSInfoIFDPointer'
+            };
+            // Exif 子 IFD 标签
+            const TAG_EXIF = {
+                0x829A: 'ExposureTime', 0x829D: 'FNumber', 0x8827: 'ISO',
+                0x9209: 'Flash', 0x920A: 'FocalLength', 0xA403: 'WhiteBalance'
+            };
+            // GPS 子 IFD 标签
+            const TAG_GPS = {
+                0x0001: 'GPSLatitudeRef', 0x0002: 'GPSLatitude',
+                0x0003: 'GPSLongitudeRef', 0x0004: 'GPSLongitude'
+            };
+
+            // 在 JPEG 中定位 APP1 EXIF 段并返回 DataView（TIFF 部分）
+            function findExifSegment(bytes) {
+                if (bytes.length < 4 || bytes[0] !== 0xFF || bytes[1] !== 0xD8) return null;
+                let offset = 2;
+                while (offset + 4 < bytes.length) {
+                    if (bytes[offset] !== 0xFF) return null; // 段结构损坏
+                    const marker = bytes[offset + 1];
+                    if (marker === 0xD8 || marker === 0x01 || (marker >= 0xD0 && marker <= 0xD7)) {
+                        offset += 2; // 无长度段的标记
+                        continue;
+                    }
+                    if (marker === 0xDA) return null; // 到达图像数据，无 EXIF
+                    const segLen = (bytes[offset + 2] << 8) | bytes[offset + 3];
+                    if (marker === 0xE1 && // APP1
+                        bytes[offset + 4] === 0x45 && bytes[offset + 5] === 0x78 &&
+                        bytes[offset + 6] === 0x69 && bytes[offset + 7] === 0x66 &&
+                        bytes[offset + 8] === 0x00 && bytes[offset + 9] === 0x00) {
+                        // 校验 "Exif\0\0" 头，返回 TIFF 起始偏移
+                        return { data: bytes, tiff: offset + 10 };
+                    }
+                    offset += 2 + segLen;
+                }
+                return null;
+            }
+
+            // 读取单个 IFD 条目的值（tiffStart 为 TIFF 头绝对偏移）
+            function readEntryValue(view, bytes, tiffStart, entryOff, little) {
+                const type = view.getUint16(entryOff + 2, little);
+                const count = view.getUint32(entryOff + 4, little);
+                const size = (TYPE_SIZE[type] || 1) * count;
+                let valOff = entryOff + 8;
+                if (size > 4) valOff = tiffStart + view.getUint32(entryOff + 8, little); // 值在偏移处
+                if (valOff + size > bytes.length) return null;
+
+                switch (type) {
+                    case 2: { // ASCII 字符串
+                        let s = '';
+                        for (let i = 0; i < count; i++) {
+                            const c = bytes[valOff + i];
+                            if (c === 0) break;
+                            s += String.fromCharCode(c);
+                        }
+                        return s.trim();
+                    }
+                    case 1: case 7: { // 字节 / 未定义
+                        if (count === 1) return bytes[valOff];
+                        return Array.from(bytes.subarray(valOff, valOff + count));
+                    }
+                    case 3: { // SHORT
+                        return count === 1 ? view.getUint16(valOff, little)
+                            : Array.from({ length: count }, (_, i) => view.getUint16(valOff + i * 2, little));
+                    }
+                    case 4: { // LONG
+                        return count === 1 ? view.getUint32(valOff, little)
+                            : Array.from({ length: count }, (_, i) => view.getUint32(valOff + i * 4, little));
+                    }
+                    case 5: { // RATIONAL（分子/分母）
+                        const arr = [];
+                        for (let i = 0; i < count; i++) {
+                            const num = view.getUint32(valOff + i * 8, little);
+                            const den = view.getUint32(valOff + i * 8 + 4, little);
+                            arr.push(den === 0 ? 0 : num / den);
+                        }
+                        return count === 1 ? arr[0] : arr;
+                    }
+                    default:
+                        return null;
+                }
+            }
+
+            // 遍历一个 IFD，把结果放入 out，返回 [exif指针, gps指针]
+            function readIFD(view, bytes, tiffStart, ifdOff, tagMap, out) {
+                const little = view.getUint16(tiffStart) === 0x4949;
+                const count = view.getUint16(ifdOff, little);
+                let exifPtr = 0, gpsPtr = 0;
+                for (let i = 0; i < count; i++) {
+                    const entryOff = ifdOff + 2 + i * 12;
+                    if (entryOff + 12 > bytes.length) break;
+                    const tag = view.getUint16(entryOff, little);
+                    const name = tagMap[tag];
+                    const value = readEntryValue(view, bytes, tiffStart, entryOff, little);
+                    if (name === 'ExifIFDPointer' && typeof value === 'number') exifPtr = value;
+                    else if (name === 'GPSInfoIFDPointer' && typeof value === 'number') gpsPtr = value;
+                    else if (name && value !== null && value !== undefined) out[name] = value;
+                }
+                return [exifPtr, gpsPtr, little];
+            }
+
+            // 主解析入口：返回标签对象，失败返回 null
+            function parseExif(bytes) {
+                const seg = findExifSegment(bytes);
+                if (!seg) return null;
+                const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+                const t0 = seg.tiff;
+                if (t0 + 8 > bytes.length) return null;
+                const order = view.getUint16(t0);
+                if (order !== 0x4949 && order !== 0x4D4D) return null; // 非法字节序
+                const ifd0Off = t0 + view.getUint32(t0 + 4, order === 0x4949);
+                if (ifd0Off + 2 > bytes.length) return null;
+
+                const result = {};
+                const [exifPtr, gpsPtr] = readIFD(view, bytes, t0, ifd0Off, TAG_IFD0, result);
+                if (exifPtr && t0 + exifPtr + 2 < bytes.length) {
+                    readIFD(view, bytes, t0, t0 + exifPtr, TAG_EXIF, result);
+                }
+                if (gpsPtr && t0 + gpsPtr + 2 < bytes.length) {
+                    readIFD(view, bytes, t0, t0 + gpsPtr, TAG_GPS, result);
+                }
+                return result;
+            }
+
+            // ---------------- 值格式化 ----------------
+            function formatExposure(v) {
+                if (v < 1) return '1/' + Math.round(1 / v) + ' 秒';
+                return v + ' 秒';
+            }
+            function formatFlash(v) {
+                const flag = Number(v);
+                if (flag & 0x1) return '已闪光';
+                if (flag & 0x20) return '无闪光功能';
+                return '未闪光';
+            }
+
+            // GPS 度分秒转十进制
+            function dmsToDecimal(arr, ref) {
+                if (!Array.isArray(arr) || arr.length < 3) return null;
+                let d = arr[0] + arr[1] / 60 + arr[2] / 3600;
+                if (ref === 'S' || ref === 'W') d = -d;
+                return Math.round(d * 1000000) / 1000000;
+            }
+
+            // ---------------- 界面渲染 ----------------
+            function showBadge(text, cls) {
+                statusBadge.style.display = 'inline-block';
+                statusBadge.className = 'status-badge' + (cls ? ' ' + cls : '');
+                statusBadge.textContent = text;
+            }
+
+            function renderExifTable(tags) {
+                exifBody.innerHTML = '';
+                const rows = [];
+                const push = (label, val) => { if (val !== undefined && val !== null && val !== '') rows.push([label, String(val)]); };
+
+                push('相机品牌 (Make)', tags.Make);
+                push('型号 (Model)', tags.Model);
+                push('拍摄时间 (DateTime)', tags.DateTime);
+                push('方向 (Orientation)', tags.Orientation);
+                push('光圈 (FNumber)', tags.FNumber ? 'f/' + (Math.round(tags.FNumber * 10) / 10) : undefined);
+                push('快门 (ExposureTime)', tags.ExposureTime ? formatExposure(tags.ExposureTime) : undefined);
+                push('ISO', tags.ISO);
+                push('焦距 (FocalLength)', tags.FocalLength ? (Math.round(tags.FocalLength * 10) / 10) + ' mm' : undefined);
+                push('闪光灯 (Flash)', tags.Flash !== undefined ? formatFlash(tags.Flash) : undefined);
+                push('白平衡 (WhiteBalance)', tags.WhiteBalance !== undefined ? (Number(tags.WhiteBalance) === 1 ? '手动' : '自动') : undefined);
+                push('软件 (Software)', tags.Software);
+
+                if (!rows.length) return false;
+                rows.forEach(([k, v]) => {
+                    const tr = document.createElement('tr');
+                    const th = document.createElement('th');
+                    th.textContent = k;
+                    const td = document.createElement('td');
+                    td.textContent = v;
+                    tr.appendChild(th); tr.appendChild(td);
+                    exifBody.appendChild(tr);
+                });
+                return true;
+            }
+
+            function renderGps(tags) {
+                gpsBody.innerHTML = '';
+                currentGpsText = '';
+                const lat = dmsToDecimal(tags.GPSLatitude, tags.GPSLatitudeRef);
+                const lon = dmsToDecimal(tags.GPSLongitude, tags.GPSLongitudeRef);
+                if (lat === null && lon === null) return false;
+
+                const items = [];
+                if (lat !== null) items.push(['纬度 (GPSLatitude)', lat + ' 度' + (tags.GPSLatitudeRef === 'S' ? '（南纬）' : '（北纬）')]);
+                if (lon !== null) items.push(['经度 (GPSLongitude)', lon + ' 度' + (tags.GPSLongitudeRef === 'W' ? '（西经）' : '（东经）')]);
+                if (lat !== null && lon !== null) {
+                    currentGpsText = lat + ', ' + lon;
+                    items.push(['十进制坐标', currentGpsText]);
+                }
+                items.forEach(([k, v]) => {
+                    const tr = document.createElement('tr');
+                    const th = document.createElement('th'); th.textContent = k;
+                    const td = document.createElement('td'); td.textContent = v; td.className = 'gps-value';
+                    tr.appendChild(th); tr.appendChild(td);
+                    gpsBody.appendChild(tr);
+                });
+                return true;
+            }
+
+            // ---------------- 文件处理 ----------------
+            function formatSize(bytes) {
+                if (bytes < 1024) return bytes + ' B';
+                if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+                return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+            }
+
+            function cleanupPreview() {
+                if (previewUrl) { URL.revokeObjectURL(previewUrl); previewUrl = null; } // 释放旧预览 URL
+            }
+
+            async function handleFile(file) {
+                if (!file) return;
+                const isImage = /^image\/(jpeg|png|webp)$/.test(file.type);
+                if (!isImage) { showBadge('仅支持 JPEG / PNG / WebP 图片', 'warn'); return; }
+
+                cleanupPreview();
+                currentFile = file;
+                currentOrientation = 1;
+                currentGpsText = '';
+                uploadTip.textContent = `当前图片：${file.name}（点击可重新选择）`;
+                showBadge('正在解析...', '');
+
+                try {
+                    const bytes = new Uint8Array(await file.arrayBuffer());
+                    const tags = parseExif(bytes);
+
+                    // 预览与基本信息
+                    previewUrl = URL.createObjectURL(file);
+                    previewImg.onload = function () {
+                        infoDim.textContent = previewImg.naturalWidth + ' x ' + previewImg.naturalHeight;
+                    };
+                    previewImg.src = previewUrl;
+                    previewCard.style.display = 'block';
+                    infoName.textContent = file.name;
+                    infoSize.textContent = formatSize(file.size);
+                    infoType.textContent = file.type || '未知';
+
+                    // EXIF 展示
+                    const hasMain = tags && renderExifTable(tags);
+                    const hasGps = tags && renderGps(tags);
+                    exifSection.style.display = hasMain ? 'block' : 'none';
+                    gpsSection.style.display = hasGps ? 'block' : 'none';
+                    copyGpsBtn.disabled = !currentGpsText;
+                    eraseSection.style.display = 'block';
+                    eraseTip.style.display = 'block';
+
+                    if (!tags || (!hasMain && !hasGps)) {
+                        showBadge('未检测到 EXIF 信息（PNG/WebP 通常不含元数据）', 'warn');
+                    } else {
+                        currentOrientation = Number(tags.Orientation) || 1;
+                        showBadge(`解析完成 (${file.name})`, 'done');
+                    }
+                } catch (err) {
+                    console.error('EXIF 解析失败:', err);
+                    showBadge('解析失败：未检测到 EXIF 信息', 'warn');
+                }
+            }
+
+            // ---------------- 抹除导出 ----------------
+            function loadImage(file) {
+                return new Promise((resolve, reject) => {
+                    const url = URL.createObjectURL(file);
+                    const img = new Image();
+                    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+                    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('图片加载失败')); };
+                    img.src = url;
+                });
+            }
+
+            // 按 EXIF 方向绘制，保证导出图方向正确
+            function drawWithOrientation(canvas, img, orientation) {
+                const w = img.naturalWidth, h = img.naturalHeight;
+                const swap = orientation >= 5 && orientation <= 8;
+                canvas.width = swap ? h : w;
+                canvas.height = swap ? w : h;
+                const ctx = canvas.getContext('2d');
+                switch (orientation) {
+                    case 2: ctx.transform(-1, 0, 0, 1, w, 0); break;
+                    case 3: ctx.transform(-1, 0, 0, -1, w, h); break;
+                    case 4: ctx.transform(1, 0, 0, -1, 0, h); break;
+                    case 5: ctx.transform(0, 1, 1, 0, 0, 0); break;
+                    case 6: ctx.transform(0, 1, -1, 0, h, 0); break;
+                    case 7: ctx.transform(0, -1, -1, 0, h, w); break;
+                    case 8: ctx.transform(0, -1, 1, 0, 0, w); break;
+                }
+                ctx.drawImage(img, 0, 0, w, h);
+            }
+
+            async function eraseAndExport() {
+                if (!currentFile) return;
+                eraseBtn.disabled = true;
+                showBadge('正在重新编码（抹除元数据）...', '');
+                const canvas = document.createElement('canvas');
+
+                try {
+                    const img = await loadImage(currentFile);
+                    currentImg = img;
+                    drawWithOrientation(canvas, img, currentOrientation);
+
+                    // 选择导出格式：auto 时优先原格式，浏览器不支持则回退 PNG
+                    let mime = formatSelect.value;
+                    if (mime === 'auto') mime = currentFile.type || 'image/png';
+                    const blob = await new Promise((resolve, reject) => {
+                        canvas.toBlob(b => b ? resolve(b) : reject(new Error('编码失败')), mime, 0.92);
+                    });
+                    const outMime = blob.type.indexOf(mime) === -1 ? 'image/png' : blob.type;
+
+                    const ext = outMime.split('/')[1].replace('jpeg', 'jpg');
+                    const baseName = currentFile.name.replace(/\.[^.]+$/, '');
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${baseName}-无元数据.${ext}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+
+                    // 及时释放大对象，防止内存泄漏
+                    setTimeout(() => URL.revokeObjectURL(url), 3000);
+                    showBadge(`导出完成：${outMime.split('/')[1].toUpperCase()}，已彻底去除 EXIF/GPS 元数据`, 'done');
+                } catch (err) {
+                    console.error('抹除导出失败:', err);
+                    showBadge('导出失败，请重试或更换格式', 'warn');
+                } finally {
+                    canvas.width = 0; canvas.height = 0; // 释放画布内存
+                    currentImg = null;
+                    eraseBtn.disabled = false;
+                }
+            }
+
+            // ---------------- 事件绑定 ----------------
+            uploadArea.addEventListener('click', () => imgInput.click());
+            imgInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) handleFile(file);
+            });
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = 'rgba(129, 140, 248, 0.5)';
+            });
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+            });
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+                const file = e.dataTransfer.files[0];
+                if (file) handleFile(file);
+            });
+
+            copyGpsBtn.addEventListener('click', () => {
+                if (!currentGpsText) return;
+                navigator.clipboard.writeText(currentGpsText).then(() => {
+                    const old = copyGpsBtn.textContent;
+                    copyGpsBtn.textContent = '已复制！';
+                    setTimeout(() => copyGpsBtn.textContent = old, 1500);
+                }).catch(() => alert('坐标为: ' + currentGpsText));
+            });
+
+            eraseBtn.addEventListener('click', eraseAndExport);
+
+            // 页面卸载时释放预览资源
+            window.addEventListener('beforeunload', cleanupPreview);
+        })();
+    </script>
+</body>
+</html>

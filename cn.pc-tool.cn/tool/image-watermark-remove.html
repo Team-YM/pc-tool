@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片去水印/橡皮擦</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="免费在线图片去水印与消除笔工具，支持涂抹区域修复、框选消除与边缘智能羽化扩散，纯浏览器端处理，保护图片隐私。">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="图片去水印/消除笔 | PC-TOOL">
+    <meta property="og:description" content="在线图片涂抹去水印、框选文字擦除，智能周边纹理融合算法。">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/image-watermark-remove.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="zh_CN">
+    <style>
+        .container {
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            padding: 12px 18px;
+            margin: 18px 0;
+        }
+
+        .tool-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tool-btn {
+            padding: 7px 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #d4d4d8;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .tool-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .tool-btn.active {
+            background: rgba(129, 140, 248, 0.25);
+            border-color: rgba(129, 140, 248, 0.6);
+            color: #c4b5fd;
+        }
+
+        .slider-label {
+            font-size: 13px;
+            color: #a1a1aa;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .slider-label input[type="range"] {
+            width: 100px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            -webkit-appearance: none;
+            cursor: pointer;
+        }
+
+        .slider-label input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: #818cf8;
+        }
+
+        .canvas-area {
+            position: relative;
+            background: repeating-conic-gradient(#1c1c22 0% 25%, #141418 0% 50%) 50% / 16px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            overflow: auto;
+            max-height: 550px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            user-select: none;
+        }
+
+        .canvas-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        #imageCanvas {
+            display: block;
+            max-width: 100%;
+        }
+
+        #maskCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            cursor: crosshair;
+        }
+
+        .brush-cursor {
+            position: fixed;
+            border: 1.5px solid rgba(239, 68, 68, 0.8);
+            background: rgba(239, 68, 68, 0.2);
+            border-radius: 50%;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            display: none;
+            z-index: 999;
+        }
+
+        .bottom-actions {
+            display: flex;
+            justify-content: center;
+            gap: 14px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+    <a href="../index.html" class="back-link">← 返回转换工具首页</a>
+
+    <div class="container">
+        <h1>图片去水印 / 消除笔</h1>
+        <p>通过涂抹红色彩笔标注水印或多余瑕疵，利用邻域自适应梯度扩散智能填补消除</p>
+
+        <div class="upload-area" id="uploadArea">
+            <p>点击或拖拽上传带水印/杂质的图片（JPG、PNG、WebP 等）</p>
+            <input type="file" id="fileInput" accept="image/*">
+        </div>
+
+        <div id="editorArea" style="display:none;">
+            <div class="toolbar">
+                <div class="tool-group">
+                    <button class="tool-btn active" id="toolBrush">涂抹画笔</button>
+                    <button class="tool-btn" id="toolRect">矩形选框</button>
+                    <button class="tool-btn" id="btnClearMask">清空涂抹</button>
+                    <button class="tool-btn" id="btnUndo">撤销上步</button>
+                </div>
+
+                <div class="tool-group">
+                    <div class="slider-label">
+                        画笔大小
+                        <input type="range" id="brushSizeRange" min="5" max="60" value="20">
+                        <span id="brushSizeVal" style="font-family:monospace;color:#818cf8;min-width:26px;">20</span>
+                    </div>
+                    <div class="slider-label">
+                        修复强度
+                        <input type="range" id="featherRange" min="1" max="5" value="3">
+                    </div>
+                </div>
+            </div>
+
+            <div class="canvas-area" id="canvasScrollArea">
+                <div class="canvas-container" id="canvasContainer">
+                    <canvas id="imageCanvas"></canvas>
+                    <canvas id="maskCanvas"></canvas>
+                </div>
+            </div>
+
+            <div class="bottom-actions">
+                <button class="btn" id="btnExecuteRepair" style="background:rgba(129,140,248,0.3);border-color:rgba(129,140,248,0.5);">智能消除水印</button>
+                <button class="download-btn" id="downloadBtn" style="display:none;">下载处理图片</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="brush-cursor" id="brushCursor"></div>
+
+    <script src="common.js"></script>
+    <script>
+        var uploadArea = document.getElementById('uploadArea');
+        var fileInput = document.getElementById('fileInput');
+        var editorArea = document.getElementById('editorArea');
+        var imageCanvas = document.getElementById('imageCanvas');
+        var imgCtx = imageCanvas.getContext('2d');
+        var maskCanvas = document.getElementById('maskCanvas');
+        var maskCtx = maskCanvas.getContext('2d');
+        var canvasContainer = document.getElementById('canvasContainer');
+        var brushCursor = document.getElementById('brushCursor');
+        var brushSizeRange = document.getElementById('brushSizeRange');
+        var brushSizeVal = document.getElementById('brushSizeVal');
+        var featherRange = document.getElementById('featherRange');
+        var toolBrush = document.getElementById('toolBrush');
+        var toolRect = document.getElementById('toolRect');
+        var btnClearMask = document.getElementById('btnClearMask');
+        var btnUndo = document.getElementById('btnUndo');
+        var btnExecuteRepair = document.getElementById('btnExecuteRepair');
+        var downloadBtn = document.getElementById('downloadBtn');
+
+        var currentTool = 'brush'; // 'brush' or 'rect'
+        var isDrawing = false;
+        var startPos = { x: 0, y: 0 };
+        var brushSize = 20;
+        var historyStack = [];
+        var originalLoadedImg = null;
+
+        uploadArea.addEventListener('click', function() { fileInput.click(); });
+        uploadArea.addEventListener('dragover', function(e) { e.preventDefault(); });
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', function(e) {
+            if (e.target.files.length) handleFile(e.target.files[0]);
+        });
+
+        function handleFile(file) {
+            if (!file || !file.type.startsWith('image/')) return;
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                var img = new Image();
+                img.onload = function() {
+                    originalLoadedImg = img;
+                    initCanvas(img);
+                    editorArea.style.display = 'block';
+                    downloadBtn.style.display = 'inline-block';
+                    saveHistory();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function initCanvas(img) {
+            var w = img.width;
+            var h = img.height;
+            imageCanvas.width = w;
+            imageCanvas.height = h;
+            maskCanvas.width = w;
+            maskCanvas.height = h;
+
+            imgCtx.drawImage(img, 0, 0);
+            maskCtx.clearRect(0, 0, w, h);
+        }
+
+        brushSizeRange.addEventListener('input', function() {
+            brushSize = parseInt(brushSizeRange.value, 10);
+            brushSizeVal.innerText = brushSize;
+            updateCursorSize();
+        });
+
+        function updateCursorSize() {
+            brushCursor.style.width = brushSize * 2 + 'px';
+            brushCursor.style.height = brushSize * 2 + 'px';
+        }
+        updateCursorSize();
+
+        toolBrush.addEventListener('click', function() {
+            currentTool = 'brush';
+            toolBrush.classList.add('active');
+            toolRect.classList.remove('active');
+        });
+
+        toolRect.addEventListener('click', function() {
+            currentTool = 'rect';
+            toolRect.classList.add('active');
+            toolBrush.classList.remove('active');
+            brushCursor.style.display = 'none';
+        });
+
+        btnClearMask.addEventListener('click', function() {
+            maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
+        });
+
+        function getPos(e) {
+            var rect = maskCanvas.getBoundingClientRect();
+            var scaleX = maskCanvas.width / rect.width;
+            var scaleY = maskCanvas.height / rect.height;
+            return {
+                x: (e.clientX - rect.left) * scaleX,
+                y: (e.clientY - rect.top) * scaleY
+            };
+        }
+
+        maskCanvas.addEventListener('mouseenter', function() {
+            if (currentTool === 'brush') brushCursor.style.display = 'block';
+        });
+
+        maskCanvas.addEventListener('mouseleave', function() {
+            brushCursor.style.display = 'none';
+            if (isDrawing && currentTool === 'brush') isDrawing = false;
+        });
+
+        maskCanvas.addEventListener('mousemove', function(e) {
+            brushCursor.style.left = e.clientX + 'px';
+            brushCursor.style.top = e.clientY + 'px';
+
+            if (!isDrawing) return;
+            var pos = getPos(e);
+
+            if (currentTool === 'brush') {
+                maskCtx.fillStyle = 'rgba(239, 68, 68, 0.65)';
+                maskCtx.strokeStyle = 'rgba(239, 68, 68, 0.65)';
+                maskCtx.lineWidth = brushSize * 2;
+                maskCtx.lineCap = 'round';
+                maskCtx.lineJoin = 'round';
+
+                maskCtx.lineTo(pos.x, pos.y);
+                maskCtx.stroke();
+                maskCtx.beginPath();
+                maskCtx.moveTo(pos.x, pos.y);
+            }
+        });
+
+        maskCanvas.addEventListener('mousedown', function(e) {
+            isDrawing = true;
+            var pos = getPos(e);
+            startPos = pos;
+
+            if (currentTool === 'brush') {
+                maskCtx.fillStyle = 'rgba(239, 68, 68, 0.65)';
+                maskCtx.beginPath();
+                maskCtx.arc(pos.x, pos.y, brushSize, 0, Math.PI * 2);
+                maskCtx.fill();
+                maskCtx.beginPath();
+                maskCtx.moveTo(pos.x, pos.y);
+            }
+        });
+
+        window.addEventListener('mouseup', function(e) {
+            if (!isDrawing) return;
+            isDrawing = false;
+            if (currentTool === 'rect') {
+                var pos = getPos(e);
+                var x = Math.min(startPos.x, pos.x);
+                var y = Math.min(startPos.y, pos.y);
+                var w = Math.abs(pos.x - startPos.x);
+                var h = Math.abs(pos.y - startPos.y);
+                if (w > 2 && h > 2) {
+                    maskCtx.fillStyle = 'rgba(239, 68, 68, 0.65)';
+                    maskCtx.fillRect(x, y, w, h);
+                }
+            }
+            maskCtx.beginPath();
+        });
+
+        function saveHistory() {
+            var data = imgCtx.getImageData(0, 0, imageCanvas.width, imageCanvas.height);
+            historyStack.push(data);
+            if (historyStack.length > 8) historyStack.shift();
+        }
+
+        btnUndo.addEventListener('click', function() {
+            if (historyStack.length > 1) {
+                historyStack.pop(); // 当前状态
+                var prev = historyStack[historyStack.length - 1];
+                imgCtx.putImageData(prev, 0, 0);
+            }
+        });
+
+        // 智能修复扩散算法
+        btnExecuteRepair.addEventListener('click', function() {
+            var w = imageCanvas.width;
+            var h = imageCanvas.height;
+            var maskData = maskCtx.getImageData(0, 0, w, h).data;
+            var imgData = imgCtx.getImageData(0, 0, w, h);
+            var d = imgData.data;
+
+            // 检查是否有蒙版
+            var hasMask = false;
+            var isMarked = new Uint8Array(w * h);
+            for (var i = 0; i < maskData.length; i += 4) {
+                if (maskData[i + 3] > 30) {
+                    isMarked[i / 4] = 1;
+                    hasMask = true;
+                }
+            }
+
+            if (!hasMask) {
+                alert('请先使用画笔或矩形涂抹需要去水印的区域！');
+                return;
+            }
+
+            var iterations = parseInt(featherRange.value, 10) * 8; // 迭代次数
+
+            for (var iter = 0; iter < iterations; iter++) {
+                for (var y = 0; y < h; y++) {
+                    for (var x = 0; x < w; x++) {
+                        var idx = y * w + x;
+                        if (!isMarked[idx]) continue;
+
+                        var sumR = 0, sumG = 0, sumB = 0, count = 0;
+                        var radius = 2;
+
+                        for (var dy = -radius; dy <= radius; dy++) {
+                            var ny = y + dy;
+                            if (ny < 0 || ny >= h) continue;
+                            for (var dx = -radius; dx <= radius; dx++) {
+                                var nx = x + dx;
+                                if (nx < 0 || nx >= w) continue;
+
+                                var nidx = ny * w + nx;
+                                var weight = 1 / (1 + Math.sqrt(dx * dx + dy * dy));
+                                var p = nidx * 4;
+
+                                sumR += d[p] * weight;
+                                sumG += d[p + 1] * weight;
+                                sumB += d[p + 2] * weight;
+                                count += weight;
+                            }
+                        }
+
+                        if (count > 0) {
+                            var curP = idx * 4;
+                            d[curP] = Math.round(sumR / count);
+                            d[curP + 1] = Math.round(sumG / count);
+                            d[curP + 2] = Math.round(sumB / count);
+                        }
+                    }
+                }
+            }
+
+            imgCtx.putImageData(imgData, 0, 0);
+            maskCtx.clearRect(0, 0, w, h);
+            saveHistory();
+        });
+
+        downloadBtn.addEventListener('click', function() {
+            var a = document.createElement('a');
+            a.download = 'watermark_removed.png';
+            a.href = imageCanvas.toDataURL('image/png');
+            a.click();
+        });
+    </script>
+</body>
+</html>

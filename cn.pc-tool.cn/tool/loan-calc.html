@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>房贷利息计算器 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="专业在线房贷贷款计算器，支持商业贷款、公积金贷款及组合贷款，支持等额本息与等额本金两种还款方式对比与还款月供明细表。">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .container {
+            max-width: 820px;
+        }
+        .container h1 {
+            color: #e4e4e7;
+            margin-bottom: 8px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .container > p {
+            color: #a1a1aa;
+            font-size: 15px;
+            margin-bottom: 24px;
+        }
+        .card-box {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        .input-group label {
+            display: block;
+            font-size: 13px;
+            color: #a1a1aa;
+            margin-bottom: 6px;
+        }
+        .input-styled, .select-styled {
+            width: 100%;
+            padding: 10px 14px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+        }
+        .select-styled {
+            background: rgba(24, 24, 27, 0.8);
+            cursor: pointer;
+        }
+        .input-styled:focus, .select-styled:focus {
+            border-color: rgba(129, 140, 248, 0.5);
+        }
+        .action-btn {
+            padding: 11px 26px;
+            background: #818cf8;
+            border: none;
+            color: white;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .action-btn:hover {
+            background: #6366f1;
+        }
+        .compare-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 20px;
+        }
+        @media (max-width: 640px) {
+            .compare-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .result-card {
+            background: rgba(129, 140, 248, 0.07);
+            border: 1px solid rgba(129, 140, 248, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+        }
+        .result-card.highlight {
+            border-color: rgba(52, 211, 153, 0.4);
+            background: rgba(52, 211, 153, 0.06);
+        }
+        .result-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: #a1a1aa;
+            padding: 6px 0;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
+        }
+        .result-item:last-child {
+            border-bottom: none;
+        }
+        .result-val {
+            color: #e4e4e7;
+            font-weight: 600;
+            font-family: monospace;
+        }
+        .result-val.green {
+            color: #34d399;
+            font-size: 16px;
+        }
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin-top: 16px;
+            max-height: 300px;
+        }
+        .schedule-table th, .schedule-table td {
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 8px 10px;
+            text-align: center;
+        }
+        .schedule-table th {
+            background: rgba(255, 255, 255, 0.04);
+            color: #a1a1aa;
+        }
+        .schedule-table td {
+            color: #d4d4d8;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+    <a href="../index.html" class="back-link">← 返回首页</a>
+
+    <div class="container">
+        <h1>房贷利息计算器</h1>
+        <p>提供等额本息与等额本金双重对比，支持商业贷款、公积金贷款及组合贷款测算。</p>
+
+        <div class="card-box">
+            <div class="form-grid">
+                <div class="input-group">
+                    <label>贷款类型</label>
+                    <select class="select-styled" id="loanType" onchange="switchLoanType()">
+                        <option value="biz">商业贷款</option>
+                        <option value="fund">公积金贷款</option>
+                        <option value="combo">组合贷款</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>按揭年数 (年)</label>
+                    <select class="select-styled" id="loanYears">
+                        <option value="30" selected>30 年 (360 期)</option>
+                        <option value="25">25 年 (300 期)</option>
+                        <option value="20">20 年 (240 期)</option>
+                        <option value="15">15 年 (180 期)</option>
+                        <option value="10">10 年 (120 期)</option>
+                        <option value="5">5 年 (60 期)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 商贷金额与利率 -->
+            <div class="form-grid" id="bizGroup">
+                <div class="input-group">
+                    <label id="bizAmountLabel">商贷金额 (万元)</label>
+                    <input type="number" class="input-styled" id="bizAmount" value="100" min="1" step="1">
+                </div>
+                <div class="input-group">
+                    <label id="bizRateLabel">商贷年利率 (%)</label>
+                    <input type="number" class="input-styled" id="bizRate" value="3.45" step="0.01">
+                </div>
+            </div>
+
+            <!-- 公积金贷款金额与利率（组合贷款时展示） -->
+            <div class="form-grid" id="fundGroup" style="display:none;">
+                <div class="input-group">
+                    <label>公积金金额 (万元)</label>
+                    <input type="number" class="input-styled" id="fundAmount" value="50" min="1" step="1">
+                </div>
+                <div class="input-group">
+                    <label>公积金年利率 (%)</label>
+                    <input type="number" class="input-styled" id="fundRate" value="2.85" step="0.01">
+                </div>
+            </div>
+
+            <button class="action-btn" onclick="calculateLoan()">计算月供明细</button>
+        </div>
+
+        <div id="resultSection" style="display:none;">
+            <div class="compare-grid">
+                <!-- 等额本息 -->
+                <div class="result-card highlight">
+                    <div class="result-title">
+                        <span>等额本息 (每月等额)</span>
+                        <span style="font-size:12px; color:#34d399; font-weight:normal;">推荐工薪族</span>
+                    </div>
+                    <div class="result-item">
+                        <span>每月月供：</span>
+                        <span class="result-val green" id="resBenxiMonthly">0 元</span>
+                    </div>
+                    <div class="result-item">
+                        <span>贷款本金：</span>
+                        <span class="result-val" id="resBenxiPrincipal">0 万元</span>
+                    </div>
+                    <div class="result-item">
+                        <span>利息总额：</span>
+                        <span class="result-val" id="resBenxiInterest" style="color:#fbbf24;">0 万元</span>
+                    </div>
+                    <div class="result-item">
+                        <span>还款总额：</span>
+                        <span class="result-val" id="resBenxiTotal">0 万元</span>
+                    </div>
+                </div>
+
+                <!-- 等额本金 -->
+                <div class="result-card">
+                    <div class="result-title">
+                        <span>等额本金 (逐月递减)</span>
+                        <span style="font-size:12px; color:#818cf8; font-weight:normal;">总利息更省</span>
+                    </div>
+                    <div class="result-item">
+                        <span>首月还款：</span>
+                        <span class="result-val green" id="resBenjinFirst">0 元</span>
+                    </div>
+                    <div class="result-item">
+                        <span>每月递减约：</span>
+                        <span class="result-val" id="resBenjinDecrease">0 元</span>
+                    </div>
+                    <div class="result-item">
+                        <span>利息总额：</span>
+                        <span class="result-val" id="resBenjinInterest" style="color:#fbbf24;">0 万元</span>
+                    </div>
+                    <div class="result-item">
+                        <span>还款总额：</span>
+                        <span class="result-val" id="resBenjinTotal">0 万元</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-box" style="margin-top: 24px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-size:15px; font-weight:600; color:#e4e4e7;">首年月供明细表 (前12期示例)</span>
+                    <span style="font-size:12px; color:#71717a;">单位：人民币 (元)</span>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table class="schedule-table">
+                        <thead>
+                            <tr>
+                                <th>期数</th>
+                                <th>等额本息月供</th>
+                                <th>等额本金月供</th>
+                                <th>本金本息差额</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scheduleTbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        function switchLoanType() {
+            const type = document.getElementById('loanType').value;
+            const bizGroup = document.getElementById('bizGroup');
+            const fundGroup = document.getElementById('fundGroup');
+            const bizAmountLabel = document.getElementById('bizAmountLabel');
+            const bizRateLabel = document.getElementById('bizRateLabel');
+
+            if (type === 'biz') {
+                bizGroup.style.display = 'grid';
+                fundGroup.style.display = 'none';
+                bizAmountLabel.textContent = '商贷金额 (万元)';
+                bizRateLabel.textContent = '商贷年利率 (%)';
+            } else if (type === 'fund') {
+                bizGroup.style.display = 'grid';
+                fundGroup.style.display = 'none';
+                bizAmountLabel.textContent = '公积金金额 (万元)';
+                bizRateLabel.textContent = '公积金年利率 (%)';
+                document.getElementById('bizRate').value = '2.85';
+            } else {
+                bizGroup.style.display = 'grid';
+                fundGroup.style.display = 'grid';
+                bizAmountLabel.textContent = '商贷金额 (万元)';
+                bizRateLabel.textContent = '商贷年利率 (%)';
+            }
+        }
+
+        function calculateSingleLoan(principalYuan, annualRate, months) {
+            const monthlyRate = annualRate / 100 / 12;
+
+            // 等额本息
+            let benxiMonthly = 0;
+            let benxiTotalInterest = 0;
+            if (monthlyRate === 0) {
+                benxiMonthly = principalYuan / months;
+            } else {
+                const pow = Math.pow(1 + monthlyRate, months);
+                benxiMonthly = (principalYuan * monthlyRate * pow) / (pow - 1);
+            }
+            const benxiTotalPay = benxiMonthly * months;
+            benxiTotalInterest = benxiTotalPay - principalYuan;
+
+            // 等额本金
+            const basePrincipalMonth = principalYuan / months;
+            let benjinFirstMonth = basePrincipalMonth + principalYuan * monthlyRate;
+            let benjinDecrease = basePrincipalMonth * monthlyRate;
+            let benjinTotalInterest = ((months + 1) * principalYuan * monthlyRate) / 2;
+            let benjinTotalPay = principalYuan + benjinTotalInterest;
+
+            return {
+                benxiMonthly,
+                benxiTotalInterest,
+                benxiTotalPay,
+                benjinFirstMonth,
+                benjinDecrease,
+                benjinTotalInterest,
+                benjinTotalPay,
+                basePrincipalMonth,
+                monthlyRate
+            };
+        }
+
+        function calculateLoan() {
+            const type = document.getElementById('loanType').value;
+            const years = parseInt(document.getElementById('loanYears').value, 10);
+            const months = years * 12;
+
+            let bizAmt = parseFloat(document.getElementById('bizAmount').value) || 0;
+            let bizRate = parseFloat(document.getElementById('bizRate').value) || 0;
+            let fundAmt = 0;
+            let fundRate = 0;
+
+            if (type === 'combo') {
+                fundAmt = parseFloat(document.getElementById('fundAmount').value) || 0;
+                fundRate = parseFloat(document.getElementById('fundRate').value) || 0;
+            }
+
+            if (bizAmt <= 0 && fundAmt <= 0) {
+                showToast('请输入有效的贷款金额');
+                return;
+            }
+
+            const bizRes = calculateSingleLoan(bizAmt * 10000, bizRate, months);
+            const fundRes = calculateSingleLoan(fundAmt * 10000, fundRate, months);
+
+            const totalPrincipalWan = bizAmt + fundAmt;
+            const benxiMonthly = bizRes.benxiMonthly + fundRes.benxiMonthly;
+            const benxiTotalInterest = bizRes.benxiTotalInterest + fundRes.benxiTotalInterest;
+            const benxiTotalPay = bizRes.benxiTotalPay + fundRes.benxiTotalPay;
+
+            const benjinFirstMonth = bizRes.benjinFirstMonth + fundRes.benjinFirstMonth;
+            const benjinDecrease = bizRes.benjinDecrease + fundRes.benjinDecrease;
+            const benjinTotalInterest = bizRes.benjinTotalInterest + fundRes.benjinTotalInterest;
+            const benjinTotalPay = bizRes.benjinTotalPay + fundRes.benjinTotalPay;
+
+            // 渲染数据
+            document.getElementById('resBenxiMonthly').textContent = `¥ ${benxiMonthly.toFixed(2)}`;
+            document.getElementById('resBenxiPrincipal').textContent = `${totalPrincipalWan.toFixed(2)} 万元`;
+            document.getElementById('resBenxiInterest').textContent = `${(benxiTotalInterest / 10000).toFixed(2)} 万元`;
+            document.getElementById('resBenxiTotal').textContent = `${(benxiTotalPay / 10000).toFixed(2)} 万元`;
+
+            document.getElementById('resBenjinFirst').textContent = `¥ ${benjinFirstMonth.toFixed(2)}`;
+            document.getElementById('resBenjinDecrease').textContent = `¥ ${benjinDecrease.toFixed(2)}`;
+            document.getElementById('resBenjinInterest').textContent = `${(benjinTotalInterest / 10000).toFixed(2)} 万元`;
+            document.getElementById('resBenjinTotal').textContent = `${(benjinTotalPay / 10000).toFixed(2)} 万元`;
+
+            // 渲染明细
+            const tbody = document.getElementById('scheduleTbody');
+            tbody.innerHTML = '';
+            for (let i = 1; i <= Math.min(12, months); i++) {
+                const benjinMonthVal = benjinFirstMonth - (i - 1) * benjinDecrease;
+                const diff = benjinMonthVal - benxiMonthly;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>第 ${i} 期</td>
+                    <td>¥ ${benxiMonthly.toFixed(2)}</td>
+                    <td>¥ ${benjinMonthVal.toFixed(2)}</td>
+                    <td style="color:${diff >= 0 ? '#f87171' : '#34d399'}">${diff >= 0 ? '+' : ''}${diff.toFixed(2)}</td>
+                `;
+                tbody.appendChild(tr);
+            }
+
+            document.getElementById('resultSection').style.display = 'block';
+        }
+
+        calculateLoan();
+    </script>
+</body>
+</html>

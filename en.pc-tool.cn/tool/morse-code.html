@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Morse Code Converter</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="Online Morse code encoder and decoder for letters, digits and punctuation, with audio playback and a manual telegraph key.">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .container {
+            max-width: 800px;
+        }
+        .container h1 {
+            color: #e4e4e7;
+            margin-bottom: 8px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .container > p {
+            color: #a1a1aa;
+            font-size: 15px;
+            margin-bottom: 24px;
+        }
+        .card-box {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .text-area-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: #a1a1aa;
+            margin-bottom: 8px;
+        }
+        .styled-textarea {
+            width: 100%;
+            height: 120px;
+            padding: 12px 14px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 15px;
+            outline: none;
+            resize: none;
+            font-family: monospace, sans-serif;
+            line-height: 1.6;
+        }
+        .styled-textarea:focus {
+            border-color: rgba(129, 140, 248, 0.5);
+        }
+        .action-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 16px 0;
+        }
+        .action-btn {
+            padding: 9px 18px;
+            background: #818cf8;
+            border: none;
+            color: white;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .action-btn:hover {
+            background: #6366f1;
+        }
+        .btn-outline {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #e4e4e7;
+        }
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+        .play-btn {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #34d399;
+        }
+        .play-btn:hover {
+            background: rgba(16, 185, 129, 0.3);
+        }
+        .telegraph-key {
+            padding: 14px 28px;
+            background: rgba(129, 140, 248, 0.15);
+            border: 2px dashed rgba(129, 140, 248, 0.5);
+            border-radius: 12px;
+            color: #818cf8;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            user-select: none;
+            text-align: center;
+            margin-top: 10px;
+            transition: all 0.1s;
+        }
+        .telegraph-key:active {
+            background: rgba(129, 140, 248, 0.4);
+            transform: scale(0.98);
+        }
+        .ref-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin-top: 12px;
+        }
+        .ref-table th, .ref-table td {
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 6px 10px;
+            text-align: center;
+        }
+        .ref-table th {
+            background: rgba(255, 255, 255, 0.04);
+            color: #a1a1aa;
+        }
+        .ref-table td {
+            color: #e4e4e7;
+            font-family: monospace;
+        }
+        .ref-table code {
+            color: #818cf8;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+    <a href="../index.html" class="back-link">← Back to Home</a>
+
+    <div class="container">
+        <h1>Morse Code Converter</h1>
+        <p>Convert plain letters and digits into Morse code (dots and dashes), decode it back, and play it as audio beeps.</p>
+
+        <div class="card-box">
+            <div class="text-area-label">
+                <span>Plain text</span>
+                <span style="color:#71717a; font-size:12px;">Letters, digits and basic symbols</span>
+            </div>
+            <textarea class="styled-textarea" id="plainInput" placeholder="Enter the text to encode, e.g. SOS or HELLO WORLD">HELLO WORLD</textarea>
+
+            <div class="action-row">
+                <button class="action-btn" onclick="encodeToMorse()">Encode to Morse ➔</button>
+                <button class="action-btn" onclick="decodeFromMorse()">⬅ Decode to plain text</button>
+                <button class="action-btn play-btn" id="playaudioBtn" onclick="playMorseaudio()">🔊 Play telegraph audio</button>
+                <button class="action-btn btn-outline" onclick="clearAll()">Clear</button>
+            </div>
+
+            <div class="text-area-label">
+                <span>Morse code</span>
+                <span style="color:#71717a; font-size:12px;">Dot (· or .), dash (— or -), letters separated by spaces</span>
+            </div>
+            <textarea class="styled-textarea" id="morseInput" placeholder="Enter the Morse code to decode, e.g. ... --- ..."></textarea>
+            
+            <div style="margin-top: 14px; text-align:right;">
+                <button class="action-btn btn-outline" onclick="copyMorse()">Copy Morse code</button>
+            </div>
+        </div>
+
+        <div class="card-box">
+            <div style="font-size:14px; font-weight:600; color:#e4e4e7; margin-bottom:4px;">Interactive telegraph key:</div>
+            <p style="font-size:12px; color:#a1a1aa; margin-bottom:10px;">Hold the key below to send a continuous beep; release to stop:</p>
+            <div class="telegraph-key" id="telegraphKey">⚡ Click or hold here to transmit (beep)</div>
+        </div>
+
+        <div class="card-box">
+            <div style="font-size:14px; font-weight:600; color:#e4e4e7; margin-bottom:8px;">Morse code reference chart (common letters and digits):</div>
+            <div style="overflow-x:auto;">
+                <table class="ref-table">
+                    <tr>
+                        <th>A</th><td><code>.-</code></td>
+                        <th>B</th><td><code>-...</code></td>
+                        <th>C</th><td><code>-.-.</code></td>
+                        <th>D</th><td><code>-..</code></td>
+                        <th>E</th><td><code>.</code></td>
+                        <th>F</th><td><code>..-.</code></td>
+                    </tr>
+                    <tr>
+                        <th>G</th><td><code>--.</code></td>
+                        <th>H</th><td><code>....</code></td>
+                        <th>I</th><td><code>..</code></td>
+                        <th>J</th><td><code>.---</code></td>
+                        <th>K</th><td><code>-.-</code></td>
+                        <th>L</th><td><code>.-..</code></td>
+                    </tr>
+                    <tr>
+                        <th>M</th><td><code>--</code></td>
+                        <th>N</th><td><code>-.</code></td>
+                        <th>O</th><td><code>---</code></td>
+                        <th>P</th><td><code>.--.</code></td>
+                        <th>Q</th><td><code>--.-</code></td>
+                        <th>R</th><td><code>.-.</code></td>
+                    </tr>
+                    <tr>
+                        <th>S</th><td><code>...</code></td>
+                        <th>T</th><td><code>-</code></td>
+                        <th>U</th><td><code>..-</code></td>
+                        <th>V</th><td><code>...-</code></td>
+                        <th>W</th><td><code>.--</code></td>
+                        <th>X</th><td><code>-..-</code></td>
+                    </tr>
+                    <tr>
+                        <th>Y</th><td><code>-.--</code></td>
+                        <th>Z</th><td><code>--..</code></td>
+                        <th>1</th><td><code>.----</code></td>
+                        <th>2</th><td><code>..---</code></td>
+                        <th>3</th><td><code>...--</code></td>
+                        <th>4</th><td><code>....-</code></td>
+                    </tr>
+                    <tr>
+                        <th>5</th><td><code>.....</code></td>
+                        <th>6</th><td><code>-....</code></td>
+                        <th>7</th><td><code>--...</code></td>
+                        <th>8</th><td><code>---..</code></td>
+                        <th>9</th><td><code>----.</code></td>
+                        <th>0</th><td><code>-----</code></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        const MORSE_MAP = {
+            'A': '.-', 'B': '-...', 'C': '-.-.', 'D': '-..', 'E': '.', 'F': '..-.',
+            'G': '--.', 'H': '....', 'I': '..', 'J': '.---', 'K': '-.-', 'L': '.-..',
+            'M': '--', 'N': '-.', 'O': '---', 'P': '.--.', 'Q': '--.-', 'R': '.-.',
+            'S': '...', 'T': '-', 'U': '..-', 'V': '...-', 'W': '.--', 'X': '-..-',
+            'Y': '-.--', 'Z': '--..',
+            '1': '.----', '2': '..---', '3': '...--', '4': '....-', '5': '.....',
+            '6': '-....', '7': '--...', '8': '---..', '9': '----.', '0': '-----',
+            '.': '.-.-.-', ',': '--..--', '?': '..--..', "'": '.----.', '!': '-.-.--',
+            '/': '-..-.', '(': '-.--.', ')': '-.--.-', '&': '.-...', ':': '---...',
+            ';': '-.-.-.', '=': '-...-', '+': '.-.-.', '-': '-....-', '_': '..--.-',
+            '"': '.-..-.', '$': '...-..-', '@': '.--.-.'
+        };
+
+        const REVERSE_MORSE = {};
+        for (let char in MORSE_MAP) {
+            REVERSE_MORSE[MORSE_MAP[char]] = char;
+        }
+
+        const plainInput = document.getElementById('plainInput');
+        const morseInput = document.getElementById('morseInput');
+
+        function encodeToMorse() {
+            const text = plainInput.value.toUpperCase();
+            if (!text) {
+                morseInput.value = '';
+                return;
+            }
+            const words = text.split(/\s+/);
+            const encodedWords = words.map(w => {
+                return w.split('').map(c => MORSE_MAP[c] || c).join(' ');
+            });
+            morseInput.value = encodedWords.join('   ');
+        }
+
+        function decodeFromMorse() {
+            const raw = morseInput.value.trim();
+            if (!raw) {
+                plainInput.value = '';
+                return;
+            }
+            // Normalize dot and dash symbols to . and -
+            const normalized = raw.replace(/[·•]/g, '.').replace(/[—－_]/g, '-');
+            const words = normalized.split(/\s{2,}|\//);
+            const decoded = words.map(word => {
+                const letters = word.trim().split(/\s+/);
+                return letters.map(l => REVERSE_MORSE[l] || l).join('');
+            }).join(' ');
+            plainInput.value = decoded;
+        }
+
+        function clearAll() {
+            plainInput.value = '';
+            morseInput.value = '';
+        }
+
+        function copyMorse() {
+            if (!morseInput.value) return;
+            navigator.clipboard.writeText(morseInput.value).then(() => {
+                showToast('Copied the Morse code.');
+            });
+        }
+
+        // Web Audio telegraph playback
+        let audioCtx = null;
+        function getaudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            return audioCtx;
+        }
+
+        let isPlayingaudio = false;
+        async function playMorseaudio() {
+            if (isPlayingaudio) return;
+            encodeToMorse();
+            const code = morseInput.value;
+            if (!code) {
+                showToast('No Morse code available.');
+                return;
+            }
+
+            isPlayingaudio = true;
+            document.getElementById('playaudioBtn').textContent = '⏹ Playing...';
+            const ctx = getaudioContext();
+            const dotDuration = 80; // ms
+
+            for (let i = 0; i < code.length; i++) {
+                const ch = code[i];
+                if (ch === '.' || ch === '·') {
+                    playTone(ctx, dotDuration);
+                    await sleep(dotDuration + dotDuration);
+                } else if (ch === '-' || ch === '—') {
+                    playTone(ctx, dotDuration * 3);
+                    await sleep(dotDuration * 3 + dotDuration);
+                } else if (ch === ' ') {
+                    await sleep(dotDuration * 2);
+                }
+            }
+
+            isPlayingaudio = false;
+            document.getElementById('playaudioBtn').textContent = '🔊 Play telegraph audio';
+        }
+
+        function playTone(ctx, ms) {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.frequency.setValueAtTime(650, ctx.currentTime);
+            gain.gain.setValueAtTime(0.25, ctx.currentTime);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            osc.stop(ctx.currentTime + ms / 1000);
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // Manual telegraph key
+        let manualOsc = null;
+        let manualGain = null;
+        const keyBtn = document.getElementById('telegraphKey');
+
+        function startManualTone() {
+            const ctx = getaudioContext();
+            if (manualOsc) return;
+            manualOsc = ctx.createOscillator();
+            manualGain = ctx.createGain();
+            manualOsc.frequency.setValueAtTime(650, ctx.currentTime);
+            manualGain.gain.setValueAtTime(0.25, ctx.currentTime);
+            manualOsc.connect(manualGain);
+            manualGain.connect(ctx.destination);
+            manualOsc.start();
+        }
+
+        function stopManualTone() {
+            if (manualOsc) {
+                manualOsc.stop();
+                manualOsc.disconnect();
+                manualOsc = null;
+            }
+        }
+
+        keyBtn.addEventListener('mousedown', startManualTone);
+        keyBtn.addEventListener('mouseup', stopManualTone);
+        keyBtn.addEventListener('mouseleave', stopManualTone);
+        keyBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startManualTone(); });
+        keyBtn.addEventListener('touchend', (e) => { e.preventDefault(); stopManualTone(); });
+
+        encodeToMorse();
+    </script>
+</body>
+</html>

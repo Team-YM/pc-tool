@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bilibili Video URL Tool</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="Free online Bilibili video URL converter that extracts direct video links from Bilibili, supports multi-part (P) selection, and works great with VRChat. Completely free.">
+    <link rel="stylesheet" href="common.css">
+    <!-- OGP social sharing tags -->
+    <meta property="og:title" content="Bilibili Video URL Converter | PC-TOOL">
+    <meta property="og:description" content="Free online tools for image conversion, video compression, audio conversion, background removal, and more. Every feature is built for efficiency and is completely free.">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/vrc-url.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="en_US">
+    <style>
+        h1 {
+            text-align: center;
+            color: #fb7299;
+            margin-bottom: 8px;
+            font-size: 24px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #a1a1aa;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+
+        .subtitle a {
+            color: #4299e1;
+            text-decoration: none;
+        }
+
+        .subtitle a:hover {
+            color: #63b3ed;
+            text-decoration: underline;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #e4e4e7;
+            font-size: 15px;
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s;
+            background-color: rgba(255, 255, 255, 0.05);
+            color: #ffffff;
+        }
+
+        input:focus {
+            border-color: #fb7299;
+            background-color: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 0 3px rgba(251, 114, 153, 0.15);
+        }
+
+        input::placeholder {
+            color: #71717a;
+        }
+
+        .paste-btn {
+            width: auto;
+            padding: 12px 18px;
+            background-color: #9f7aea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 0;
+            font-weight: 500;
+        }
+
+        .paste-btn:hover {
+            background-color: #805ad5;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(159, 122, 234, 0.2);
+        }
+
+        .paste-btn:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        #extract-btn {
+            width: 100%;
+            padding: 14px 12px;
+            background: rgba(24, 24, 27, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 15px;
+            font-weight: 500;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        #extract-btn:hover {
+            background: rgba(39, 39, 42, 0.6);
+            border-color: rgba(251, 114, 153, 0.4);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(251, 114, 153, 0.1);
+        }
+
+        #extract-btn:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        .tutorial-btn {
+            width: 100%;
+            padding: 14px 12px;
+            background: rgba(24, 24, 27, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+            font-weight: 500;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        .tutorial-btn:hover {
+            background: rgba(39, 39, 42, 0.6);
+            border-color: rgba(66, 153, 225, 0.4);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 20px rgba(66, 153, 225, 0.1);
+        }
+
+        .tutorial-btn:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        .error {
+            color: #ff6b6b;
+            margin-top: 10px;
+            display: none;
+            font-size: 14px;
+            padding: 8px 12px;
+            background-color: rgba(248, 215, 218, 0.1);
+            border-radius: 8px;
+            border-left: 3px solid #e53e3e;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(24, 24, 27, 0.3);
+            border-radius: 12px;
+            word-break: break-all;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: none;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            animation: fadeIn 0.4s ease;
+        }
+
+        .result-title {
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #e4e4e7;
+            font-size: 16px;
+            text-align: center;
+        }
+
+        #result-text {
+            padding: 12px 15px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            color: #f4f4f5;
+            font-size: 15px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+            word-break: break-all;
+        }
+
+        .copy-btn {
+            background: rgba(24, 24, 27, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 0;
+            width: auto;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+            color: white;
+            cursor: pointer;
+            display: block;
+            margin: 0 auto;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        .copy-btn:hover {
+            background: rgba(39, 39, 42, 0.6);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .copy-btn:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            color: white;
+            border-radius: 8px;
+            font-size: 14px;
+            opacity: 0;
+            transition: all 0.3s;
+            pointer-events: none;
+            z-index: 9999;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+    </style>
+</head>
+<body>
+<canvas id="bg-canvas" class="bg-canvas"></canvas>
+    <a href="../index.html" class="back-link">← Back to Tools</a>
+
+    <div class="container">
+        <h1>Bilibili Video URL Converter</h1>
+        <div class="subtitle">This site is open source — <a href="https://github.com/cuteFishovo/pc-tool" target="_blank">view it on GitHub</a>. For questions or feedback, join our Discord: <a href="https://discord.gg/wjvS3efTj" target="_blank" rel="noopener noreferrer">https://discord.gg/wjvS3efTj</a></div>
+        <div class="subtitle" style="margin-top: -8px;">VRChat-friendly §(*￣▽￣*)§ It was actually written for VRC, but "URL converter" is just a better name for it.</div>
+
+        <button class="tutorial-btn" id="tutorial-btn-bilibili">View tutorial — Bilibili source</button>
+
+        <div class="form-group">
+            <label for="bilibili-url">Enter a Bilibili video link:</label>
+            <div class="input-wrapper">
+                <input type="text" id="bilibili-url" placeholder="e.g. https://www.bilibili.com/video/BV******/?p=2">
+                <button class="paste-btn" id="paste-url-btn">Paste</button>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="prefix-url">API link (the default should work; if it doesn't, please report it in our Discord (<a href="https://discord.gg/wjvS3efTj" target="_blank" rel="noopener noreferrer">https://discord.gg/wjvS3efTj</a>):</label>
+            <div class="input-wrapper">
+                <input type="text" id="prefix-url" value="http://ckapi.sevenbrothers.cn/bili/api?id=" placeholder="Enter API link">
+                <button class="paste-btn" id="paste-prefix-btn">Paste</button>
+            </div>
+        </div>
+
+        <button id="extract-btn">Extract and generate link</button>
+        <div class="error" id="error-msg">Please enter a valid Bilibili link!</div>
+
+        <div class="result" id="result-area">
+            <div class="result-title">Result</div>
+            <div id="result-text"></div>
+            <button class="copy-btn" id="copy-btn">Copy Result</button>
+        </div>
+
+        <div class="contact-tip">For feature requests or feedback, join our Discord: <a href="https://discord.gg/wjvS3efTj" target="_blank" rel="noopener noreferrer">https://discord.gg/wjvS3efTj</a></div>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="common.js"></script>
+
+    <script>
+        const urlInput = document.getElementById('bilibili-url');
+        const prefixInput = document.getElementById('prefix-url');
+        const extractBtn = document.getElementById('extract-btn');
+        const resultArea = document.getElementById('result-area');
+        const resultText = document.getElementById('result-text');
+        const copyBtn = document.getElementById('copy-btn');
+        const errorMsg = document.getElementById('error-msg');
+        const pasteUrlBtn = document.getElementById('paste-url-btn');
+        const pastePrefixBtn = document.getElementById('paste-prefix-btn');
+        const toast = document.getElementById('toast');
+        const tutorialBtnBilibili = document.getElementById('tutorial-btn-bilibili');
+
+        extractBtn.addEventListener('click', function () {
+            const url = urlInput.value.trim();
+            const prefix = prefixInput.value.trim();
+
+            errorMsg.style.display = 'none';
+            resultArea.style.display = 'none';
+
+            if (!url) {
+                errorMsg.textContent = 'Please enter a valid Bilibili link!';
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            const bvPattern = /BV[a-zA-Z0-9]{10}/;
+            const matchBv = url.match(bvPattern);
+
+            if (!matchBv) {
+                errorMsg.textContent = 'Could not find a BV code in the link. Please check that the link is correct.';
+                errorMsg.style.display = 'block';
+                return;
+            }
+            const bvCode = matchBv[0];
+            let finalUrl = prefix + bvCode;
+
+            const pPattern = /p=(\d+)/;
+            const matchP = url.match(pPattern);
+            if (matchP) {
+                finalUrl += '&p=' + matchP[1];
+            }
+
+            resultText.textContent = finalUrl;
+            resultArea.style.display = 'block';
+        });
+
+        copyBtn.addEventListener('click', async function () {
+            try {
+                await navigator.clipboard.writeText(resultText.textContent);
+                showToast('CopySuccess!');
+            } catch (err) {
+                showToast('Copy failed. Please copy it manually.');
+                console.error(err);
+            }
+        });
+
+        pasteUrlBtn.addEventListener('click', async function () {
+            try {
+                const text = await navigator.clipboard.readText();
+                urlInput.value = text.trim();
+                showToast('Pasted successfully!');
+            } catch (err) {
+                showToast('Paste failed. Please paste it manually.');
+                console.error(err);
+            }
+        });
+
+        pastePrefixBtn.addEventListener('click', async function () {
+            try {
+                const text = await navigator.clipboard.readText();
+                prefixInput.value = text.trim();
+                showToast('Pasted successfully!');
+            } catch (err) {
+                showToast('Paste failed. Please paste it manually.');
+                console.error(err);
+            }
+        });
+
+        function showToast(message) {
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+
+        urlInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                extractBtn.click();
+            }
+        });
+
+        tutorialBtnBilibili.addEventListener('click', function () {
+            const tutorialUrl = 'https://www.bilibili.com/video/BV1GpcQzpEa9/?share_source=copy_web&vd_source=2b36761489223d0bcb938551a82ccb91';
+            window.open(tutorialUrl, '_blank');
+        });
+    </script>
+</body>
+</html>
+
+
+

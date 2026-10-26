@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Inverter</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="Free online black-and-white inversion and film negative converter with pure B&W thresholding, color negative inversion, grayscale inversion and an adjustable threshold — all processed offline in your browser.">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="Black &amp; White Invert / Negative Effect | PC-TOOL">
+    <meta property="og:description" content="Create black-and-white inverted or color film-negative images online, with freely adjustable threshold and contrast.">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/image-invert.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="en_US">
+    <style>
+        .container {
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .mode-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 18px 0;
+            justify-content: center;
+        }
+
+        .mode-btn {
+            padding: 9px 18px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #a1a1aa;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.25s;
+        }
+
+        .mode-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+        }
+
+        .mode-btn.active {
+            background: rgba(129, 140, 248, 0.25);
+            border-color: rgba(129, 140, 248, 0.6);
+            color: #c4b5fd;
+            font-weight: 500;
+        }
+
+        .slider-box {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            padding: 14px 18px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .slider-box label {
+            font-size: 14px;
+            color: #d4d4d8;
+            white-space: nowrap;
+            min-width: 80px;
+        }
+
+        .slider-box input[type="range"] {
+            flex: 1;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+        }
+
+        .slider-box input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #818cf8;
+            cursor: pointer;
+        }
+
+        .slider-val {
+            font-size: 13px;
+            color: #818cf8;
+            font-family: monospace;
+            width: 45px;
+            text-align: right;
+        }
+
+        .preview-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 15px;
+        }
+
+        @media (max-width: 640px) {
+            .preview-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .preview-pane {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .preview-pane h4 {
+            font-size: 13px;
+            color: #a1a1aa;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .preview-canvas-wrap {
+            width: 100%;
+            height: 320px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: repeating-conic-gradient(#1c1c22 0% 25%, #141418 0% 50%) 50% / 14px 14px;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .preview-canvas-wrap canvas,
+        .preview-canvas-wrap img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        .btn-center {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 22px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+    <a href="../index.html" class="back-link">← Back to Tools</a>
+
+    <div class="container">
+        <h1>Black &amp; White Invert / Negative Effect</h1>
+        <p>Convert your images to high-contrast inverted black and white, color film negatives or grayscale inversion, with an adjustable threshold.</p>
+
+        <div class="upload-area" id="uploadArea">
+            <p>Click or drag to upload an image (JPG, PNG, WebP and more supported)</p>
+            <input type="file" id="fileInput" accept="image/*">
+        </div>
+
+        <div id="processWorkspace" style="display:none;">
+            <div class="mode-row" id="modeGroup">
+                <button class="mode-btn active" data-mode="bw-invert">B&amp;W Invert (High Contrast)</button>
+                <button class="mode-btn" data-mode="gray-invert">Grayscale Negative (Smooth)</button>
+                <button class="mode-btn" data-mode="color-invert">Full-Color Negative (Classic Film)</button>
+                <button class="mode-btn" data-mode="bw-normal">Pure B&amp;W Threshold</button>
+            </div>
+
+            <div class="slider-box" id="thresholdBox">
+                <label>B&amp;W Threshold</label>
+                <input type="range" id="thresholdRange" min="1" max="254" value="128">
+                <span class="slider-val" id="thresholdVal">128</span>
+            </div>
+
+            <div class="slider-box">
+                <label>Invert Contrast Boost</label>
+                <input type="range" id="contrastRange" min="50" max="200" value="100">
+                <span class="slider-val" id="contrastVal">100%</span>
+            </div>
+
+            <div class="preview-grid">
+                <div class="preview-pane">
+                    <h4>Original Reference</h4>
+                    <div class="preview-canvas-wrap">
+                        <img id="origImg" alt="Original image preview">
+                    </div>
+                </div>
+                <div class="preview-pane">
+                    <h4>Inverted Result</h4>
+                    <div class="preview-canvas-wrap">
+                        <canvas id="resultCanvas"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="btn-center">
+                <button class="btn" id="downloadBtn" style="background:rgba(129,140,248,0.3);border-color:rgba(129,140,248,0.4);">Download Inverted Image</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        var uploadArea = document.getElementById('uploadArea');
+        var fileInput = document.getElementById('fileInput');
+        var processWorkspace = document.getElementById('processWorkspace');
+        var origImg = document.getElementById('origImg');
+        var resultCanvas = document.getElementById('resultCanvas');
+        var resultCtx = resultCanvas.getContext('2d');
+        var thresholdRange = document.getElementById('thresholdRange');
+        var thresholdVal = document.getElementById('thresholdVal');
+        var contrastRange = document.getElementById('contrastRange');
+        var contrastVal = document.getElementById('contrastVal');
+        var modeGroup = document.getElementById('modeGroup');
+        var downloadBtn = document.getElementById('downloadBtn');
+
+        var currentMode = 'bw-invert';
+        var sourceimage = null;
+
+        uploadArea.addEventListener('click', function() { fileInput.click(); });
+        uploadArea.addEventListener('dragover', function(e) { e.preventDefault(); });
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', function(e) {
+            if (e.target.files.length) handleFile(e.target.files[0]);
+        });
+
+        function handleFile(file) {
+            if (!file || !file.type.startsWith('image/')) return;
+            var reader = new FileReader();
+            reader.onload = function(ev) {
+                var img = new Image();
+                img.onload = function() {
+                    sourceimage = img;
+                    origImg.src = ev.target.result;
+                    processWorkspace.style.display = 'block';
+                    applyInversion();
+                };
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        modeGroup.addEventListener('click', function(e) {
+            if (e.target.classList.contains('mode-btn')) {
+                modeGroup.querySelectorAll('.mode-btn').forEach(function(b) { b.classList.remove('active'); });
+                e.target.classList.add('active');
+                currentMode = e.target.getAttribute('data-mode');
+                applyInversion();
+            }
+        });
+
+        thresholdRange.addEventListener('input', function() {
+            thresholdVal.innerText = thresholdRange.value;
+            applyInversion();
+        });
+
+        contrastRange.addEventListener('input', function() {
+            contrastVal.innerText = contrastRange.value + '%';
+            applyInversion();
+        });
+
+        function applyInversion() {
+            if (!sourceimage) return;
+            var w = sourceimage.width;
+            var h = sourceimage.height;
+            resultCanvas.width = w;
+            resultCanvas.height = h;
+
+            resultCtx.drawImage(sourceimage, 0, 0, w, h);
+            var imgData = resultCtx.getImageData(0, 0, w, h);
+            var d = imgData.data;
+
+            var th = parseInt(thresholdRange.value, 10);
+            var factor = (259 * (parseInt(contrastRange.value, 10) + 255)) / (255 * (259 - parseInt(contrastRange.value, 10)));
+
+            for (var i = 0; i < d.length; i += 4) {
+                var r = d[i];
+                var g = d[i + 1];
+                var b = d[i + 2];
+
+                // Contrast adjustment
+                if (contrastRange.value !== '100') {
+                    r = Math.min(255, Math.max(0, factor * (r - 128) + 128));
+                    g = Math.min(255, Math.max(0, factor * (g - 128) + 128));
+                    b = Math.min(255, Math.max(0, factor * (b - 128) + 128));
+                }
+
+                // Grayscale luminance
+                var gray = 0.299 * r + 0.587 * g + 0.114 * b;
+
+                if (currentMode === 'color-invert') {
+                    // Full-color film negative
+                    d[i] = 255 - r;
+                    d[i + 1] = 255 - g;
+                    d[i + 2] = 255 - b;
+                } else if (currentMode === 'gray-invert') {
+                    // Grayscale inversion
+                    var invGray = 255 - gray;
+                    d[i] = invGray;
+                    d[i + 1] = invGray;
+                    d[i + 2] = invGray;
+                } else if (currentMode === 'bw-invert') {
+                    // B&W inversion (light areas turn black, dark areas turn white)
+                    var val = gray >= th ? 0 : 255;
+                    d[i] = val;
+                    d[i + 1] = val;
+                    d[i + 2] = val;
+                } else if (currentMode === 'bw-normal') {
+                    // Standard thresholding (light areas turn white, dark areas turn black)
+                    var val2 = gray >= th ? 255 : 0;
+                    d[i] = val2;
+                    d[i + 1] = val2;
+                    d[i + 2] = val2;
+                }
+            }
+
+            resultCtx.putImageData(imgData, 0, 0);
+        }
+
+        downloadBtn.addEventListener('click', function() {
+            if (!sourceimage) return;
+            var a = document.createElement('a');
+            a.download = 'inverted-image.png';
+            a.href = resultCanvas.toDataURL('image/png');
+            a.click();
+        });
+    </script>
+</body>
+</html>

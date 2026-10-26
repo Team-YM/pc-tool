@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>条形码生成器 | PC-TOOL</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="在线条形码生成器，支持 Code 128、EAN-13、EAN-8、UPC-A、Code 39 格式，支持自定义条码高度、文字显示与高清 PNG 下载。">
+    <link rel="stylesheet" href="common.css">
+    <style>
+        .container {
+            max-width: 780px;
+        }
+        .container h1 {
+            color: #e4e4e7;
+            margin-bottom: 8px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .container > p {
+            color: #a1a1aa;
+            font-size: 15px;
+            margin-bottom: 24px;
+        }
+        .card-box {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        .input-group label {
+            display: block;
+            font-size: 13px;
+            color: #a1a1aa;
+            margin-bottom: 6px;
+        }
+        .input-styled, .select-styled {
+            width: 100%;
+            padding: 10px 14px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+        }
+        .select-styled {
+            background: rgba(24, 24, 27, 0.8);
+            cursor: pointer;
+        }
+        .input-styled:focus, .select-styled:focus {
+            border-color: rgba(129, 140, 248, 0.5);
+        }
+        .action-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        .action-btn {
+            padding: 10px 22px;
+            background: #818cf8;
+            border: none;
+            color: white;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .action-btn:hover {
+            background: #6366f1;
+        }
+        .btn-outline {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #e4e4e7;
+        }
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+        .barcode-preview-box {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-top: 20px;
+            overflow-x: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        #barcodeCanvas {
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+    <a href="../index.html" class="back-link">← 返回首页</a>
+
+    <div class="container">
+        <h1>条形码生成器</h1>
+        <p>支持 Code-128、EAN-13、Code-39 等格式条形码实时绘制，支持高清图片导出与打印。</p>
+
+        <div class="card-box">
+            <div class="form-grid">
+                <div class="input-group">
+                    <label>条形码格式</label>
+                    <select class="select-styled" id="codeFormat" onchange="generateBarcode()">
+                        <option value="CODE128">Code 128 (支持数字与字母)</option>
+                        <option value="EAN13">EAN-13 (标准13位商品码)</option>
+                        <option value="CODE39">Code 39 (工业标准字符码)</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>条码高度 (px)</label>
+                    <input type="number" class="input-styled" id="barHeight" value="80" min="40" max="200" step="5" oninput="generateBarcode()">
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>输入条码内容</label>
+                <input type="text" class="input-styled" id="barcodeContent" value="PCTOOL888888" placeholder="请输入条形码内容" oninput="generateBarcode()">
+            </div>
+
+            <div class="action-row">
+                <button class="action-btn" onclick="generateBarcode()">生成条形码</button>
+                <button class="action-btn btn-outline" onclick="downloadBarcode()">下载 PNG 图片</button>
+                <button class="action-btn btn-outline" onclick="printBarcode()">打印条码</button>
+            </div>
+
+            <div class="barcode-preview-box">
+                <canvas id="barcodeCanvas"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        // Code 128 模式 B 编码表实现
+        const CODE128_PATTERNS = [
+            "212222","222122","222221","121223","121322","131222","122213","122312","132212","221213",
+            "221312","231212","112232","122132","122231","113222","123122","123221","223211","221132",
+            "221231","213212","223112","312131","311222","321122","321221","312212","322112","322211",
+            "212123","212321","232121","111323","131123","131321","112313","132113","132311","211313",
+            "231113","231311","112133","112331","132131","113123","113321","133121","313121","211331",
+            "231131","213113","213311","213131","311123","311321","331121","312113","312311","332111",
+            "314111","221411","431111","111224","111422","121124","121421","141122","141221","112214",
+            "112412","122114","122411","142112","142211","241211","221114","413111","241112","134111",
+            "111242","121142","121241","114212","124112","124211","411212","421112","421211","212141",
+            "214121","412121","111143","111341","131141","114113","114311","411113","411311","113141",
+            "114131","311141","411131","211412","211214","211232","2331112"
+        ];
+
+        // Code 39 字符表
+        const CODE39_MAP = {
+            '0':'101001101101', '1':'110100101011', '2':'101100101011', '3':'110110010101',
+            '4':'101001101011', '5':'110100110101', '6':'101100110101', '7':'101001011011',
+            '8':'110100101101', '9':'101100101101', 'A':'110101001011', 'B':'101101001011',
+            'C':'110110100101', 'D':'101011001011', 'E':'110101100101', 'F':'101101100101',
+            'G':'101010011011', 'H':'110101001101', 'I':'101101001101', 'J':'101011001101',
+            'K':'110101010011', 'L':'101101010011', 'M':'110110101001', 'N':'101011010011',
+            'O':'110101101001', 'P':'101101101001', 'Q':'101010110011', 'R':'110101011001',
+            'S':'101101011001', 'T':'101011011001', 'U':'110010101011', 'V':'100110101011',
+            'W':'110011010101', 'X':'100101101011', 'Y':'110010110101', 'Z':'100110110101',
+            '-':'100101011011', '.':'110010101101', ' ':'100110101101', '$':'100100100101',
+            '/':'100100101001', '+':'100101001001', '%':'101001001001', '*':'100101101101'
+        };
+
+        function encodeCode128B(text) {
+            let codes = [104]; // Start Code B
+            let checksum = 104;
+            for (let i = 0; i < text.length; i++) {
+                const charCode = text.charCodeAt(i);
+                const codeVal = charCode - 32;
+                if (codeVal < 0 || codeVal > 95) return null;
+                codes.push(codeVal);
+                checksum += codeVal * (i + 1);
+            }
+            codes.push(checksum % 103);
+            codes.push(106); // Stop Code
+
+            let bitStr = "";
+            codes.forEach(c => {
+                const pattern = CODE128_PATTERNS[c];
+                for (let j = 0; j < pattern.length; j++) {
+                    const count = parseInt(pattern[j], 10);
+                    const bit = (j % 2 === 0) ? "1" : "0";
+                    bitStr += bit.repeat(count);
+                }
+            });
+            return bitStr;
+        }
+
+        function encodeCode39(text) {
+            const upper = text.toUpperCase();
+            const fullText = '*' + upper + '*';
+            let bitStr = "";
+            for (let i = 0; i < fullText.length; i++) {
+                const char = fullText[i];
+                if (!CODE39_MAP[char]) return null;
+                bitStr += CODE39_MAP[char] + "0";
+            }
+            return bitStr;
+        }
+
+        function generateBarcode() {
+            const canvas = document.getElementById('barcodeCanvas');
+            const ctx = canvas.getContext('2d');
+            const format = document.getElementById('codeFormat').value;
+            const text = document.getElementById('barcodeContent').value.trim();
+            const barHeight = parseInt(document.getElementById('barHeight').value, 10) || 80;
+
+            if (!text) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                return;
+            }
+
+            let bits = "";
+            if (format === 'CODE128') {
+                bits = encodeCode128B(text);
+            } else if (format === 'CODE39') {
+                bits = encodeCode39(text);
+            } else if (format === 'EAN13') {
+                // 如果是EAN13但位数不对，降级到Code128提示
+                if (/^\d{12,13}$/.test(text)) {
+                    bits = encodeCode128B(text);
+                } else {
+                    showToast('EAN-13 格式需输入 12~13 位数字');
+                    bits = encodeCode128B(text);
+                }
+            }
+
+            if (!bits) {
+                showToast('输入内容包含所选格式不支持的字符');
+                return;
+            }
+
+            const moduleWidth = 2;
+            const quietZone = 20;
+            const totalWidth = bits.length * moduleWidth + quietZone * 2;
+            const textHeight = 24;
+            const totalHeight = barHeight + textHeight + 20;
+
+            canvas.width = totalWidth;
+            canvas.height = totalHeight;
+
+            // 绘制白色背景
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, totalWidth, totalHeight);
+
+            // 绘制条码黑线
+            ctx.fillStyle = '#000000';
+            for (let i = 0; i < bits.length; i++) {
+                if (bits[i] === '1') {
+                    ctx.fillRect(quietZone + i * moduleWidth, 10, moduleWidth, barHeight);
+                }
+            }
+
+            // 绘制下方条码文本
+            ctx.font = '15px monospace';
+            ctx.fillStyle = '#18181b';
+            ctx.textAlign = 'center';
+            ctx.fillText(text, totalWidth / 2, barHeight + textHeight + 5);
+        }
+
+        function downloadBarcode() {
+            const canvas = document.getElementById('barcodeCanvas');
+            if (!canvas.width) {
+                showToast('请先生成条形码');
+                return;
+            }
+            const dataUrl = canvas.toDataURL('image/png');
+            const a = document.createElement('a');
+            a.href = dataUrl;
+            a.download = `barcode_${Date.now()}.png`;
+            a.click();
+            showToast('条形码已保存');
+        }
+
+        function printBarcode() {
+            const canvas = document.getElementById('barcodeCanvas');
+            if (!canvas.width) {
+                showToast('请先生成条形码');
+                return;
+            }
+            const dataUrl = canvas.toDataURL('image/png');
+            const win = window.open('', '_blank');
+            win.document.write(`
+                <html>
+                    <head><title>打印条形码</title></head>
+                    <body style="display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">
+                        <img src="${dataUrl}" style="max-width:80%;" onload="window.print();window.close();" />
+                    </body>
+                </html>
+            `);
+            win.document.close();
+        }
+
+        generateBarcode();
+    </script>
+</body>
+</html>

@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Editor</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="Free online Markdown editor with live preview, toolbar shortcuts, HTML and Markdown export, and automatic saving. Runs entirely in your browser.">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="Markdown Editor | PC-TOOL">
+    <meta property="og:description" content="Free online Markdown editor with live preview and one-click formatting, plus HTML and Markdown export.">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/markdown-editor.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="en_US">
+    <style>
+        .container { max-width: 1120px; }
+
+        /* Library load failure notice */
+        .lib-warning {
+            display: none;
+            margin-top: 16px;
+            padding: 12px 16px;
+            background: rgba(234, 179, 8, 0.12);
+            border: 1px solid rgba(234, 179, 8, 0.35);
+            color: #fde047;
+            border-radius: 10px;
+            font-size: 0.875rem;
+        }
+
+        /* Toolbar */
+        .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+        .toolbar.secondary { margin-top: 10px; }
+        .md-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #e4e4e7;
+            padding: 7px 12px;
+            border-radius: 8px;
+            font-size: 0.8125rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .md-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(129, 140, 248, 0.5);
+        }
+        .md-btn:active { transform: scale(0.96); }
+        .md-btn.primary {
+            background: rgba(99, 102, 241, 0.25);
+            border-color: rgba(129, 140, 248, 0.4);
+            color: #c7d2fe;
+        }
+        .md-btn.primary:hover { background: rgba(99, 102, 241, 0.45); }
+        .md-btn.danger { color: #fca5a5; }
+        .md-btn.danger:hover { border-color: rgba(248, 113, 113, 0.5); }
+
+        /* Two-column layout */
+        .editor-wrap {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 16px;
+        }
+        .pane-title {
+            font-size: 0.8125rem;
+            color: #71717a;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+        }
+
+        #editor {
+            width: 100%;
+            min-height: 480px;
+            resize: vertical;
+            background: rgba(15, 15, 18, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            color: #e4e4e7;
+            padding: 16px;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        #editor:focus { outline: none; border-color: rgba(129, 140, 248, 0.5); }
+
+        .preview-pane {
+            min-height: 480px;
+            max-height: 600px;
+            overflow-y: auto;
+            background: rgba(15, 15, 18, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 20px;
+            font-size: 0.95rem;
+            color: #d4d4d8;
+        }
+
+        /* Markdown typography in the preview pane */
+        .preview-pane h1, .preview-pane h2, .preview-pane h3, .preview-pane h4 { color: #f4f4f5; margin: 18px 0 10px; }
+        .preview-pane h1 { font-size: 1.8rem; border-bottom: 1px solid rgba(255, 255, 255, 0.12); padding-bottom: 8px; }
+        .preview-pane h2 { font-size: 1.4rem; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 6px; }
+        .preview-pane h3 { font-size: 1.15rem; }
+        .preview-pane p { margin: 10px 0; }
+        .preview-pane ul, .preview-pane ol { padding-left: 24px; margin: 10px 0; }
+        .preview-pane li { margin: 4px 0; }
+        .preview-pane a { color: #818cf8; text-decoration: underline; }
+        .preview-pane img { max-width: 100%; border-radius: 8px; }
+        .preview-pane hr { border: none; border-top: 1px solid rgba(255, 255, 255, 0.1); margin: 16px 0; }
+        .preview-pane code {
+            font-family: "SFMono-Regular", Consolas, Menlo, monospace;
+            background: rgba(255, 255, 255, 0.08);
+            padding: 2px 5px;
+            border-radius: 4px;
+            color: #c7d2fe;
+            font-size: 0.875em;
+        }
+        .preview-pane pre {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 14px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 12px 0;
+        }
+        .preview-pane pre code { background: transparent; padding: 0; color: #e4e4e7; }
+        .preview-pane blockquote {
+            border-left: 3px solid #818cf8;
+            padding-left: 14px;
+            color: #a1a1aa;
+            margin: 12px 0;
+        }
+        .preview-pane table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+        .preview-pane th, .preview-pane td { border: 1px solid rgba(255, 255, 255, 0.15); padding: 8px 12px; text-align: left; }
+        .preview-pane th { background: rgba(255, 255, 255, 0.05); color: #e4e4e7; }
+        .render-fallback { color: #a1a1aa; }
+
+        /* Bottom status bar */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 12px;
+            color: #71717a;
+            font-size: 0.8125rem;
+        }
+
+        @media (max-width: 900px) {
+            .editor-wrap { grid-template-columns: 1fr; }
+            .preview-pane { max-height: none; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <!-- Back-to-home button in a unified position -->
+    <a href="../index.html" class="back-link">← Back to Tools</a>
+
+    <div class="container">
+        <h1>Markdown Editor</h1>
+        <p>Type Markdown on the left and see the live preview on the right, with quick formatting, export and automatic local saving.</p>
+
+        <div id="libWarning" class="lib-warning">Failed to load the rendering library. Please check your network connection and refresh the page. Editing and exporting still work.</div>
+
+        <!-- Formatting toolbar -->
+        <div class="toolbar" id="formatBar">
+            <button class="md-btn" data-action="bold">Bold</button>
+            <button class="md-btn" data-action="italic">Italic</button>
+            <button class="md-btn" data-action="heading">Heading</button>
+            <button class="md-btn" data-action="link">Link</button>
+            <button class="md-btn" data-action="image">Image</button>
+            <button class="md-btn" data-action="inlineCode">Inline code</button>
+            <button class="md-btn" data-action="codeBlock">Code block</button>
+            <button class="md-btn" data-action="quote">Quote</button>
+            <button class="md-btn" data-action="ol">Numbered list</button>
+            <button class="md-btn" data-action="ul">Bullet list</button>
+            <button class="md-btn" data-action="table">Table</button>
+        </div>
+
+        <!-- Import and export toolbar -->
+        <div class="toolbar secondary">
+            <button class="md-btn primary" id="exportMdBtn">Download .md</button>
+            <button class="md-btn primary" id="exportHtmlBtn">Download .html</button>
+            <button class="md-btn" id="copyHtmlBtn">Copy HTML source</button>
+            <button class="md-btn" id="importBtn">Import .md</button>
+            <button class="md-btn danger" id="clearBtn">Clear</button>
+            <input type="file" id="fileInput" accept=".md,.markdown,text/markdown,text/plain" hidden>
+        </div>
+
+        <div class="editor-wrap">
+            <div class="pane">
+                <div class="pane-title">EDITOR</div>
+                <textarea id="editor" spellcheck="false" placeholder="Type your Markdown here..."></textarea>
+            </div>
+            <div class="pane">
+                <div class="pane-title">PREVIEW</div>
+                <div class="preview-pane" id="preview"></div>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <span id="statusInfo">0 characters · line 1</span>
+            <span id="saveState">Saved automatically</span>
+        </div>
+    </div>
+    <script type="text/plain" id="sampleDoc"># Markdown Editor
+Welcome to the **PC-TOOL Markdown Editor**. Type on the left and see the live preview on the right.
+## What it can do
+- Supports **bold**, *italic* and `inline code`
+- Supports code blocks, quotes and tables
+- Supports exporting Markdown and HTML files
+### Code example
+
+```js
+function greet(name) { return 'Hello, ' + name; }
+```
+
+> This is a block quote, shown here to demonstrate the quote style.
+| Feature | Description |
+| --- | --- |
+| Live preview | Renders as you type |
+| Auto save | Survives a page refresh |
+[Visit PC-TOOL](https://www.pc-tool.cn)</script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+    <script src="common.js"></script>
+    <script>
+        (function () {
+            const STORAGE_KEY = 'pc-tool-markdown-editor';
+
+            // DOM elements
+            const editor = document.getElementById('editor');
+            const preview = document.getElementById('preview');
+            const statusInfo = document.getElementById('statusInfo');
+            const saveState = document.getElementById('saveState');
+            const libWarning = document.getElementById('libWarning');
+            const formatBar = document.getElementById('formatBar');
+            const fileInput = document.getElementById('fileInput');
+
+            const exportMdBtn = document.getElementById('exportMdBtn');
+            const exportHtmlBtn = document.getElementById('exportHtmlBtn');
+            const copyHtmlBtn = document.getElementById('copyHtmlBtn');
+            const importBtn = document.getElementById('importBtn');
+            const clearBtn = document.getElementById('clearBtn');
+
+            let lastHtml = '';
+            let rendertimer = null;
+            let savetimer = null;
+
+            // Toast message
+            function toast(msg) {
+                const el = document.createElement('div');
+                el.textContent = msg;
+                el.style.cssText = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);padding:10px 22px;background:rgba(0,0,0,0.85);color:#fff;border-radius:8px;font-size:14px;z-index:9999;border:1px solid rgba(255,255,255,0.12);opacity:0;transition:opacity .3s;';
+                document.body.appendChild(el);
+                requestAnimationFrame(() => el.style.opacity = '1');
+                setTimeout(() => {
+                    el.style.opacity = '0';
+                    setTimeout(() => el.remove(), 300);
+                }, 1800);
+            }
+
+            // Update character and line counts
+            function updatestatus() {
+                const text = editor.value;
+                const chars = text.replace(/\s/g, '').length;
+                const lines = text.length === 0 ? 1 : text.split('\n').length;
+                statusInfo.textContent = chars + ' characters · line ' + lines;
+            }
+
+            // Render the preview (marked parsing + DOMPurify XSS filtering)
+            function render() {
+                const text = editor.value;
+                if (!window.marked || !window.DOMPurify) {
+                    libWarning.style.display = 'block';
+                    preview.innerHTML = '';
+                    const p = document.createElement('p');
+                    p.className = 'render-fallback';
+                    p.textContent = 'Preview unavailable: the rendering library has not loaded.';
+                    preview.appendChild(p);
+                    return;
+                }
+                libWarning.style.display = 'none';
+                try {
+                    const raw = window.marked.parse(text);
+                    if (raw && typeof raw.then === 'function') {
+                        raw.then(html => { lastHtml = window.DOMPurify.sanitize(html); preview.innerHTML = lastHtml; });
+                    } else {
+                        lastHtml = window.DOMPurify.sanitize(raw);
+                        preview.innerHTML = lastHtml;
+                    }
+                } catch (err) {
+                    preview.innerHTML = '';
+                    const p = document.createElement('p');
+                    p.className = 'render-fallback';
+                    p.textContent = 'Rendering error: ' + (err && err.message ? err.message : err);
+                    preview.appendChild(p);
+                }
+            }
+
+            function scheduleRender() {
+                if (rendertimer) clearTimeout(rendertimer);
+                rendertimer = setTimeout(render, 150);
+            }
+            function scheduleSave() {
+                saveState.textContent = 'Typing...';
+                if (savetimer) clearTimeout(savetimer);
+                savetimer = setTimeout(() => {
+                    try {
+                        localStorage.setItem(STORAGE_KEY, editor.value);
+                        saveState.textContent = 'Saved automatically';
+                    } catch (e) {
+                        saveState.textContent = 'Save failed';
+                    }
+                }, 300);
+            }
+
+            // Refresh everything after an edit
+            function afterEdit() {
+                updatestatus();
+                scheduleRender();
+                scheduleSave();
+            }
+
+            // Wrap the selected text (before/after syntax)
+            function wrapSelection(before, after, placeholder) {
+                const start = editor.selectionStart;
+                const end = editor.selectionEnd;
+                const selected = editor.value.slice(start, end);
+                const text = selected || placeholder;
+                editor.setRangeText(before + text + after, start, end, 'end');
+                // Select the inner text so it can be typed over directly
+                editor.setSelectionRange(start + before.length, start + before.length + text.length);
+                afterEdit();
+                editor.focus();
+            }
+
+            // Line-start prefix (heading/quote/list); clicking again removes it
+            function linePrefix(prefix) {
+                const value = editor.value;
+                const start = editor.selectionStart;
+                const end = editor.selectionEnd;
+                let lineStart = value.lastIndexOf('\n', start - 1) + 1;
+                let lineEnd = value.indexOf('\n', end);
+                if (lineEnd === -1) lineEnd = value.length;
+
+                const lines = value.slice(lineStart, lineEnd).split('\n');
+                const allPrefixed = lines.every(l => l.startsWith(prefix));
+                const newBlock = lines.map(l => allPrefixed ? l.slice(prefix.length) : prefix + l).join('\n');
+
+                editor.setRangeText(newBlock, lineStart, lineEnd, 'end');
+                afterEdit();
+                editor.focus();
+            }
+
+            // Insert a table template
+            function insertTable() {
+                const value = editor.value;
+                const start = editor.selectionStart;
+                const before = (start > 0 && value[start - 1] !== '\n') ? '\n' : '';
+                const tpl = '| Column 1 | Column 2 | Column 3 |\n| --- | --- | --- |\n| Content | Content | Content |\n';
+                editor.setRangeText(before + tpl, start, editor.selectionEnd, 'end');
+                afterEdit();
+                editor.focus();
+            }
+
+            // Toolbar action dispatch
+            const wrapMap = {
+                bold: ['**', '**', 'bold text'],
+                italic: ['*', '*', 'italic text'],
+                inlineCode: ['`', '`', 'code'],
+                link: ['[', '](https://)', 'link text'],
+                image: ['![', '](https://)', 'image description'],
+                codeBlock: ['```\n', '\n```', 'code']
+            };
+            const lineMap = { heading: '# ', quote: '> ', ol: '1. ', ul: '- ' };
+
+            formatBar.addEventListener('click', (e) => {
+                const btn = e.target.closest('button[data-action]');
+                if (!btn) return;
+                const action = btn.dataset.action;
+                editor.focus();
+                if (wrapMap[action]) {
+                    wrapSelection(wrapMap[action][0], wrapMap[action][1], wrapMap[action][2]);
+                } else if (lineMap[action]) {
+                    linePrefix(lineMap[action]);
+                } else if (action === 'table') {
+                    insertTable();
+                }
+            });
+
+            // Download File
+            function downloadText(content, filename, mime) {
+                const blob = new Blob([content], { type: mime || 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+            }
+
+            // Inline styles for exported HTML
+            const EXPORT_CSS =
+                'body{margin:0;padding:32px;background:#0f0f12;color:#e4e4e7;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;line-height:1.6;}' +
+                '.markdown-body{max-width:820px;margin:0 auto;}' +
+                '.markdown-body h1{border-bottom:1px solid #333;padding-bottom:8px;}' +
+                '.markdown-body pre{background:#000;padding:14px;border-radius:8px;overflow-x:auto;}' +
+                '.markdown-body code{font-family:monospace;background:rgba(255,255,255,.08);padding:2px 5px;border-radius:4px;}' +
+                '.markdown-body pre code{background:transparent;padding:0;}' +
+                '.markdown-body blockquote{border-left:3px solid #818cf8;padding-left:14px;color:#a1a1aa;}' +
+                '.markdown-body table{border-collapse:collapse;width:100%;}' +
+                '.markdown-body th,.markdown-body td{border:1px solid #444;padding:8px 12px;}' +
+                '.markdown-body th{background:rgba(255,255,255,.06);}' +
+                '.markdown-body a{color:#818cf8;}' +
+                '.markdown-body img{max-width:100%;}';
+
+            function buildHtmlDocument(bodyHtml) {
+                return '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>Markdown Editor</title>\n<style>' + EXPORT_CSS + '</style>\n</head>\n<body>\n<article class="markdown-body">\n' + bodyHtml + '\n</article>\n</body>\n</html>';
+            }
+
+            exportMdBtn.addEventListener('click', () => {
+                if (!editor.value.trim()) { toast('Nothing to export: the editor is empty.'); return; }
+                downloadText(editor.value, 'document.md', 'text/markdown;charset=utf-8');
+                toast('Exported document.md');
+            });
+
+            exportHtmlBtn.addEventListener('click', () => {
+                if (!window.marked || !window.DOMPurify) { toast('The rendering library has not loaded, so HTML export is unavailable.'); return; }
+                if (!editor.value.trim()) { toast('Nothing to export: the editor is empty.'); return; }
+                downloadText(buildHtmlDocument(lastHtml), 'document.html', 'text/html;charset=utf-8');
+                toast('Exported document.html');
+            });
+
+            // Copy the HTML source
+            function copyText(text) {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(
+                        () => toast('Copied to clipboard'),
+                        () => fallbackCopy(text)
+                    );
+                } else {
+                    fallbackCopy(text);
+                }
+            }
+            function fallbackCopy(text) {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.cssText = 'position:fixed;opacity:0;';
+                document.body.appendChild(ta);
+                ta.select();
+                try { document.execCommand('copy'); toast('Copied to clipboard'); }
+                catch (e) { toast('Copy failed. Please copy manually.'); }
+                document.body.removeChild(ta);
+            }
+
+            copyHtmlBtn.addEventListener('click', () => {
+                if (!window.marked || !window.DOMPurify) { toast('The rendering library has not loaded, so HTML copy is unavailable.'); return; }
+                if (!editor.value.trim()) { toast('Nothing to copy: the editor is empty.'); return; }
+                copyText(buildHtmlDocument(lastHtml));
+            });
+
+            // Import a .md file
+            importBtn.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = () => {
+                    editor.value = String(reader.result || '');
+                    afterEdit();
+                    render();
+                    toast('Imported ' + file.name);
+                };
+                reader.onerror = () => toast('Failed to read the file');
+                reader.readAsText(file);
+                fileInput.value = '';
+            });
+
+            // Clear the content
+            clearBtn.addEventListener('click', () => {
+                editor.value = '';
+                afterEdit();
+                render();
+                toast('Editor cleared');
+            });
+
+            // Input listener
+            editor.addEventListener('input', afterEdit);
+
+            // Initialization: restore saved content or load the sample
+            let saved = null;
+            try { saved = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+            if (saved !== null && saved !== undefined) {
+                editor.value = saved;
+                saveState.textContent = 'Previous content restored';
+            } else {
+                const sample = document.getElementById('sampleDoc');
+                editor.value = sample ? sample.textContent : '';
+                saveState.textContent = 'Sample document loaded';
+            }
+
+            if (window.marked && window.marked.use) {
+                window.marked.use({ gfm: true, breaks: true });
+            }
+            updatestatus();
+            render();
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Palette Generator</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="Online color scheme generator built on the HSL color wheel, with complementary, analogous, triadic, tetradic and split-complementary harmony rules. Export CSS variables, a Tailwind config or JSON in one click — everything is computed locally in your browser.">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="Color Palette Generator | PC-TOOL">
+    <meta property="og:description" content="Free online color palette generator that uses the HSL color wheel to build harmonious schemes, with color locking, random generation and multiple export formats.">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/color-palette.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="en_US">
+    <style>
+        .container { max-width: 720px; width: 100%; }
+
+        /* Shared section card */
+        .section-card {
+            margin-top: 24px; padding: 20px;
+            background: rgba(24, 24, 27, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+        }
+        .section-title { font-size: 0.9375rem; color: #a1a1aa; margin-bottom: 14px; }
+
+        /* Base color preview and HEX input */
+        .base-row { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+        .base-preview {
+            width: 64px; height: 64px; border-radius: 12px; flex-shrink: 0;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            transition: background 0.15s ease;
+        }
+        .hex-input {
+            flex: 1; padding: 10px 14px; font-size: 0.9375rem; border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: #e4e4e7; font-family: monospace; letter-spacing: 0.05em;
+        }
+        .hex-input:focus { outline: none; border-color: rgba(129, 140, 248, 0.5); }
+        .hex-input.invalid { border-color: rgba(239, 68, 68, 0.7); }
+
+        /* Sliders */
+        .slider-row { margin-bottom: 14px; }
+        .slider-head {
+            display: flex; justify-content: space-between;
+            font-size: 0.8125rem; color: #71717a; margin-bottom: 6px;
+        }
+        .slider-head span:last-child { color: #a1a1aa; font-variant-numeric: tabular-nums; }
+        input[type="range"] {
+            -webkit-appearance: none; appearance: none; width: 100%;
+            height: 10px; border-radius: 5px; background: rgba(255, 255, 255, 0.1);
+            outline: none; cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+            background: #f4f4f5; border: 2px solid #818cf8;
+            cursor: pointer; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 16px; height: 16px; border-radius: 50%;
+            background: #f4f4f5; border: 2px solid #818cf8; cursor: pointer;
+        }
+
+        /* Action buttons and dropdown */
+        .controls-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .ctrl-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #e4e4e7; padding: 8px 16px; border-radius: 8px;
+            font-size: 0.875rem; cursor: pointer; transition: all 0.2s ease;
+        }
+        .ctrl-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25); transform: translateY(-1px);
+        }
+        .ctrl-btn.primary {
+            background: rgba(99, 102, 241, 0.25);
+            border-color: rgba(129, 140, 248, 0.4); color: #c7d2fe;
+        }
+        .ctrl-btn.primary:hover {
+            background: rgba(99, 102, 241, 0.45);
+            border-color: rgba(129, 140, 248, 0.7);
+        }
+        .format-select {
+            padding: 8px 12px; font-size: 0.875rem; border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05); color: #e4e4e7;
+            cursor: pointer; appearance: none;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23a1a1aa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>');
+            background-repeat: no-repeat; background-position: right 0.6rem center;
+            background-size: 1rem; padding-right: 2rem;
+        }
+        .format-select:focus { outline: none; border-color: rgba(129, 140, 248, 0.5); }
+
+        /* Palette grid */
+        .palette-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+        .swatch {
+            border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 12px 10px; min-height: 118px;
+            display: flex; flex-direction: column; justify-content: space-between;
+            cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .swatch:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35); }
+        .swatch-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 4px; }
+        .swatch-hex { font-family: monospace; font-size: 0.75rem; word-break: break-all; }
+        .lock-btn {
+            background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 6px; color: inherit; font-size: 0.6875rem;
+            padding: 2px 7px; cursor: pointer; white-space: nowrap;
+        }
+        .swatch-bottom { font-size: 0.6875rem; opacity: 0.85; font-variant-numeric: tabular-nums; }
+        .swatch.locked { border-color: #818cf8; box-shadow: 0 0 0 1px rgba(129, 140, 248, 0.5); }
+
+        /* Export preview */
+        .export-preview {
+            margin-top: 12px; padding: 14px;
+            background: rgba(15, 15, 18, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 10px;
+            color: #a1a1aa; font-family: monospace; font-size: 0.78rem;
+            line-height: 1.6; white-space: pre; max-height: 200px; overflow: auto;
+        }
+
+        /* Light and dark shades */
+        .shade-row { display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px; }
+        .shade-cell {
+            height: 72px; border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.08); cursor: pointer;
+            display: flex; flex-direction: column; justify-content: space-between;
+            align-items: center; padding: 6px 2px; font-size: 0.625rem;
+            transition: transform 0.15s ease;
+        }
+        .shade-cell:hover { transform: translateY(-2px); }
+        .shade-cell span { font-variant-numeric: tabular-nums; }
+
+        @media (max-width: 600px) {
+            .palette-grid { grid-template-columns: repeat(2, 1fr); }
+            .shade-row { grid-template-columns: repeat(5, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <!-- Back-to-home button in a unified position -->
+    <a href="../index.html" class="back-link">← Back to Tools</a>
+
+    <div class="container">
+        <h1>Color Palette Generator</h1>
+        <p>Build harmonious color schemes with the HSL color wheel. Lock individual swatches, roll random inspiration and export in multiple formats — everything is computed locally in your browser.</p>
+
+        <!-- Base color adjustment -->
+        <div class="section-card">
+            <div class="section-title">Base Color</div>
+            <div class="base-row">
+                <div class="base-preview" id="basepreview"></div>
+                <input type="text" class="hex-input" id="hexInput" maxlength="7" spellcheck="false" placeholder="#818CF8">
+            </div>
+            <div class="slider-row">
+                <div class="slider-head"><span>Hue</span><span id="hueVal">245</span></div>
+                <input type="range" id="hueSlider" min="0" max="360" value="245">
+            </div>
+            <div class="slider-row">
+                <div class="slider-head"><span>Saturation</span><span id="satVal">70%</span></div>
+                <input type="range" id="satSlider" min="0" max="100" value="70">
+            </div>
+            <div class="slider-row">
+                <div class="slider-head"><span>Lightness</span><span id="lightVal">60%</span></div>
+                <input type="range" id="lightSlider" min="0" max="100" value="60">
+            </div>
+        </div>
+
+        <!-- Harmony rule and random generator -->
+        <div class="section-card">
+            <div class="section-title">Harmony Rule</div>
+            <div class="controls-row">
+                <select class="format-select" id="ruleSelect">
+                    <option value="complementary">Complementary</option>
+                    <option value="analogous">Analogous</option>
+                    <option value="triadic">Triadic</option>
+                    <option value="tetradic">Tetradic</option>
+                    <option value="split">Split-Complementary</option>
+                </select>
+                <button class="ctrl-btn primary" id="randomBtn">Randomize</button>
+            </div>
+        </div>
+
+        <!-- Generated scheme -->
+        <div class="section-card">
+            <div class="section-title">Generated Scheme (click a swatch to copy its HEX; use the button at the top right to lock it)</div>
+            <div class="palette-grid" id="paletteGrid"></div>
+        </div>
+
+        <!-- Export -->
+        <div class="section-card">
+            <div class="section-title">Export</div>
+            <div class="controls-row">
+                <select class="format-select" id="exportSelect">
+                    <option value="css">CSS Variables</option>
+                    <option value="tailwind">Tailwind Config</option>
+                    <option value="json">JSON Array</option>
+                </select>
+                <button class="ctrl-btn primary" id="copyExportBtn">Copy</button>
+            </div>
+            <pre class="export-preview" id="exportpreview"></pre>
+        </div>
+
+        <!-- Light and dark variants -->
+        <div class="section-card">
+            <div class="section-title">Shades (50–900 scale derived from the base color, click to copy)</div>
+            <div class="shade-row" id="shadeRow"></div>
+        </div>
+
+        <p class="contact-tip">The Color Palette Generator is provided by <strong>PC-TOOL</strong>. Everything runs locally and no data is uploaded</p>
+    </div>
+
+    <script src="common.js"></script>
+    <script>
+        (function() {
+            // ---------- DOM references ----------
+            const $ = (id) => document.getElementById(id);
+            const basepreview = $('basepreview'), hexInput = $('hexInput');
+            const hueSlider = $('hueSlider'), satSlider = $('satSlider'), lightSlider = $('lightSlider');
+            const hueVal = $('hueVal'), satVal = $('satVal'), lightVal = $('lightVal');
+            const ruleSelect = $('ruleSelect'), randomBtn = $('randomBtn'), paletteGrid = $('paletteGrid');
+            const exportSelect = $('exportSelect'), copyExportBtn = $('copyExportBtn');
+            const exportpreview = $('exportpreview'), shadeRow = $('shadeRow');
+
+            // ---------- status ----------
+            const base = { h: 245, s: 70, l: 60 }; // Base color in HSL
+            let palette = [];                      // Five-color scheme, each entry { h, s, l, locked }
+
+            // Harmony rules: hue offsets plus small saturation/lightness tweaks (keeps the five colors distinct)
+            const RULE_OFFSETS = {
+                complementary: [{ dh: 0, ds: 0, dl: 0 }, { dh: 180, ds: 0, dl: 0 }, { dh: 0, ds: -15, dl: 14 }, { dh: 180, ds: -15, dl: -12 }, { dh: 0, ds: -28, dl: -6 }],
+                analogous: [{ dh: -40 }, { dh: -20 }, { dh: 0 }, { dh: 20 }, { dh: 40 }],
+                triadic: [{ dh: 0 }, { dh: 120 }, { dh: 240 }, { dh: 120, ds: -14, dl: 12 }, { dh: 240, ds: -14, dl: -12 }],
+                tetradic: [{ dh: 0 }, { dh: 90 }, { dh: 180 }, { dh: 270 }, { dh: 45, ds: -18, dl: 8 }],
+                split: [{ dh: 0 }, { dh: 150 }, { dh: 210 }, { dh: 150, ds: -12, dl: 12 }, { dh: 210, ds: -12, dl: -12 }]
+            };
+            // Shade lightness mapping (similar to Tailwind 50–900)
+            const SHADE_STEPS = [[50, 97], [100, 94], [200, 86], [300, 77], [400, 64], [500, 52], [600, 44], [700, 36], [800, 28], [900, 21]];
+
+            // ---------- Color conversion ----------
+            function clamp(v, min, max) { return Math.min(max, Math.max(min, v)); }
+
+            // HSL to RGB (0-255)
+            function hslToRgb(h, s, l) {
+                h = ((h % 360) + 360) % 360;
+                s = clamp(s, 0, 100) / 100;
+                l = clamp(l, 0, 100) / 100;
+                const c = (1 - Math.abs(2 * l - 1)) * s;
+                const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+                const m = l - c / 2;
+                let r, g, b;
+                if (h < 60)       { r = c; g = x; b = 0; }
+                else if (h < 120) { r = x; g = c; b = 0; }
+                else if (h < 180) { r = 0; g = c; b = x; }
+                else if (h < 240) { r = 0; g = x; b = c; }
+                else if (h < 300) { r = x; g = 0; b = c; }
+                else              { r = c; g = 0; b = x; }
+                return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)];
+            }
+
+            // RGB to HSL (s/l in the 0-100 range)
+            function rgbToHsl(r, g, b) {
+                r /= 255; g /= 255; b /= 255;
+                const max = Math.max(r, g, b), min = Math.min(r, g, b);
+                const l = (max + min) / 2;
+                let h = 0, s = 0;
+                if (max !== min) {
+                    const d = max - min;
+                    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                    if (max === r)      h = ((g - b) / d + (g < b ? 6 : 0)) * 60;
+                    else if (max === g) h = ((b - r) / d + 2) * 60;
+                    else                h = ((r - g) / d + 4) * 60;
+                }
+                return [h, Math.round(s * 100), Math.round(l * 100)];
+            }
+
+            function rgbToHex(r, g, b) {
+                return '#' + [r, g, b].map(v => clamp(Math.round(v), 0, 255).toString(16).padStart(2, '0')).join('');
+            }
+            function hslToHex(h, s, l) { return rgbToHex.apply(null, hslToRgb(h, s, l)); }
+
+            // HEX to RGB; returns null when invalid (supports 3 or 6 digits)
+            function hexToRgb(str) {
+                const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(str.trim());
+                if (!m) return null;
+                let hex = m[1];
+                if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+                return [parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16)];
+            }
+
+            // Perceived brightness (0-100), used to switch the text between black and white
+            function brightness(r, g, b) { return Math.round((r * 299 + g * 587 + b * 114) / 2550); }
+            function textColorOf(r, g, b) { return brightness(r, g, b) > 60 ? '#18181b' : '#f4f4f5'; }
+
+            // ---------- Copy helper (with fallback) ----------
+            function copyText(text, onDone) {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(onDone).catch(() => fallbackCopy(text, onDone));
+                } else {
+                    fallbackCopy(text, onDone);
+                }
+            }
+            function fallbackCopy(text, onDone) {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                try { document.execCommand('copy'); onDone(); } catch (e) { alert('Copy failed. Please copy manually.'); }
+                document.body.removeChild(ta);
+            }
+
+            // Copy success feedback for buttons
+            function flashBtn(el, text) {
+                const old = el.textContent;
+                el.textContent = text;
+                setTimeout(() => { el.textContent = old; }, 1200);
+            }
+
+            // ---------- Core logic ----------
+            // Recompute unlocked swatches with the current rule
+            function regenerate() {
+                const offsets = RULE_OFFSETS[ruleSelect.value];
+                for (let i = 0; i < 5; i++) {
+                    if (palette[i] && palette[i].locked) continue;
+                    const o = offsets[i];
+                    palette[i] = {
+                        h: base.h + (o.dh || 0),
+                        s: clamp(base.s + (o.ds || 0), 0, 100),
+                        l: clamp(base.l + (o.dl || 0), 0, 100),
+                        locked: false
+                    };
+                }
+            }
+
+            // Render the five-color scheme
+            function renderPalette() {
+                paletteGrid.innerHTML = '';
+                palette.forEach((c) => {
+                    const rgb = hslToRgb(c.h, c.s, c.l);
+                    const hex = rgbToHex.apply(null, rgb).toUpperCase();
+                    const fg = textColorOf.apply(null, rgb);
+
+                    const swatch = document.createElement('div');
+                    swatch.className = 'swatch' + (c.locked ? ' locked' : '');
+                    swatch.style.background = hex;
+                    swatch.style.color = fg;
+                    swatch.innerHTML =
+                        '<div class="swatch-top"><span class="swatch-hex">' + hex + '</span>' +
+                        '<button class="lock-btn" type="button">' + (c.locked ? 'Locked' : 'Lock') + '</button></div>' +
+                        '<div class="swatch-bottom">Brightness ' + brightness.apply(null, rgb) + '%</div>';
+
+                    // Click a swatch to copy its HEX
+                    swatch.addEventListener('click', () => {
+                        copyText(hex, () => flashBtn(swatch.querySelector('.lock-btn'), 'Copied'));
+                    });
+                    // Toggle the lock (stop propagation so copying is not triggered)
+                    swatch.querySelector('.lock-btn').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        c.locked = !c.locked;
+                        renderPalette();
+                    });
+                    paletteGrid.appendChild(swatch);
+                });
+            }
+
+            // Render the light and dark shades
+            function renderShades() {
+                shadeRow.innerHTML = '';
+                SHADE_STEPS.forEach(([step, l]) => {
+                    const rgb = hslToRgb(base.h, base.s, l);
+                    const hex = rgbToHex.apply(null, rgb).toUpperCase();
+                    const cell = document.createElement('div');
+                    cell.className = 'shade-cell';
+                    cell.style.background = hex;
+                    cell.style.color = textColorOf.apply(null, rgb);
+                    cell.innerHTML = '<span>' + step + '</span><span class="shade-hex" style="font-family:monospace">' + hex + '</span>';
+                    cell.addEventListener('click', () => {
+                        copyText(hex, () => flashBtn(cell.querySelector('.shade-hex'), 'Copied'));
+                    });
+                    shadeRow.appendChild(cell);
+                });
+            }
+
+            // HEX array of the current scheme
+            function paletteHexes() { return palette.map(c => hslToHex(c.h, c.s, c.l).toUpperCase()); }
+
+            // Render the export preview
+            function renderExport() {
+                const hexes = paletteHexes();
+                const fmt = exportSelect.value;
+                let text = '';
+                if (fmt === 'css') {
+                    text = ':root {\n' + hexes.map((h, i) => '    --color-' + (i + 1) + ': ' + h.toLowerCase() + ';').join('\n') + '\n}';
+                } else if (fmt === 'tailwind') {
+                    text = '// tailwind.config.js\nmodule.exports = {\n    theme: {\n        extend: {\n            colors: {\n                palette: {\n' +
+                        hexes.map((h, i) => '                    ' + (i + 1) + ": '" + h.toLowerCase() + "',").join('\n') +
+                        '\n                }\n            }\n        }\n    }\n};';
+                } else {
+                    text = JSON.stringify(hexes.map(h => h.toLowerCase()), null, 4);
+                }
+                exportpreview.textContent = text;
+            }
+
+            // Update the slider gradients and value labels
+            function renderSliders() {
+                hueVal.textContent = Math.round(((base.h % 360) + 360) % 360);
+                satVal.textContent = Math.round(base.s) + '%';
+                lightVal.textContent = Math.round(base.l) + '%';
+                hueSlider.value = hueVal.textContent;
+                satSlider.value = base.s;
+                lightSlider.value = base.l;
+                const stops = [];
+                for (let a = 0; a <= 360; a += 60) stops.push('hsl(' + a + ',80%,55%)'); // Hue: rainbow gradient
+                hueSlider.style.background = 'linear-gradient(to right,' + stops.join(',') + ')';
+                // Saturation: gray to full color
+                satSlider.style.background = 'linear-gradient(to right,hsl(' + base.h + ',0%,' + base.l + '%),hsl(' + base.h + ',100%,' + base.l + '%))';
+                // Lightness: black - pure color - white
+                lightSlider.style.background = 'linear-gradient(to right,hsl(' + base.h + ',' + base.s + '%,0%),hsl(' + base.h + ',' + base.s + '%,50%),hsl(' + base.h + ',' + base.s + '%,100%))';
+            }
+
+            // Base color preview and HEX input
+            function renderBase() {
+                const hex = hslToHex(base.h, base.s, base.l).toUpperCase();
+                basepreview.style.background = hex;
+                if (document.activeElement !== hexInput) hexInput.value = hex;
+            }
+
+            // Full refresh
+            function renderAll() {
+                renderSliders();
+                renderBase();
+                regenerate();
+                renderPalette();
+                renderShades();
+                renderExport();
+            }
+
+            // ---------- Event bindings ----------
+            // Three sliders: update the base color in real time
+            function onSlider() {
+                base.h = +hueSlider.value;
+                base.s = +satSlider.value;
+                base.l = +lightSlider.value;
+                hexInput.classList.remove('invalid');
+                renderAll();
+            }
+            hueSlider.addEventListener('input', onSlider);
+            satSlider.addEventListener('input', onSlider);
+            lightSlider.addEventListener('input', onSlider);
+
+            // HEX input: parse and sync the base color
+            hexInput.addEventListener('change', () => {
+                const rgb = hexToRgb(hexInput.value);
+                if (!rgb) { hexInput.classList.add('invalid'); return; }
+                hexInput.classList.remove('invalid');
+                const [h, s, l] = rgbToHsl.apply(null, rgb);
+                base.h = h; base.s = s; base.l = l;
+                renderAll();
+            });
+
+            // Rule switching
+            ruleSelect.addEventListener('change', renderAll);
+
+            // Randomize: pick a random base color while keeping locked swatches
+            randomBtn.addEventListener('click', () => {
+                base.h = Math.floor(Math.random() * 360);
+                base.s = 45 + Math.floor(Math.random() * 50);
+                base.l = 35 + Math.floor(Math.random() * 30);
+                hexInput.classList.remove('invalid');
+                renderAll();
+            });
+
+            // Export format switching and copying
+            exportSelect.addEventListener('change', renderExport);
+            copyExportBtn.addEventListener('click', () => {
+                copyText(exportpreview.textContent, () => flashBtn(copyExportBtn, 'Copied'));
+            });
+
+            // ---------- Initialization ----------
+            renderAll();
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>视频提取音频</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="免费在线视频提取音频工具，从视频文件中提取音频，支持多种输出格式，纯浏览器端处理，安全免费。">
+    <link rel="stylesheet" href="common.css">
+    <!-- OGP 社交分享标签 -->
+    <meta property="og:title" content="视频提取音频 | PC-TOOL">
+    <meta property="og:description" content="免费在线工具集合——图片转换、视频压缩、音频转格式、图片抠图……每一个功能都为效率而生，完全免费，为人民服务！">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/video-to-audio.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="zh_CN">
+    <style>
+        #videoFileInput { display: none; }
+
+        .extract-btn {
+            padding: 12px 25px;
+            background: rgba(24, 24, 27, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        .extract-btn:hover {
+            background: rgba(39, 39, 42, 0.6);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .extract-btn:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 3px;
+            margin: 15px 0;
+            display: none;
+            overflow: hidden;
+        }
+
+        .progress-bar .fill {
+            height: 100%;
+            background: linear-gradient(90deg, #818cf8, #34d399);
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+<canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <a href="../index.html" class="back-link">← 返回转换工具首页</a>
+
+    <div class="container">
+        <h1>视频提取音频</h1>
+        <p>从视频文件中提取音频，支持多种输出格式</p>
+
+        <div class="upload-area" id="videoUploadArea">
+            <p>点击或拖拽上传视频</p>
+            <input type="file" id="videoFileInput" accept="video/*">
+        </div>
+
+        <div id="videoInfo" style="text-align:center; margin:15px 0; display:none;">
+            <p id="videoFileName" style="color:#e4e4e7;"></p>
+        </div>
+
+        <div class="progress-bar" id="progressBar">
+            <div class="fill" id="progressFill"></div>
+        </div>
+
+        <div style="text-align:center;">
+            <select class="format-select" id="audioOutputFormat">
+                <option value="wav">输出 WAV (无损)</option>
+                <option value="ogg">输出 OGG (有损·体积小)</option>
+            </select>
+            <button class="extract-btn" id="extractBtn">开始提取</button>
+            <button class="download-btn" id="downloadBtn">下载音频</button>
+        </div>
+
+        <div class="result-box" id="resultBox">
+            <h3>音频提取完成</h3>
+            <div class="size-info" id="sizeInfo"></div>
+        </div>
+
+        <div class="contact-tip">面向大众，有任何想要的功能或者意见，请联系QQ交流群：<strong>1121812272</strong></div>
+    </div>
+
+    <script src="common.js"></script>
+
+    <script>
+        const videoUpload = document.getElementById('videoUploadArea');
+        const videoFile = document.getElementById('videoFileInput');
+        const extractBtn = document.getElementById('extractBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const audioFormat = document.getElementById('audioOutputFormat');
+        const resultBox = document.getElementById('resultBox');
+        const sizeInfo = document.getElementById('sizeInfo');
+        const videoInfo = document.getElementById('videoInfo');
+        const videoFileName = document.getElementById('videoFileName');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        let videoBlob = null, audioUrl = null, videoOriginalName = '';
+
+        videoUpload.onclick = () => videoFile.click();
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(e => videoUpload.addEventListener(e, ev => { ev.preventDefault(); ev.stopPropagation() }));
+        ['dragenter', 'dragover'].forEach(e => videoUpload.addEventListener(e, () => videoUpload.style.background = 'rgba(129,140,248,0.1)'));
+        ['dragleave', 'drop'].forEach(e => videoUpload.addEventListener(e, () => videoUpload.style.background = ''));
+
+        videoUpload.ondrop = (e) => {
+            const f = e.dataTransfer.files[0];
+            if (f?.type.startsWith('video/')) handleVideo(f);
+            else alert('请上传视频文件');
+        };
+        videoFile.onchange = (e) => handleVideo(e.target.files[0]);
+
+        function handleVideo(f) {
+            videoBlob = f;
+            videoOriginalName = f.name.replace(/\.\w+$/, '');
+            videoFileName.innerText = '文件名：' + f.name + ' (' + formatSize(f.size) + ')';
+            videoInfo.style.display = 'block';
+            resultBox.style.display = 'none';
+            downloadBtn.style.display = 'none';
+        }
+
+        function formatSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / 1048576).toFixed(2) + ' MB';
+        }
+
+        extractBtn.onclick = async () => {
+            if (!videoBlob) { alert('请先上传视频'); return; }
+
+            extractBtn.disabled = true;
+            extractBtn.textContent = '提取中...';
+            progressBar.style.display = 'block';
+            progressFill.style.width = '0%';
+            resultBox.style.display = 'none';
+            downloadBtn.style.display = 'none';
+
+            try {
+                const audioBlob = await extractAudioFromVideo(videoBlob);
+                const fmt = audioFormat.value;
+
+                // 先解码录制的 WebM 音频为 AudioBuffer
+                const ab = await audioBlob.arrayBuffer();
+                const actx = new (window.AudioContext || window.webkitAudioContext)();
+                const buf = await actx.decodeAudioData(ab);
+                actx.close();
+
+                let finalBlob;
+                if (fmt === 'wav') {
+                    const wavBuf = audioBufferToWav(buf);
+                    finalBlob = new Blob([wavBuf], { type: 'audio/wav' });
+                } else {
+                    finalBlob = OggVorbisEncoder.encode(buf, 0.7);
+                }
+
+                audioUrl = URL.createObjectURL(finalBlob);
+
+                sizeInfo.innerHTML =
+                    '视频大小：' + formatSize(videoBlob.size) + '<br>' +
+                    '提取音频：<span class="highlight">' + formatSize(finalBlob.size) + '</span><br>' +
+                    '格式：<span class="highlight">' + fmt.toUpperCase() + '</span>';
+                resultBox.style.display = 'block';
+                downloadBtn.style.display = 'inline-block';
+            } catch (e) {
+                alert('提取失败：' + e.message);
+            } finally {
+                extractBtn.disabled = false;
+                extractBtn.textContent = '开始提取';
+                progressBar.style.display = 'none';
+            }
+        };
+
+        function extractAudioFromVideo(videoBlob) {
+            return new Promise((resolve, reject) => {
+                const video = document.createElement('video');
+                video.preload = 'auto';
+                video.volume = 0;
+
+                const url = URL.createObjectURL(videoBlob);
+                let timer = null, settled = false, recorder = null;
+
+                function cleanup() {
+                    if (timer) clearInterval(timer);
+                    URL.revokeObjectURL(url);
+                }
+
+                function finish(err, blob) {
+                    if (settled) return;
+                    settled = true;
+                    cleanup();
+                    if (err) reject(err);
+                    else resolve(blob);
+                }
+
+                video.onloadedmetadata = () => {
+                    const stream = video.captureStream();
+                    const audioTracks = stream.getAudioTracks();
+
+                    if (audioTracks.length === 0) {
+                        // 尝试用 createMediaElementSource 兜底
+                        tryMediaElementSource();
+                        return;
+                    }
+
+                    const audioStream = new MediaStream(audioTracks);
+                    const chunks = [];
+                    let mimeType = 'audio/webm';
+                    if (!MediaRecorder.isTypeSupported('audio/webm')) {
+                        mimeType = 'audio/webm;codecs=opus';
+                        if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = '';
+                    }
+
+                    recorder = new MediaRecorder(audioStream, mimeType ? { mimeType } : {});
+
+                    recorder.ondataavailable = (e) => {
+                        if (e.data.size > 0) chunks.push(e.data);
+                    };
+
+                    recorder.onstop = () => {
+                        audioTracks.forEach(t => t.stop());
+                        finish(null, new Blob(chunks, { type: mimeType || 'audio/webm' }));
+                    };
+
+                    recorder.onerror = () => finish(new Error('录制失败'));
+
+                    recorder.start();
+
+                    const duration = video.duration;
+                    timer = setInterval(() => {
+                        const pct = Math.min((video.currentTime / duration) * 100, 100);
+                        progressFill.style.width = pct + '%';
+                    }, 200);
+
+                    video.play().catch(e => finish(new Error('视频播放失败：' + e.message)));
+                };
+
+                // createMediaElementSource 兜底方案
+                function tryMediaElementSource() {
+                    try {
+                        const actx = new (window.AudioContext || window.webkitAudioContext)();
+                        const source = actx.createMediaElementSource(video);
+                        const dest = actx.createMediaStreamDestination();
+                        source.connect(dest);
+                        source.connect(actx.destination);
+
+                        const chunks = [];
+                        let mimeType = 'audio/webm';
+                        if (!MediaRecorder.isTypeSupported('audio/webm')) {
+                            mimeType = 'audio/webm;codecs=opus';
+                            if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = '';
+                        }
+
+                        recorder = new MediaRecorder(dest.stream, mimeType ? { mimeType } : {});
+                        recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+
+                        recorder.onstop = () => {
+                            try { source.disconnect(); } catch(e) {}
+                            try { actx.close(); } catch(e) {}
+                            finish(null, new Blob(chunks, { type: mimeType || 'audio/webm' }));
+                        };
+
+                        recorder.onerror = () => {
+                            try { source.disconnect(); } catch(e) {}
+                            try { actx.close(); } catch(e) {}
+                            finish(new Error('录制失败'));
+                        };
+
+                        recorder.start();
+
+                        const duration = video.duration;
+                        timer = setInterval(() => {
+                            const pct = Math.min((video.currentTime / duration) * 100, 100);
+                            progressFill.style.width = pct + '%';
+                        }, 200);
+
+                        video.play().catch(e => {
+                            try { source.disconnect(); } catch(e) {}
+                            try { actx.close(); } catch(e) {}
+                            finish(new Error('视频播放失败：' + e.message));
+                        });
+                    } catch(e) {
+                        finish(new Error('无法提取音频：' + e.message));
+                    }
+                }
+
+                video.onended = () => {
+                    progressFill.style.width = '100%';
+                    if (recorder && recorder.state === 'recording') {
+                        setTimeout(() => {
+                            if (recorder.state === 'recording') recorder.stop();
+                        }, 200);
+                    }
+                };
+
+                video.onerror = () => finish(new Error('视频加载失败，请检查文件格式'));
+
+                video.src = url;
+            });
+        }
+
+        downloadBtn.onclick = () => {
+            const a = document.createElement('a');
+            a.href = audioUrl;
+            const ext = audioFormat.value;
+            a.download = videoOriginalName + '-视频提取音频.' + ext;
+            a.click();
+        };
+
+        function audioBufferToWav(b) {
+            let l = b.length * b.numberOfChannels * 2 + 44;
+            let ab = new ArrayBuffer(l);
+            let v = new DataView(ab);
+            let p = 0;
+            const s16 = (d) => { v.setUint16(p, d, true); p += 2; };
+            const s32 = (d) => { v.setUint32(p, d, true); p += 4; };
+            s32(0x46464952); s32(l - 8); s32(0x45564157);
+            s32(0x20746D66); s32(16); s16(1); s16(b.numberOfChannels);
+            s32(b.sampleRate); s32(b.sampleRate * 2 * b.numberOfChannels);
+            s16(b.numberOfChannels * 2); s16(16);
+            s32(0x61746164); s32(l - p - 4);
+            let o = 0;
+            while (p < l) {
+                for (let i = 0; i < b.numberOfChannels; i++) {
+                    let s = b.getChannelData(i)[o];
+                    s = Math.max(-1, Math.min(1, s));
+                    v.setInt16(p, s < 0 ? s * 0x8000 : s * 0x7FFF, true); p += 2;
+                }
+                o++;
+            }
+            return ab;
+        }
+
+        const OggVorbisEncoder = (function () {
+            const crcTable = new Uint32Array(256);
+            for (let i = 0; i < 256; i++) {
+                let r = i;
+                for (let j = 0; j < 8; j++) { r = (r & 1) ? (r >>> 1) ^ 0xEDB88320 : (r >>> 1); }
+                crcTable[i] = r;
+            }
+            function crc32(data) {
+                let crc = 0xFFFFFFFF;
+                for (let i = 0; i < data.length; i++) { crc = crcTable[(crc ^ data[i]) & 0xFF] ^ (crc >>> 8); }
+                return (crc ^ 0xFFFFFFFF) >>> 0;
+            }
+            function createVorbisHeader(sampleRate, channels, quality) {
+                const header = new Uint8Array(30);
+                header.set([0x76, 0x6f, 0x72, 0x62, 0x69, 0x73], 0);
+                header.set([0x00, 0x00, 0x00, 0x00], 6);
+                header[10] = channels;
+                new DataView(header.buffer).setUint32(11, sampleRate, true);
+                const nominalBitrate = Math.floor(quality * 192000);
+                new DataView(header.buffer).setInt32(15, 0, true);
+                new DataView(header.buffer).setInt32(19, nominalBitrate, true);
+                new DataView(header.buffer).setInt32(23, 0, true);
+                header[27] = 0x08; header[28] = 0x10; header[29] = 0x01;
+                return header;
+            }
+            function createOggPage(segmentData, headerType, granulePosition, streamSerial) {
+                const segments = [];
+                let dataOffset = 0;
+                while (dataOffset < segmentData.length) {
+                    const remaining = segmentData.length - dataOffset;
+                    if (remaining <= 255) { segments.push(remaining); dataOffset += remaining; }
+                    else { segments.push(255); dataOffset += 255; }
+                }
+                const pageHeaderSize = 27 + segments.length;
+                const pageBuffer = new ArrayBuffer(pageHeaderSize + segmentData.length);
+                const page = new Uint8Array(pageBuffer);
+                page.set([0x4f, 0x67, 0x67, 0x53], 0);
+                page[4] = 0; page[5] = headerType;
+                new DataView(pageBuffer).setBigInt64(6, BigInt(granulePosition), true);
+                new DataView(pageBuffer).setUint32(14, streamSerial, true);
+                new DataView(pageBuffer).setUint32(18, 0, true);
+                page[26] = segments.length;
+                for (let i = 0; i < segments.length; i++) { page[27 + i] = segments[i]; }
+                page.set(segmentData, 27 + segments.length);
+                const crc = crc32(page);
+                new DataView(pageBuffer).setUint32(22, crc, true);
+                return page;
+            }
+            function encode(audioBuffer, quality) {
+                const sampleRate = audioBuffer.sampleRate;
+                const channels = Math.min(audioBuffer.numberOfChannels, 2);
+                const length = audioBuffer.length;
+                const leftChannel = audioBuffer.getChannelData(0);
+                const rightChannel = channels > 1 ? audioBuffer.getChannelData(1) : leftChannel;
+                const pcmData = new Float32Array(length * 2);
+                for (let i = 0; i < length; i++) { pcmData[i * 2] = leftChannel[i]; pcmData[i * 2 + 1] = rightChannel[i]; }
+                const serial = Math.floor(Math.random() * 0xFFFFFFFF);
+                const vorbisHeader = createVorbisHeader(sampleRate, channels, quality);
+                const packets = [];
+                const samplesPerPacket = 1024;
+                for (let offset = 0; offset < pcmData.length; offset += samplesPerPacket * 2) {
+                    const end = Math.min(offset + samplesPerPacket * 2, pcmData.length);
+                    const packetData = new Uint8Array((end - offset) * 2);
+                    const view = new DataView(packetData.buffer);
+                    for (let i = offset; i < end; i++) {
+                        const sample = Math.max(-1, Math.min(1, pcmData[i]));
+                        const intSample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+                        view.setInt16((i - offset) * 2, intSample, true);
+                    }
+                    packets.push(packetData);
+                }
+                const oggParts = [];
+                oggParts.push(createOggPage(vorbisHeader, 0x02, 0, serial));
+                const commentHeader = new Uint8Array([0x76, 0x6f, 0x72, 0x62, 0x69, 0x73, 0x00, 0x00, 0x00, 0x00, 0x01]);
+                oggParts.push(createOggPage(commentHeader, 0x00, 0, serial));
+                let granulePos = 0;
+                for (const packet of packets) { granulePos += samplesPerPacket; oggParts.push(createOggPage(packet, 0x00, granulePos, serial)); }
+                oggParts.push(createOggPage(new Uint8Array(0), 0x04, granulePos, serial));
+                const totalLength = oggParts.reduce((acc, part) => acc + part.length, 0);
+                const finalOgg = new Uint8Array(totalLength);
+                let offset = 0;
+                for (const part of oggParts) { finalOgg.set(part, offset); offset += part.length; }
+                return new Blob([finalOgg], { type: 'audio/ogg' });
+            }
+            return { encode };
+        })();
+    </script>
+</body>
+</html>

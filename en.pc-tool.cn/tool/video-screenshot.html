@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Screenshot / Frame Capture</title>
+    <link rel="icon" type="image/png" href="../favicon.png">
+    <meta name="description" content="Free online video frame capture tool. Play to any frame and export it as an image. Supports JPG and PNG formats, processed entirely in your browser — safe and free.">
+    <link rel="stylesheet" href="common.css">
+    <meta property="og:title" content="Video Screenshot / Frame Capture | PC-TOOL">
+    <meta property="og:description" content="Free online tools — image conversion, video compression, audio conversion, image cutout and more — every feature built for productivity, completely free, made for everyone!">
+    <meta property="og:image" content="https://www.pc-tool.cn/avatar.jpg">
+    <meta property="og:url" content="https://www.pc-tool.cn/tool/video-screenshot.html">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PC-TOOL">
+    <meta property="og:locale" content="en_US">
+    <style>
+        #videoInput { display: none; }
+        video {
+            max-width: 100%;
+            border-radius: 8px;
+            display: none;
+            margin: 10px auto;
+        }
+    </style>
+</head>
+<body>
+<canvas id="bg-canvas" class="bg-canvas"></canvas>
+
+    <a href="../index.html" class="back-link">← Back to Tools</a>
+
+    <div class="container">
+        <h1>Video Screenshot / Frame Capture</h1>
+        <p>Play the video to the frame you want and export it as an image with one click.</p>
+
+        <div class="upload-area" id="uploadArea">
+            <p>Click or drag to upload a video</p>
+            <input type="file" id="videoInput" accept="video/*">
+        </div>
+
+        <div id="videoInfo" style="text-align:center; margin:10px 0; display:none;">
+            <p id="fileName" style="color:#e4e4e7;"></p>
+        </div>
+
+        <video id="previewVideo" controls></video>
+
+        <div style="text-align:center;">
+            <select class="format-select" id="outputFormat">
+                <option value="png">PNG format</option>
+                <option value="jpg">JPG format</option>
+            </select>
+            <button class="convert-btn" id="captureBtn">Capture current frame</button>
+            <button class="download-btn" id="downloadBtn">Download Image</button>
+        </div>
+
+        <div class="result-box" id="resultBox">
+            <h3>Screenshot Complete</h3>
+            <img id="screenshotPreview" style="max-width:100%; border-radius:8px; margin-top:10px;">
+            <div class="size-info" id="sizeInfo" style="margin-top:8px;"></div>
+        </div>
+
+        <div class="contact-tip">For feature requests or feedback, join our Discord: <a href="https://discord.gg/wjvS3efTj" target="_blank" rel="noopener noreferrer">https://discord.gg/wjvS3efTj</a></div>
+
+    <script src="common.js"></script>
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const videoInput = document.getElementById('videoInput');
+        const captureBtn = document.getElementById('captureBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const resultBox = document.getElementById('resultBox');
+        const sizeInfo = document.getElementById('sizeInfo');
+        const videoInfo = document.getElementById('videoInfo');
+        const fileName = document.getElementById('fileName');
+        const previewVideo = document.getElementById('previewVideo');
+        const outputFormat = document.getElementById('outputFormat');
+        const screenshotPreview = document.getElementById('screenshotPreview');
+
+        let videoFile = null, imageUrl = null;
+
+        uploadArea.onclick = () => videoInput.click();
+        setupDragDrop(uploadArea, (files) => {
+            if (files[0]?.type.startsWith('video/')) handleVideo(files[0]);
+            else showToast('Please upload a video file');
+        });
+
+        videoInput.onchange = (e) => handleVideo(e.target.files[0]);
+
+        function handleVideo(f) {
+            videoFile = f;
+            fileName.textContent = 'File name: ' + f.name + ' (' + formatSize(f.size) + ')';
+            const url = URL.createObjectURL(f);
+            previewVideo.src = url;
+            previewVideo.style.display = 'block';
+            videoInfo.style.display = 'block';
+            resultBox.style.display = 'none';
+            downloadBtn.style.display = 'none';
+        }
+
+        captureBtn.onclick = () => {
+            if (!videoFile) { showToast('Please upload a video first'); return; }
+
+            const video = previewVideo;
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            const fmt = outputFormat.value;
+            const mimeType = fmt === 'jpg' ? 'image/jpeg' : 'image/png';
+            const quality = fmt === 'jpg' ? 0.92 : undefined;
+
+            canvas.toBlob((blob) => {
+                imageUrl = URL.createObjectURL(blob);
+                screenshotPreview.src = imageUrl;
+                sizeInfo.innerHTML = 'Format: <span class="highlight">' + fmt.toUpperCase() + '</span> | Dimensions: <span class="highlight">' + canvas.width + '×' + canvas.height + '</span> | Size: <span class="highlight">' + formatSize(blob.size) + '</span>';
+                resultBox.style.display = 'block';
+                downloadBtn.style.display = 'inline-block';
+            }, mimeType, quality);
+        };
+
+        downloadBtn.onclick = () => {
+            const a = document.createElement('a');
+            a.href = imageUrl;
+            const ext = outputFormat.value;
+            a.download = (videoFile?.name || 'screenshot').replace(/\.\w+$/, '') + '-screenshot.' + ext;
+            a.click();
+        };
+    </script>
+</body>
+</html>
+
+
+
